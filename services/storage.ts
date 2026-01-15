@@ -48,3 +48,25 @@ export const getStats = () => {
     urgent: mails.filter(m => m.urgency === 'Segera').length
   };
 };
+
+// FITUR BARU: Export Database ke JSON String
+export const exportDatabase = (): string => {
+  const data = localStorage.getItem(STORAGE_KEY);
+  return data || '[]';
+};
+
+// FITUR BARU: Import Database dari JSON String
+export const importDatabase = (jsonString: string): boolean => {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (Array.isArray(parsed)) {
+      localStorage.setItem(STORAGE_KEY, jsonString);
+      window.dispatchEvent(new Event('storage-update'));
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error("Invalid JSON format", e);
+    return false;
+  }
+};

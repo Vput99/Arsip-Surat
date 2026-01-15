@@ -62,9 +62,20 @@ Telah mengajukan pindah ke salah satu Sekolah ..................................
 Kecamatan ........................... Kabupaten ...........................
 Provinsi ........................... dengan alasan ...........................................................
 
+Yang bersangkutan belum memiliki Buku Laporan Hasil Belajar ( Raport ) maka bersangkutan akan membawa Surat permohonan pindah orang tua/ wali murid.
+
 Demikian Surat Keterangan Pindah Sekolah ini dibuat untuk dapat dipergunakan sebagaimana mestinya.
 
--------------------------------------------------- ✂ --------------------------------------------------
+(Area Tanda Tangan Kepala Sekolah Asal - Silakan Edit Tanggal dan Nama di bawah ini secara manual jika perlu, atau biarkan kosong jika menggunakan Tanda Tangan Footer)
+
+Kediri, ...........................................
+Kepala Sekolah,
+
+
+( ........................................... )
+NIP. ...........................................
+
+✂-CUT-LINE
 
 Setelah anak diterima di sekolah ini, isian di bawah ini harap dikirim kembali pada kami.
 
@@ -75,14 +86,7 @@ Status Sekolah : ...........................................................
 Alamat : ...........................................................
 Nama Siswa : ...........................................................
 Diterima di kelas : ...........................................................
-Diterima tanggal : ...........................................................
-
-......................, ...........................
-Kepala Sekolah Penerima,
-
-
-( ........................................ )
-NIP. ........................................`
+Diterima tanggal : ...........................................................`
   },
   {
     id: 't_spt',

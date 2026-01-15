@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Printer, FileText, ChevronDown, Copy, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Save, Printer, FileText, ChevronDown, Copy, RefreshCw, CheckCircle2, Scissors } from 'lucide-react';
 import { LETTER_TEMPLATES } from '../constants';
 import { getSchoolConfig, saveMail } from '../services/storage';
 import { Mail, MailType, MailStatus, UrgencyLevel, SchoolConfig } from '../types';
@@ -20,9 +20,9 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
             {tableRows.map((row, idx) => (
               <tr key={idx}>
                 {/* Lebar label dibuat fix agar lurus vertikal */}
-                <td className="align-top pb-1 w-[30%] whitespace-nowrap pr-2">{row.label}</td>
+                <td className="align-top pb-1 w-[35%] whitespace-nowrap pr-2">{row.label}</td>
                 <td className="align-top pb-1 px-1 w-[2%]">{row.separator}</td>
-                <td className="align-top pb-1 w-[68%]">{row.value}</td>
+                <td className="align-top pb-1 w-[63%]">{row.value}</td>
               </tr>
             ))}
           </tbody>
@@ -35,10 +35,37 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     
-    // Deteksi pola "Label : Value"
-    // Syarat: Ada titik dua, dan posisi titik dua tidak terlalu jauh (misal < 50 char) agar bukan kalimat biasa
-    const colonIndex = line.indexOf(':');
+    // 1. Deteksi Garis Potong (Cut Line)
+    if (trimmed.includes('✂') || trimmed.includes('-CUT-LINE')) {
+      flushTable();
+      renderedBlocks.push(
+        <div key={`cut-${index}`} className="flex items-center gap-4 my-6 select-none">
+          <Scissors size={16} className="text-black transform -rotate-90" />
+          <div className="flex-1 border-b-2 border-dashed border-black"></div>
+        </div>
+      );
+      return;
+    }
 
+    // 2. Deteksi pola "Label : Value"
+    const colonIndex = line.indexOf(':');
+    
+    // Logika khusus untuk "NSS :" agar kotaknya terlihat rapi
+    if (trimmed.startsWith('NSS') && colonIndex > 0) {
+       flushTable();
+       renderedBlocks.push(
+         <div key={`nss-${index}`} className="flex items-center mb-2">
+            <span className="w-[35%] pr-2">NSS</span>
+            <span className="w-[2%] px-1">:</span>
+            <span className="font-mono text-lg tracking-[0.2em] border border-black px-2 py-1 bg-white inline-block">
+               {line.substring(colonIndex + 1).trim() || "            "}
+            </span>
+         </div>
+       );
+       return;
+    }
+
+    // Logika tabel standar
     if (colonIndex > 0 && colonIndex < 40 && trimmed.length > 0) {
          const label = line.substring(0, colonIndex).trim();
          const value = line.substring(colonIndex + 1).trim();
@@ -52,13 +79,28 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
          }
     } else {
       flushTable();
-      // Render teks biasa
-      if (trimmed === '') {
-         renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
-      } else {
-         renderedBlocks.push(
-           <p key={`p-${index}`} className="mb-1 text-justify whitespace-pre-wrap">{line}</p>
+      // Render teks biasa (Handle Signature placeholder manual in text)
+      if (trimmed.includes('( ........................................... )') && trimmed.includes('NIP')) {
+         // Manual signature in text detection (simple)
+          renderedBlocks.push(
+           <div key={`p-${index}`} className="mb-1 text-right whitespace-pre-wrap">{line}</div>
          );
+      } else if (line.includes('Kediri,') && line.length < 50) {
+         renderedBlocks.push(
+           <div key={`p-${index}`} className="mb-1 text-right font-serif">{line}</div>
+         );
+      } else if (line.includes('Kepala Sekolah,') && line.length < 30) {
+          renderedBlocks.push(
+           <div key={`p-${index}`} className="mb-1 text-right font-serif">{line}</div>
+         );
+      } else {
+          if (trimmed === '') {
+             renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
+          } else {
+             renderedBlocks.push(
+               <p key={`p-${index}`} className="mb-1 text-justify whitespace-pre-wrap">{line}</p>
+             );
+          }
       }
     }
   });
@@ -89,14 +131,17 @@ const LetterCreator: React.FC = () => {
     const template = LETTER_TEMPLATES.find(t => t.id === e.target.value);
     if (template) {
       setSelectedTemplate(template);
+      
+      // Khusus Mutasi Keluar, sesuaikan signer untuk bagian bawah (Penerima)
+      const isMutasiKeluar = template.id === 't_mutasi_keluar';
+      
       setFormData(prev => ({ 
         ...prev, 
         content: template.content,
-        // @ts-ignore
-        signatureTitle: template.signatureTitle || 'Kepala Sekolah',
-        // @ts-ignore
-        signerName: template.signatureTitle?.includes('Pelaksana') ? '( ___________________________ )' : '( Nama Kepala Sekolah )',
-        signerNip: '...................................'
+        // Untuk mutasi keluar, tanda tangan bawah adalah Sekolah Penerima (kosongkan defaultnya)
+        signatureTitle: isMutasiKeluar ? 'Kepala Sekolah Penerima,' : (template.signatureTitle || 'Kepala Sekolah'),
+        signerName: isMutasiKeluar ? '( ........................................... )' : (template.signatureTitle?.includes('Pelaksana') ? '( ___________________________ )' : '( Nama Kepala Sekolah )'),
+        signerNip: isMutasiKeluar ? '...........................................' : '...................................'
       }));
     }
   };
@@ -203,7 +248,9 @@ const LetterCreator: React.FC = () => {
              )}
 
              <div className="pt-2 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Info Penanda Tangan</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                  {selectedTemplate.id === 't_mutasi_keluar' ? 'Info Tanda Tangan Bawah (Penerima)' : 'Info Penanda Tangan'}
+                </label>
                 <div className="space-y-3">
                   <div>
                      <label className="text-[10px] text-slate-400 font-bold mb-1 block">Jabatan</label>
@@ -230,7 +277,7 @@ const LetterCreator: React.FC = () => {
                 <span className="text-[10px] text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full normal-case">Editor Cerdas (Auto-Align)</span>
              </label>
              <p className="text-[10px] text-slate-400 mb-2">
-                Tips: Tulis "Label : Isi" (gunakan titik dua) agar otomatis lurus di pratinjau.
+                Tips: Tulis "Label : Isi" agar lurus. Gunakan "✂-CUT-LINE" untuk garis potong.
              </p>
              <textarea 
                name="content"
@@ -273,7 +320,7 @@ const LetterCreator: React.FC = () => {
                  
                  {isCentered ? (
                    /* Centered Layout (SPT / Laporan) */
-                   <div className="text-center mb-8">
+                   <div className="text-center mb-6">
                       <h2 className="text-lg font-bold underline uppercase tracking-wide">{selectedTemplate.subject}</h2>
                       {!selectedTemplate.name.includes('Laporan') && (
                         <p className="mt-1 font-bold">Nomor : {formData.refNumber}</p>
@@ -318,10 +365,14 @@ const LetterCreator: React.FC = () => {
                     <SmartContentRenderer text={formData.content} />
                  </div>
 
-                 {/* Signature */}
+                 {/* Signature (Bottom) */}
                  <div className="mt-auto flex justify-end">
                     <div className="text-center w-64">
-                       <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
+                       <p className="mb-1">
+                         {selectedTemplate.id === 't_mutasi_keluar' 
+                           ? `......................, ...........................` 
+                           : `Kediri, ${format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}`}
+                       </p>
                        <p>{formData.signatureTitle}</p>
                        <div className="h-24"></div> {/* Space for signature */}
                        <p className="font-bold underline">{formData.signerName}</p>

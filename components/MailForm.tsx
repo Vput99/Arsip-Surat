@@ -4,7 +4,7 @@ import { Mail, MailType, MailStatus, UrgencyLevel } from '../types';
 import { saveMail } from '../services/storage';
 import { analyzeLetter } from '../services/geminiService';
 import { CATEGORIES } from '../constants';
-import { Save, X, Sparkles, Loader2 } from 'lucide-react';
+import { Save, X, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 
 interface MailFormProps {
   type: MailType;
@@ -15,6 +15,7 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [fileError, setFileError] = useState<string>('');
   
   const [formData, setFormData] = useState<Partial<Mail>>({
     type: type,
@@ -27,7 +28,7 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
     description: '',
     referenceNumber: '',
     sender: '',
-    fileUrl: '', // Inisialisasi field file
+    fileUrl: '', 
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -35,16 +36,38 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Fungsi baru untuk menangani input file
+  // FUNGSI UTAMA: Mengubah file menjadi Base64 string agar bisa disimpan di LocalStorage
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setFileError('');
+
     if (file) {
-      // Dalam aplikasi nyata, di sini kita akan upload ke server (Firebase/AWS S3)
-      // Untuk demo local storage, kita simpan nama filenya saja sebagai simulasi
-      setFormData(prev => ({ 
-        ...prev, 
-        fileUrl: file.name 
-      }));
+      // Validasi Ukuran: Batasi 1MB agar LocalStorage tidak penuh/crash
+      if (file.size > 1024 * 1024) {
+        setFileError('Ukuran file terlalu besar! Maksimal 1MB untuk penyimpanan lokal.');
+        e.target.value = ''; // Reset input
+        return;
+      }
+
+      // Validasi Tipe
+      if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+        setFileError('Hanya file PDF, JPG, dan PNG yang diperbolehkan.');
+        e.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Simpan hasil konversi (Base64 string panjang) ke state
+        setFormData(prev => ({ 
+          ...prev, 
+          fileUrl: reader.result as string 
+        }));
+      };
+      reader.onerror = () => {
+        setFileError('Gagal membaca file.');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -87,12 +110,18 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
       urgency: formData.urgency!,
       status: formData.status!,
       aiSummary: formData.aiSummary,
-      fileUrl: formData.fileUrl // Simpan info file
+      fileUrl: formData.fileUrl // Berisi data file asli (Base64)
     };
 
-    saveMail(newMail);
-    setLoading(false);
-    onClose();
+    try {
+      saveMail(newMail);
+      setLoading(false);
+      onClose();
+    } catch (error) {
+      console.error(error);
+      alert("Gagal menyimpan. Kemungkinan ukuran file total melebihi kapasitas browser.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -229,15 +258,20 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">File Dokumen</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Upload File (Max 1MB)</label>
               <input
                 type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
                 onChange={handleFileChange}
                 className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer"
               />
-              <p className="text-xs text-gray-400 mt-1">
-                {formData.fileUrl ? `File terpilih: ${formData.fileUrl}` : 'Format: PDF, JPG, PNG (Simulasi)'}
-              </p>
+              {fileError ? (
+                <p className="text-xs text-red-500 mt-1 flex items-center"><AlertTriangle size={10} className="mr-1"/>{fileError}</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">
+                  {formData.fileUrl ? `File berhasil dimuat` : 'Format: PDF, JPG, PNG'}
+                </p>
+              )}
             </div>
           </div>
 
@@ -251,8 +285,8 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 font-medium"
+              disabled={loading || !!fileError}
+              className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 size={18} className="animate-spin mr-2"/> : <Save size={18} className="mr-2"/>}
               Simpan Surat

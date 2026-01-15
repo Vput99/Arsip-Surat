@@ -39,7 +39,8 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     }
   };
 
-  const handlePrint = (mail: Mail) => {
+  // Cetak Lembar Disposisi / Arsip (Hanya Metadata)
+  const handlePrintDisposition = (mail: Mail) => {
     const printWindow = window.open('', '', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(`
@@ -132,12 +133,43 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     }
   };
 
-  const handleDownload = (mail: Mail) => {
-    // Jika ada fileUrl (simulasi), kita beri alert bahwa ini demo
-    if (mail.fileUrl) {
-      alert(`Mendownload file lampiran asli: ${mail.fileUrl}\n(Catatan: Dalam versi demo ini file fisik tidak disimpan di server, hanya nama filenya saja)`);
+  // Cetak/Lihat File Lampiran Asli
+  const handleViewOrPrintFile = (mail: Mail) => {
+    if (mail.fileUrl && mail.fileUrl.startsWith('data:')) {
+      // Buka data base64 di tab baru agar browser native viewer (PDF/Image) terbuka
+      // Dari sana user bisa klik ikon Print bawaan browser
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(
+          `<iframe src="${mail.fileUrl}" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`
+        );
+        newWindow.document.title = `Lampiran - ${mail.referenceNumber}`;
+        newWindow.document.close();
+      }
+    } else if (mail.fileUrl) {
+      alert(`File simulasi lama: ${mail.fileUrl}. Upload file baru untuk bisa dicetak.`);
     } else {
-      // Fallback: Download resume text jika tidak ada file
+      alert("Tidak ada file lampiran.");
+    }
+  };
+
+  const handleDownload = (mail: Mail) => {
+    if (mail.fileUrl && mail.fileUrl.startsWith('data:')) {
+      // Download file asli dari Base64
+      const link = document.createElement('a');
+      link.href = mail.fileUrl;
+      // Mencoba menebak ekstensi dari mime type di string base64
+      let ext = 'bin';
+      if (mail.fileUrl.includes('application/pdf')) ext = 'pdf';
+      else if (mail.fileUrl.includes('image/jpeg')) ext = 'jpg';
+      else if (mail.fileUrl.includes('image/png')) ext = 'png';
+      
+      link.download = `Dokumen-${mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-')}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      // Fallback: Download resume text
       const content = `ARSIP SURAT - SD PINTAR\nNomor: ${mail.referenceNumber}\nPerihal: ${mail.subject}\n\n${mail.description}`;
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -148,14 +180,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    }
-  };
-
-  const handleViewFile = (mail: Mail) => {
-    if (mail.fileUrl) {
-      alert(`Membuka pratinjau file: ${mail.fileUrl}\n\nFitur ini akan membuka PDF/Gambar di tab baru jika backend penyimpanan file sudah terhubung.`);
-    } else {
-      alert("Tidak ada file lampiran yang diunggah untuk surat ini.");
     }
   };
 
@@ -319,7 +343,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                 </div>
                 <div className="flex gap-1">
                   <button 
-                    onClick={() => handlePrint(selectedMail)} 
+                    onClick={() => handlePrintDisposition(selectedMail)} 
                     className="text-white hover:bg-white/20 p-2 rounded transition-colors"
                     title="Cetak Lembar Disposisi/Arsip"
                   >
@@ -359,14 +383,24 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                 </div>
 
                 {selectedMail.fileUrl && (
-                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-center justify-between">
+                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex flex-col gap-2">
                     <div className="flex items-center gap-2 overflow-hidden">
                       <FileText className="text-blue-500 shrink-0" size={20} />
                       <div className="overflow-hidden">
                         <p className="text-xs text-gray-500 uppercase font-bold">File Terlampir</p>
-                        <p className="text-sm text-blue-700 truncate">{selectedMail.fileUrl}</p>
+                        <p className="text-sm text-blue-700 truncate">
+                          {selectedMail.fileUrl.startsWith('data:') ? 'Dokumen Tersimpan' : selectedMail.fileUrl}
+                        </p>
                       </div>
                     </div>
+                    {selectedMail.fileUrl.startsWith('data:') && (
+                       <button 
+                        onClick={() => handleViewOrPrintFile(selectedMail)}
+                        className="text-xs bg-white border border-blue-200 text-blue-600 px-3 py-1 rounded-full hover:bg-blue-50 transition-colors w-full text-center"
+                       >
+                         Cetak Dokumen Lampiran
+                       </button>
+                    )}
                   </div>
                 )}
 
@@ -409,7 +443,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                    )}
                    <div className="flex gap-2">
                      <button 
-                       onClick={() => handleViewFile(selectedMail)}
+                       onClick={() => handleViewOrPrintFile(selectedMail)}
                        className={`flex-1 flex items-center justify-center px-4 py-2 border rounded-lg transition-colors text-sm font-semibold ${selectedMail.fileUrl ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`}
                      >
                         <Eye size={16} className="mr-2" />
@@ -425,7 +459,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                    </div>
                    
                    <button 
-                      onClick={() => handlePrint(selectedMail)}
+                      onClick={() => handlePrintDisposition(selectedMail)}
                       className="w-full flex items-center justify-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors text-sm font-semibold mt-1"
                    >
                       <Printer size={16} className="mr-2" />

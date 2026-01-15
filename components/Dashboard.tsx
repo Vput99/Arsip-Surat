@@ -33,7 +33,7 @@ const Dashboard: React.FC = () => {
       <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-6">
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border-4 border-white shadow-lg flex-shrink-0 overflow-hidden relative">
            <img 
-            src="WhatsApp Image 2025-06-18 at 21.16.21.jpeg" 
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png" 
             alt="Logo Sekolah" 
             className="w-full h-full object-contain p-1"
             onError={(e) => {

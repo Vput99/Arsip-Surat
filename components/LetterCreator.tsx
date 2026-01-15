@@ -298,28 +298,28 @@ const LetterCreator: React.FC = () => {
            {/* A4 Container */}
            <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl p-[20mm] mx-auto relative print:shadow-none print:w-full print:m-0 flex flex-col">
               
-              {/* Kop Surat yang Diperbaiki (Grid Layout agar Simetris) */}
-              <div className="border-b-[4px] border-double border-black pb-4 mb-6 pt-2 grid grid-cols-[100px_1fr_100px] items-center gap-4">
+              {/* Kop Surat yang Diperbaiki (Lebih Simetris dan Font Serif) */}
+              <div className="border-b-[4px] border-double border-black pb-4 mb-6 pt-2 grid grid-cols-[120px_1fr_120px] items-center">
                  {/* Logo Daerah (Kiri) */}
-                 <div className="flex justify-center">
+                 <div className="flex justify-center items-center h-full">
                    {config.logoDaerahUrl ? (
-                     <img src={config.logoDaerahUrl} className="w-[24mm] h-[28mm] object-contain" alt="Logo Daerah"/>
+                     <img src={config.logoDaerahUrl} className="w-[24mm] h-auto object-contain max-h-[28mm]" alt="Logo Daerah"/>
                    ) : <div className="w-[24mm]"></div>}
                  </div>
                  
                  {/* Text Header (Tengah) */}
-                 <div className="text-center w-full">
-                    <h3 className="text-[13pt] font-bold uppercase tracking-wide leading-tight">{config.headerLine1}</h3>
-                    <h3 className="text-[13pt] font-bold uppercase tracking-wide leading-tight">{config.headerLine2}</h3>
-                    <h1 className="text-[16pt] font-extrabold uppercase my-1 leading-none tracking-tight">{config.name}</h1>
-                    <p className="text-[10pt] font-serif italic leading-tight">{config.address}</p>
-                    <p className="text-[10pt] font-serif leading-tight">Email: {config.email}</p>
+                 <div className="text-center w-full px-1">
+                    <h3 className="text-[14pt] font-bold uppercase tracking-wide leading-tight font-serif text-black">{config.headerLine1}</h3>
+                    <h3 className="text-[14pt] font-bold uppercase tracking-wide leading-tight font-serif text-black">{config.headerLine2}</h3>
+                    <h1 className="text-[18pt] font-extrabold uppercase my-1 leading-none tracking-tight font-serif text-black scale-y-110">{config.name}</h1>
+                    <p className="text-[10pt] font-serif leading-tight mt-1 text-black">{config.address}</p>
+                    <p className="text-[10pt] font-serif leading-tight text-black">Email: {config.email}</p>
                  </div>
 
                  {/* Logo Sekolah (Kanan) */}
-                 <div className="flex justify-center">
+                 <div className="flex justify-center items-center h-full">
                    {config.logoUrl ? (
-                     <img src={config.logoUrl} className="w-[24mm] h-[28mm] object-contain" alt="Logo Sekolah"/>
+                     <img src={config.logoUrl} className="w-[24mm] h-auto object-contain max-h-[28mm]" alt="Logo Sekolah"/>
                    ) : <div className="w-[24mm]"></div>}
                  </div>
               </div>

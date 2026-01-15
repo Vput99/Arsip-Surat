@@ -19,6 +19,7 @@ export const MOCK_INITIAL_DATA = [
     referenceNumber: '005/DISDIK/2024',
     date: '2024-05-20',
     receivedDate: '2024-05-21',
+    createdAt: '2024-05-21T08:30:00.000Z',
     sender: 'Dinas Pendidikan Kota',
     subject: 'Undangan Rapat Koordinasi Kepala Sekolah',
     description: 'Undangan untuk menghadiri rapat koordinasi mengenai kurikulum baru di Aula Dinas.',
@@ -33,6 +34,7 @@ export const MOCK_INITIAL_DATA = [
     referenceNumber: '421.2/010/SD-01/2024',
     date: '2024-05-22',
     receivedDate: '2024-05-22',
+    createdAt: '2024-05-22T10:15:00.000Z',
     sender: 'SD Negeri 01 Pagi', // Recipient in context of outgoing
     subject: 'Balasan Permohonan Izin Kunjungan Museum',
     description: 'Surat balasan menyetujui jadwal kunjungan siswa kelas 5 ke Museum Sejarah.',

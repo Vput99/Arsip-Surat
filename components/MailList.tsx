@@ -3,7 +3,7 @@ import { Mail, MailType, UrgencyLevel } from '../types';
 import { getMails, deleteMail, getSchoolConfig } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply } from '../services/geminiService';
 
@@ -74,6 +74,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
             <table class="content-table">
               <tr><td class="label">Nomor Surat</td><td>: ${mail.referenceNumber}</td></tr>
               <tr><td class="label">Tanggal Surat</td><td>: ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</td></tr>
+              <tr><td class="label">Waktu Input</td><td>: ${mail.createdAt ? format(new Date(mail.createdAt), 'dd/MM/yyyy HH:mm', { locale: id }) : '-'}</td></tr>
               <tr><td class="label">${type === 'Masuk' ? 'Pengirim' : 'Penerima'}</td><td>: ${mail.sender}</td></tr>
               <tr><td class="label">Perihal</td><td>: ${mail.subject}</td></tr>
               <tr><td class="label">Kategori</td><td>: ${mail.category}</td></tr>
@@ -232,9 +233,19 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                       {mail.category}
                     </span>
                   </div>
-                  <span className="text-xs font-semibold text-slate-400 font-mono">
-                    {format(new Date(mail.date), 'dd MMM yyyy', { locale: id })}
-                  </span>
+                  
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs font-semibold text-slate-400 font-mono">
+                      {format(new Date(mail.date), 'dd MMM yyyy', { locale: id })}
+                    </span>
+                    {/* Realtime timestamp display */}
+                    {mail.createdAt && (
+                      <span className="text-[10px] text-indigo-400 font-medium flex items-center mt-1">
+                        <Clock size={10} className="mr-1" />
+                        {format(new Date(mail.createdAt), 'HH:mm', { locale: id })}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <h3 className="font-bold text-slate-800 text-base mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{mail.subject}</h3>
                 <p className="text-sm text-slate-500 mb-3 line-clamp-2 leading-relaxed">{mail.description}</p>
@@ -285,8 +296,18 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                     <p className="text-sm font-semibold text-slate-700 truncate" title={selectedMail.referenceNumber}>{selectedMail.referenceNumber}</p>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Tanggal</label>
+                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Tanggal Surat</label>
                      <p className="text-sm font-semibold text-slate-700">{format(new Date(selectedMail.date), 'dd MMM yyyy', { locale: id })}</p>
+                  </div>
+                  {/* Realtime Info Box */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 col-span-2 flex items-center justify-between">
+                     <div>
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Waktu Input (Realtime)</label>
+                       <p className="text-sm font-semibold text-indigo-600">
+                         {selectedMail.createdAt ? format(new Date(selectedMail.createdAt), 'dd MMMM yyyy, HH:mm:ss', { locale: id }) : '-'} WIB
+                       </p>
+                     </div>
+                     <Clock size={20} className="text-indigo-200" />
                   </div>
                 </div>
 

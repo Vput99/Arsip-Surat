@@ -59,7 +59,15 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    saveMail({ ...formData, id: Date.now().toString() } as Mail);
+    
+    // Simpan dengan timestamp realtime saat ini
+    const mailData: Mail = {
+      ...formData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString() // Waktu Realtime saat tombol simpan ditekan
+    } as Mail;
+
+    saveMail(mailData);
     setLoading(false);
     onClose();
   };

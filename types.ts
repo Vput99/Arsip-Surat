@@ -24,6 +24,7 @@ export interface Mail {
   referenceNumber: string; // Nomor Surat
   date: string; // Tanggal Surat
   receivedDate: string; // Tanggal Diterima/Dikirim
+  createdAt: string; // Waktu Input Data (Realtime)
   sender: string; // Pengirim (untuk surat masuk) or Tujuan (untuk surat keluar)
   subject: string; // Perihal
   description: string; // Isi Ringkas

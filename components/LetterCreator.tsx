@@ -14,19 +14,22 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
   const flushTable = () => {
     if (tableRows.length > 0) {
+      // Render tabel dengan indentasi agar menjorok ke dalam seperti surat resmi
       renderedBlocks.push(
-        <table className="w-full mb-2 border-collapse" key={`table-${renderedBlocks.length}`}>
-          <tbody>
-            {tableRows.map((row, idx) => (
-              <tr key={idx}>
-                {/* Lebar label dibuat fix agar lurus vertikal */}
-                <td className="align-top pb-1 w-[35%] whitespace-nowrap pr-2">{row.label}</td>
-                <td className="align-top pb-1 px-1 w-[2%]">{row.separator}</td>
-                <td className="align-top pb-1 w-[63%]">{row.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div key={`table-wrapper-${renderedBlocks.length}`} className="pl-8 mb-2">
+          <table className="w-full border-collapse table-fixed">
+            <tbody>
+              {tableRows.map((row, idx) => (
+                <tr key={idx}>
+                  {/* Lebar label 28% cukup untuk 'Tempat/Tgl Lahir' dan membuat 'Nama' tidak terlalu jauh */}
+                  <td className="align-top pb-1 w-[28%] whitespace-nowrap pr-2 font-serif">{row.label}</td>
+                  <td className="align-top pb-1 px-1 w-[2%] font-serif">{row.separator}</td>
+                  <td className="align-top pb-1 w-[70%] font-serif break-words">{row.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       );
       tableRows = [];
     }
@@ -54,11 +57,11 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     if (trimmed.startsWith('NSS') && colonIndex > 0) {
        flushTable();
        renderedBlocks.push(
-         <div key={`nss-${index}`} className="flex items-center mb-2">
-            <span className="w-[35%] pr-2">NSS</span>
-            <span className="w-[2%] px-1">:</span>
-            <span className="font-mono text-lg tracking-[0.2em] border border-black px-2 py-1 bg-white inline-block">
-               {line.substring(colonIndex + 1).trim() || "            "}
+         <div key={`nss-${index}`} className="flex items-center mb-4 pl-8">
+            <span className="w-[28%] pr-2 font-serif">NSS</span>
+            <span className="w-[2%] px-1 font-serif">:</span>
+            <span className="font-mono text-lg tracking-[0.3em] border border-black px-2 py-0.5 bg-white inline-block h-8 min-w-[200px]">
+               {line.substring(colonIndex + 1).trim()}
             </span>
          </div>
        );
@@ -66,30 +69,32 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     }
 
     // Logika tabel standar
-    if (colonIndex > 0 && colonIndex < 40 && trimmed.length > 0) {
+    // Syarat: Ada titik dua, dan label tidak terlalu panjang (max 35 char) agar bukan kalimat biasa
+    if (colonIndex > 0 && colonIndex < 35 && trimmed.length > 0) {
          const label = line.substring(0, colonIndex).trim();
          const value = line.substring(colonIndex + 1).trim();
          
-         // Jika ini terlihat seperti header bagian (misal "Menerangkan Bahwa :") tanpa value, render sebagai teks biasa
-         if (value === '' && (label.toLowerCase().includes('bahwa') || label.toLowerCase().includes('kepada'))) {
+         // Cek apakah ini header bagian (misal "Menerangkan Bahwa :") -> Jangan jadikan tabel
+         const isSectionHeader = value === '' && (label.toLowerCase().includes('bahwa') || label.toLowerCase().includes('kepada') || label.toLowerCase().includes('berikut'));
+         
+         if (isSectionHeader) {
              flushTable();
-             renderedBlocks.push(<p key={`p-${index}`} className="mb-2 font-bold">{line}</p>);
+             renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify">{line}</p>);
          } else {
              tableRows.push({ label, separator: ':', value });
          }
     } else {
       flushTable();
-      // Render teks biasa (Handle Signature placeholder manual in text)
+      // Render teks biasa
       if (trimmed.includes('( ........................................... )') && trimmed.includes('NIP')) {
-         // Manual signature in text detection (simple)
           renderedBlocks.push(
-           <div key={`p-${index}`} className="mb-1 text-right whitespace-pre-wrap">{line}</div>
+           <div key={`p-${index}`} className="mb-1 text-right whitespace-pre-wrap font-serif">{line}</div>
          );
-      } else if (line.includes('Kediri,') && line.length < 50) {
+      } else if ((line.includes('Kediri,') || line.includes('.............,')) && line.length < 50) {
          renderedBlocks.push(
            <div key={`p-${index}`} className="mb-1 text-right font-serif">{line}</div>
          );
-      } else if (line.includes('Kepala Sekolah,') && line.length < 30) {
+      } else if ((line.includes('Kepala Sekolah') || line.includes('Hormat Kami')) && line.length < 40) {
           renderedBlocks.push(
            <div key={`p-${index}`} className="mb-1 text-right font-serif">{line}</div>
          );
@@ -97,8 +102,10 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
           if (trimmed === '') {
              renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
           } else {
+             // Cek jika baris ini adalah kelanjutan indentasi (manual check, sederhana)
+             const isIndentedContext = line.startsWith('    ') || line.startsWith('\t');
              renderedBlocks.push(
-               <p key={`p-${index}`} className="mb-1 text-justify whitespace-pre-wrap">{line}</p>
+               <p key={`p-${index}`} className={`mb-1 text-justify whitespace-pre-wrap ${isIndentedContext ? 'pl-8' : ''}`}>{line}</p>
              );
           }
       }
@@ -113,7 +120,7 @@ const LetterCreator: React.FC = () => {
   const [config, setConfig] = useState<SchoolConfig>(getSchoolConfig());
   const [selectedTemplate, setSelectedTemplate] = useState(LETTER_TEMPLATES[0]);
   const [formData, setFormData] = useState({
-    refNumber: `421.2/${Math.floor(Math.random() * 100)}/SD/${new Date().getFullYear()}`,
+    refNumber: `422/150/419.42.03.135/${new Date().getFullYear()}`, // Format sesuai contoh
     date: new Date().toISOString().split('T')[0],
     recipient: '',
     signatureTitle: 'Kepala Sekolah',
@@ -132,15 +139,13 @@ const LetterCreator: React.FC = () => {
     if (template) {
       setSelectedTemplate(template);
       
-      // Khusus Mutasi Keluar, sesuaikan signer untuk bagian bawah (Penerima)
       const isMutasiKeluar = template.id === 't_mutasi_keluar';
       
       setFormData(prev => ({ 
         ...prev, 
         content: template.content,
-        // Untuk mutasi keluar, tanda tangan bawah adalah Sekolah Penerima (kosongkan defaultnya)
-        signatureTitle: isMutasiKeluar ? 'Kepala Sekolah Penerima,' : (template.signatureTitle || 'Kepala Sekolah'),
-        signerName: isMutasiKeluar ? '( ........................................... )' : (template.signatureTitle?.includes('Pelaksana') ? '( ___________________________ )' : '( Nama Kepala Sekolah )'),
+        signatureTitle: isMutasiKeluar ? 'Kepala Sekolah,' : (template.signatureTitle || 'Kepala Sekolah'),
+        signerName: isMutasiKeluar ? '( ........................................... )' : '( Nama Kepala Sekolah )',
         signerNip: isMutasiKeluar ? '...........................................' : '...................................'
       }));
     }
@@ -249,7 +254,7 @@ const LetterCreator: React.FC = () => {
 
              <div className="pt-2 border-t border-slate-100">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                  {selectedTemplate.id === 't_mutasi_keluar' ? 'Info Tanda Tangan Bawah (Penerima)' : 'Info Penanda Tangan'}
+                  {selectedTemplate.id === 't_mutasi_keluar' ? 'Info Tanda Tangan Bawah' : 'Info Penanda Tangan'}
                 </label>
                 <div className="space-y-3">
                   <div>
@@ -277,7 +282,7 @@ const LetterCreator: React.FC = () => {
                 <span className="text-[10px] text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full normal-case">Editor Cerdas (Auto-Align)</span>
              </label>
              <p className="text-[10px] text-slate-400 mb-2">
-                Tips: Tulis "Label : Isi" agar lurus. Gunakan "✂-CUT-LINE" untuk garis potong.
+                Tips: Tulis "Label : Isi" agar lurus. Data akan otomatis menjorok ke dalam.
              </p>
              <textarea 
                name="content"
@@ -293,26 +298,30 @@ const LetterCreator: React.FC = () => {
            {/* A4 Container */}
            <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl p-[20mm] mx-auto relative print:shadow-none print:w-full print:m-0 flex flex-col">
               
-              {/* Kop Surat yang Diperbaiki (Lebih Simetris) */}
-              <div className="relative border-b-[4px] border-double border-black pb-4 mb-8 pt-2 flex items-center justify-center min-h-[120px]">
-                 {/* Logo Daerah (Kiri) - Absolute */}
-                 {config.logoDaerahUrl && (
-                   <img src={config.logoDaerahUrl} className="w-[22mm] h-[26mm] object-contain absolute left-0" alt="Logo Daerah"/>
-                 )}
+              {/* Kop Surat yang Diperbaiki (Grid Layout agar Simetris) */}
+              <div className="border-b-[4px] border-double border-black pb-4 mb-6 pt-2 grid grid-cols-[100px_1fr_100px] items-center gap-4">
+                 {/* Logo Daerah (Kiri) */}
+                 <div className="flex justify-center">
+                   {config.logoDaerahUrl ? (
+                     <img src={config.logoDaerahUrl} className="w-[24mm] h-[28mm] object-contain" alt="Logo Daerah"/>
+                   ) : <div className="w-[24mm]"></div>}
+                 </div>
                  
-                 {/* Text Header - Center with Margin */}
-                 <div className="text-center w-full px-[25mm] z-10">
-                    <h3 className="text-lg font-bold uppercase tracking-wide leading-tight">{config.headerLine1}</h3>
-                    <h3 className="text-lg font-bold uppercase tracking-wide leading-tight">{config.headerLine2}</h3>
-                    <h1 className="text-2xl font-extrabold uppercase my-1 leading-none tracking-tight">{config.name}</h1>
-                    <p className="text-sm font-serif italic leading-tight">{config.address}</p>
-                    <p className="text-sm font-serif leading-tight">Email: {config.email}</p>
+                 {/* Text Header (Tengah) */}
+                 <div className="text-center w-full">
+                    <h3 className="text-[13pt] font-bold uppercase tracking-wide leading-tight">{config.headerLine1}</h3>
+                    <h3 className="text-[13pt] font-bold uppercase tracking-wide leading-tight">{config.headerLine2}</h3>
+                    <h1 className="text-[16pt] font-extrabold uppercase my-1 leading-none tracking-tight">{config.name}</h1>
+                    <p className="text-[10pt] font-serif italic leading-tight">{config.address}</p>
+                    <p className="text-[10pt] font-serif leading-tight">Email: {config.email}</p>
                  </div>
 
-                 {/* Logo Sekolah (Kanan) - Absolute */}
-                 {config.logoUrl && (
-                   <img src={config.logoUrl} className="w-[22mm] h-[26mm] object-contain absolute right-0" alt="Logo Sekolah"/>
-                 )}
+                 {/* Logo Sekolah (Kanan) */}
+                 <div className="flex justify-center">
+                   {config.logoUrl ? (
+                     <img src={config.logoUrl} className="w-[24mm] h-[28mm] object-contain" alt="Logo Sekolah"/>
+                   ) : <div className="w-[24mm]"></div>}
+                 </div>
               </div>
 
               {/* Body */}
@@ -321,9 +330,9 @@ const LetterCreator: React.FC = () => {
                  {isCentered ? (
                    /* Centered Layout (SPT / Laporan) */
                    <div className="text-center mb-6">
-                      <h2 className="text-lg font-bold underline uppercase tracking-wide">{selectedTemplate.subject}</h2>
+                      <h2 className="text-[13pt] font-bold underline uppercase tracking-wide">{selectedTemplate.subject}</h2>
                       {!selectedTemplate.name.includes('Laporan') && (
-                        <p className="mt-1 font-bold">Nomor : {formData.refNumber}</p>
+                        <p className="mt-0 font-bold text-[11pt]">NO : {formData.refNumber}</p>
                       )}
                    </div>
                  ) : (
@@ -360,17 +369,17 @@ const LetterCreator: React.FC = () => {
                    </div>
                  )}
 
-                 {/* Smart Content Renderer (Menggantikan text-justify biasa) */}
+                 {/* Smart Content Renderer */}
                  <div className="min-h-[300px] mb-8">
                     <SmartContentRenderer text={formData.content} />
                  </div>
 
                  {/* Signature (Bottom) */}
                  <div className="mt-auto flex justify-end">
-                    <div className="text-center w-64">
+                    <div className="text-center w-64 text-[11pt]">
                        <p className="mb-1">
                          {selectedTemplate.id === 't_mutasi_keluar' 
-                           ? `......................, ...........................` 
+                           ? `Kediri, ...........................................` 
                            : `Kediri, ${format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}`}
                        </p>
                        <p>{formData.signatureTitle}</p>

@@ -213,8 +213,8 @@ const LetterCreator: React.FC = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
-        {/* Editor Column */}
-        <div className="w-full lg:w-1/3 flex flex-col gap-4 overflow-y-auto pr-2 print:hidden">
+        {/* Editor Column (Diperluas menjadi 5/12 atau sekitar 42%) */}
+        <div className="w-full lg:w-5/12 flex flex-col gap-4 overflow-y-auto pr-2 print:hidden">
           
           {/* Settings Panel */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
@@ -275,8 +275,8 @@ const LetterCreator: React.FC = () => {
              </div>
           </div>
 
-          {/* Text Editor */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex-1 flex flex-col">
+          {/* Text Editor (Lebih luas, font lebih besar, min-height ditambah) */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex-1 flex flex-col min-h-[500px]">
              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex justify-between">
                 Isi Surat
                 <span className="text-[10px] text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full normal-case">Editor Cerdas (Auto-Align)</span>
@@ -288,13 +288,13 @@ const LetterCreator: React.FC = () => {
                name="content"
                value={formData.content}
                onChange={handleInputChange}
-               className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-serif text-slate-800 leading-relaxed text-sm"
+               className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-serif text-slate-800 leading-relaxed text-base"
              />
           </div>
         </div>
 
-        {/* Preview Column (A4 Paper) */}
-        <div className="w-full lg:w-2/3 bg-slate-200/50 rounded-2xl border border-slate-200 overflow-y-auto p-4 md:p-8 flex justify-center print:bg-white print:p-0 print:border-0 print:overflow-visible print:w-full print:absolute print:top-0 print:left-0 print:z-50">
+        {/* Preview Column (A4 Paper) - Dikurangi jadi 7/12 */}
+        <div className="w-full lg:w-7/12 bg-slate-200/50 rounded-2xl border border-slate-200 overflow-y-auto p-4 md:p-8 flex justify-center print:bg-white print:p-0 print:border-0 print:overflow-visible print:w-full print:absolute print:top-0 print:left-0 print:z-50">
            {/* A4 Container */}
            <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl p-[20mm] mx-auto relative print:shadow-none print:w-full print:m-0 flex flex-col">
               

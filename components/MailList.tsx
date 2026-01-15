@@ -3,7 +3,7 @@ import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
 import { getMails, deleteMail } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply } from '../services/geminiService';
 
@@ -39,35 +39,124 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     }
   };
 
+  const handlePrint = (mail: Mail) => {
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Cetak Lembar Arsip - ${mail.referenceNumber}</title>
+            <style>
+              body { font-family: 'Times New Roman', serif; padding: 40px; }
+              .header { text-align: center; border-bottom: 3px double black; padding-bottom: 10px; margin-bottom: 20px; }
+              .header h1 { margin: 0; font-size: 18pt; text-transform: uppercase; }
+              .header p { margin: 0; font-size: 12pt; }
+              .title { text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 20px; font-size: 14pt; }
+              .content-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+              .content-table td { padding: 8px; vertical-align: top; }
+              .label { width: 150px; font-weight: bold; }
+              .box { border: 1px solid black; padding: 15px; margin-top: 20px; min-height: 100px; }
+              .footer { margin-top: 50px; text-align: right; }
+              @media print {
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>SD PINTAR INDONESIA</h1>
+              <p>Jalan Pendidikan No. 1, Kota Belajar</p>
+              <p>Telp: (021) 1234567 | Email: admin@sdpintar.sch.id</p>
+            </div>
+
+            <div class="title">LEMBAR ARSIP / DISPOSISI DIGITAL</div>
+
+            <table class="content-table">
+              <tr>
+                <td class="label">Nomor Surat</td>
+                <td>: ${mail.referenceNumber}</td>
+              </tr>
+              <tr>
+                <td class="label">Tanggal Surat</td>
+                <td>: ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</td>
+              </tr>
+              <tr>
+                <td class="label">Diterima/Dikirim</td>
+                <td>: ${format(new Date(mail.receivedDate), 'dd MMMM yyyy', { locale: id })}</td>
+              </tr>
+              <tr>
+                <td class="label">${type === MailType.INCOMING ? 'Pengirim' : 'Penerima'}</td>
+                <td>: ${mail.sender}</td>
+              </tr>
+              <tr>
+                <td class="label">Perihal</td>
+                <td>: ${mail.subject}</td>
+              </tr>
+              <tr>
+                <td class="label">Kategori</td>
+                <td>: ${mail.category}</td>
+              </tr>
+              <tr>
+                <td class="label">Sifat</td>
+                <td>: ${mail.urgency}</td>
+              </tr>
+              <tr>
+                <td class="label">Status Berkas</td>
+                <td>: ${mail.fileUrl ? 'Terlampir' : 'Tidak ada lampiran fisik'}</td>
+              </tr>
+            </table>
+
+            <div style="border: 1px solid #000; padding: 10px;">
+              <strong>Isi Ringkas / Keterangan:</strong><br/>
+              <p>${mail.description}</p>
+              ${mail.aiSummary ? `<br/><strong>Ringkasan AI:</strong><br/><i>${mail.aiSummary}</i>` : ''}
+            </div>
+
+            <div class="box">
+              <strong>Catatan / Disposisi:</strong>
+            </div>
+
+            <div class="footer">
+              <p>Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}</p>
+              <br/><br/><br/>
+              <p>( Petugas Arsip )</p>
+            </div>
+
+            <script>
+              window.onload = function() { window.print(); }
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
   const handleDownload = (mail: Mail) => {
-    // Simulasi download konten surat
-    const content = `ARSIP SURAT - SD PINTAR
-============================================
-Nomor Surat : ${mail.referenceNumber}
-Tanggal     : ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}
-Kategori    : ${mail.category}
-Urgensi     : ${mail.urgency}
---------------------------------------------
-${mail.type === MailType.INCOMING ? 'PENGIRIM' : 'PENERIMA'} : ${mail.sender}
---------------------------------------------
-PERIHAL :
-${mail.subject}
+    // Jika ada fileUrl (simulasi), kita beri alert bahwa ini demo
+    if (mail.fileUrl) {
+      alert(`Mendownload file lampiran asli: ${mail.fileUrl}\n(Catatan: Dalam versi demo ini file fisik tidak disimpan di server, hanya nama filenya saja)`);
+    } else {
+      // Fallback: Download resume text jika tidak ada file
+      const content = `ARSIP SURAT - SD PINTAR\nNomor: ${mail.referenceNumber}\nPerihal: ${mail.subject}\n\n${mail.description}`;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Resume-${mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
-ISI RINGKAS :
-${mail.description}
-============================================
-${mail.aiSummary ? `RINGKASAN AI :\n${mail.aiSummary}\n============================================` : ''}
-Dicetak pada : ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`;
-
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Arsip-${mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleViewFile = (mail: Mail) => {
+    if (mail.fileUrl) {
+      alert(`Membuka pratinjau file: ${mail.fileUrl}\n\nFitur ini akan membuka PDF/Gambar di tab baru jika backend penyimpanan file sudah terhubung.`);
+    } else {
+      alert("Tidak ada file lampiran yang diunggah untuk surat ini.");
+    }
   };
 
   const handleGenerateReply = async (mail: Mail) => {
@@ -194,6 +283,12 @@ Dicetak pada : ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`;
                     <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                       {mail.category}
                     </span>
+                    {mail.fileUrl && (
+                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded flex items-center gap-1">
+                        <FileText size={10} />
+                        File
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs text-gray-400 font-mono">
                     {format(new Date(mail.date), 'dd MMM yyyy', { locale: id })}
@@ -224,11 +319,11 @@ Dicetak pada : ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`;
                 </div>
                 <div className="flex gap-1">
                   <button 
-                    onClick={() => handleDownload(selectedMail)} 
+                    onClick={() => handlePrint(selectedMail)} 
                     className="text-white hover:bg-white/20 p-2 rounded transition-colors"
-                    title="Unduh Arsip"
+                    title="Cetak Lembar Disposisi/Arsip"
                   >
-                    <Download size={18} />
+                    <Printer size={18} />
                   </button>
                   <button 
                     onClick={() => handleDelete(selectedMail.id)} 
@@ -262,6 +357,18 @@ Dicetak pada : ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`;
                    </label>
                    <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">{selectedMail.sender}</p>
                 </div>
+
+                {selectedMail.fileUrl && (
+                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <FileText className="text-blue-500 shrink-0" size={20} />
+                      <div className="overflow-hidden">
+                        <p className="text-xs text-gray-500 uppercase font-bold">File Terlampir</p>
+                        <p className="text-sm text-blue-700 truncate">{selectedMail.fileUrl}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Isi Ringkas</label>
@@ -301,9 +408,12 @@ Dicetak pada : ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`;
                      </>
                    )}
                    <div className="flex gap-2">
-                     <button className="flex-1 flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-semibold">
+                     <button 
+                       onClick={() => handleViewFile(selectedMail)}
+                       className={`flex-1 flex items-center justify-center px-4 py-2 border rounded-lg transition-colors text-sm font-semibold ${selectedMail.fileUrl ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`}
+                     >
                         <Eye size={16} className="mr-2" />
-                        Lihat File
+                        Lihat
                      </button>
                      <button 
                        onClick={() => handleDownload(selectedMail)}
@@ -313,6 +423,14 @@ Dicetak pada : ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`;
                         Unduh
                      </button>
                    </div>
+                   
+                   <button 
+                      onClick={() => handlePrint(selectedMail)}
+                      className="w-full flex items-center justify-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors text-sm font-semibold mt-1"
+                   >
+                      <Printer size={16} className="mr-2" />
+                      Cetak Lembar Disposisi
+                   </button>
                 </div>
               </div>
             </div>

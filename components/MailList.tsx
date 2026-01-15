@@ -3,7 +3,7 @@ import { Mail, MailType, UrgencyLevel } from '../types';
 import { getMails, deleteMail, getSchoolConfig } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply } from '../services/geminiService';
 
@@ -95,7 +95,17 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     if (mail.fileUrl?.startsWith('data:')) {
       const link = document.createElement('a');
       link.href = mail.fileUrl;
-      link.download = `Dokumen-${mail.referenceNumber}.pdf`;
+      
+      // Deteksi ekstensi berdasarkan MIME type di string Base64
+      let extension = 'bin';
+      if (mail.fileUrl.startsWith('data:image/jpeg')) extension = 'jpg';
+      else if (mail.fileUrl.startsWith('data:image/png')) extension = 'png';
+      else if (mail.fileUrl.startsWith('data:application/pdf')) extension = 'pdf';
+
+      // Bersihkan nomor surat untuk nama file yang valid
+      const safeRef = mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-');
+      link.download = `Dokumen-${safeRef}.${extension}`;
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -236,7 +246,9 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                     </div>
                     {mail.sender}
                   </div>
-                  {mail.fileUrl && <FileText size={14} className="text-indigo-400" />}
+                  {mail.fileUrl && (
+                     mail.fileUrl.startsWith('data:image') ? <ImageIcon size={14} className="text-emerald-500" /> : <FileText size={14} className="text-rose-500" />
+                  )}
                 </div>
                 {selectedMail?.id === mail.id && (
                   <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-12 bg-indigo-500 rounded-r-lg lg:block hidden"></div>
@@ -323,7 +335,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                        className="w-full py-3 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2 group"
                      >
                        <Download size={16} className="text-slate-400 group-hover:text-slate-600" />
-                       Unduh Lampiran Asli
+                       Unduh File Asli
                      </button>
                   )}
                 </div>

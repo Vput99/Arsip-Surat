@@ -3,7 +3,8 @@ import { MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { saveMail } from '../services/storage';
 import { analyzeLetter } from '../services/geminiService';
 import { CATEGORIES } from '../constants';
-import { Save, X, Sparkles, Loader2, UploadCloud } from 'lucide-react';
+import { Save, X, Sparkles, Loader2, UploadCloud, FileType } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 
 interface MailFormProps {
   type: MailType;
@@ -13,6 +14,7 @@ interface MailFormProps {
 const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [isConverting, setIsConverting] = useState(false); // State untuk proses konversi
   const [formData, setFormData] = useState<Partial<Mail>>({
     type: type,
     status: MailStatus.PENDING,
@@ -27,13 +29,56 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 1024 * 1024) { alert("Max 1MB"); return; }
-      const reader = new FileReader();
-      reader.onloadend = () => setFormData(prev => ({ ...prev, fileUrl: reader.result as string }));
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) { 
+      alert("Ukuran file maksimal 2MB"); 
+      return; 
+    }
+
+    // Helper untuk membaca file
+    const readFileAsDataURL = (f: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
+    };
+
+    try {
+      if (file.type.startsWith('image/')) {
+        // Logika Konversi Gambar ke PDF
+        setIsConverting(true);
+        const imgData = await readFileAsDataURL(file);
+        
+        // Buat PDF Baru
+        const doc = new jsPDF();
+        
+        // Dapatkan properti gambar (width/height) untuk scaling
+        const imgProps = doc.getImageProperties(imgData);
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        // Tambahkan gambar ke PDF (Fit to Width)
+        doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        
+        // Output sebagai Data URI String
+        const pdfDataUri = doc.output('datauristring');
+        
+        setFormData(prev => ({ ...prev, fileUrl: pdfDataUri }));
+        setIsConverting(false);
+      } else {
+        // Jika PDF, simpan langsung
+        const fileData = await readFileAsDataURL(file);
+        setFormData(prev => ({ ...prev, fileUrl: fileData }));
+      }
+    } catch (error) {
+      console.error("Gagal memproses file", error);
+      alert("Gagal memproses file. Silakan coba lagi.");
+      setIsConverting(false);
     }
   };
 
@@ -108,18 +153,35 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
                </select>
              </div>
              <div>
-               <label className={labelClass}>Lampiran</label>
-               <label className="flex items-center justify-center w-full px-4 py-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
-                 <input type="file" className="hidden" accept=".pdf,.jpg,.png" onChange={handleFileChange} />
-                 <UploadCloud size={16} className={`mr-2 ${formData.fileUrl ? 'text-emerald-500' : 'text-slate-400'}`} />
-                 <span className={`text-xs font-bold ${formData.fileUrl ? 'text-emerald-600' : 'text-slate-500'}`}>{formData.fileUrl ? 'Terupload' : 'Upload PDF/Img'}</span>
+               <label className={labelClass}>Lampiran (PDF/Img)</label>
+               <label className={`flex items-center justify-center w-full px-4 py-2.5 bg-slate-50 border border-dashed rounded-xl cursor-pointer transition-colors ${isConverting ? 'cursor-wait bg-slate-100 border-indigo-300' : 'hover:bg-slate-100 border-slate-300'}`}>
+                 <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} disabled={isConverting} />
+                 
+                 {isConverting ? (
+                    <div className="flex items-center text-indigo-600">
+                       <Loader2 size={16} className="animate-spin mr-2" />
+                       <span className="text-xs font-bold">Mengkonversi...</span>
+                    </div>
+                 ) : (
+                    <>
+                      <UploadCloud size={16} className={`mr-2 ${formData.fileUrl ? 'text-emerald-500' : 'text-slate-400'}`} />
+                      <span className={`text-xs font-bold ${formData.fileUrl ? 'text-emerald-600' : 'text-slate-500'}`}>
+                        {formData.fileUrl ? 'File Tersimpan' : 'Upload File'}
+                      </span>
+                    </>
+                 )}
                </label>
+               {formData.fileUrl && !isConverting && (
+                 <p className="text-[10px] text-emerald-600 mt-1 text-center font-medium flex items-center justify-center">
+                   <FileType size={10} className="mr-1"/> Siap dicetak (PDF)
+                 </p>
+               )}
              </div>
           </div>
 
           <div className="pt-4 flex gap-3">
              <button type="button" onClick={onClose} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors">Batal</button>
-             <button type="submit" disabled={loading} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 transition-all flex justify-center items-center">
+             <button type="submit" disabled={loading || isConverting} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 transition-all flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed">
                {loading ? <Loader2 className="animate-spin"/> : 'Simpan Data'}
              </button>
           </div>

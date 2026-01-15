@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight } from 'lucide-react';
+import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight, PenTool } from 'lucide-react';
 import { exportDatabase, importDatabase } from '../services/storage';
 import { format } from 'date-fns';
 
@@ -21,6 +21,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/inbox', label: 'Surat Masuk', icon: <Inbox size={20} /> },
     { path: '/outbox', label: 'Surat Keluar', icon: <Send size={20} /> },
+    { path: '/create', label: 'Buat Surat', icon: <PenTool size={20} /> },
     { path: '/settings', label: 'Pengaturan', icon: <Settings size={20} /> },
   ];
 

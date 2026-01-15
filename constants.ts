@@ -12,6 +12,136 @@ export const CATEGORIES = [
   "Lainnya"
 ];
 
+export const LETTER_TEMPLATES = [
+  {
+    id: 't_mutasi_masuk',
+    name: 'Surat Keterangan Menerima Siswa Pindahan',
+    subject: 'SURAT KETERANGAN MENERIMA SISWA PINDAHAN',
+    category: 'Dinas',
+    layout: 'centered',
+    content: `Yang bertanda tangan di bawah ini :
+
+Nama           : ........................................................................
+NIP            : ........................................................................
+Jabatan        : Kepala Sekolah
+Unit Kerja     : ........................................................................
+Alamat         : ........................................................................
+
+Menerangkan Bahwa :
+
+Nama              : ........................................................................
+Tempat/Tgl Lahir  : ........................................................................
+Kelas             : ........................................................................
+Nama Sekolah Asal : ........................................................................
+Alamat            : ........................................................................
+
+Bahwa yang bersangkutan DITERIMA sebagai siswa di Sekolah Dasar Negeri ......................................
+
+Demikian Surat Keterangan ini, agar dapat dipergunakan mestinya.`
+  },
+  {
+    id: 't_spt',
+    name: 'Surat Perintah Tugas (SPT)',
+    subject: 'SURAT PERINTAH TUGAS',
+    category: 'Tugas',
+    layout: 'centered',
+    content: `PERJALANAN DINAS DALAM DAERAH
+
+Dasar : 1. Surat Undangan Dinas Pendidikan Nomor ........................
+           tentang ........................
+
+MENUGASKAN :
+
+Kepada : 1. Nama        : ........................
+            NIP         : ........................
+            Pangkat/Gol : ........................
+            Jabatan     : ........................
+
+         2. dst
+
+Untuk  : ........................
+Pada tanggal  : ........................
+Tempat tujuan : ........................
+
+Pembebanan Biaya :
+a. Kode Rekening Kegiatan/Sub Kegiatan : ........................
+b. Nama Kegiatan/Sub Kegiatan          : ........................`
+  },
+  {
+    id: 't_laporan',
+    name: 'Laporan Perjalanan Dinas',
+    subject: 'LAPORAN PERJALANAN DINAS',
+    category: 'Dinas',
+    layout: 'centered',
+    signatureTitle: 'Pelaksana Perjalanan Dinas',
+    content: `I.   DASAR
+     ............................................................................................
+
+II.  MAKSUD & TUJUAN
+     ............................................................................................
+
+III. WAKTU PELAKSANAAN
+     Hari    : ........................
+     Tanggal : ........................
+
+IV.  PELAKSANA PERJALANAN DINAS
+     ............................................................................................
+
+V.   DAERAH TUJUAN/INSTANSI
+     ............................................................................................
+
+VI.  HADIR DALAM PERTEMUAN
+     ............................................................................................
+
+VII. PETUNJUK/ARAHAN
+     ............................................................................................
+
+VIII. MASALAH/TEMUAN
+     ............................................................................................
+
+IX.  SARAN TINDAKAN
+     ............................................................................................
+
+X.   LAIN-LAIN
+     ............................................................................................`
+  },
+  {
+    id: 't1',
+    name: 'Surat Undangan Wali Murid',
+    subject: 'Undangan Pengambilan Rapor',
+    category: 'Undangan',
+    layout: 'standard',
+    content: `Dengan hormat,
+
+Sehubungan dengan berakhirnya kegiatan pembelajaran Semester Genap Tahun Ajaran 2023/2024, kami mengundang Bapak/Ibu Wali Murid untuk hadir pada:
+
+Hari/Tanggal : [HARI], [TANGGAL]
+Pukul        : 08.00 WIB - Selesai
+Tempat       : Ruang Kelas [KELAS]
+Acara        : Pengambilan Rapor Semester Genap
+
+Mengingat pentingnya acara ini, kami mengharapkan kehadiran Bapak/Ibu tepat pada waktunya.
+
+Demikian undangan ini kami sampaikan. Atas perhatian dan kehadirannya, kami ucapkan terima kasih.`
+  },
+  {
+    id: 't3',
+    name: 'Surat Keterangan Siswa',
+    subject: 'Surat Keterangan Aktif Sekolah',
+    category: 'Dinas',
+    layout: 'standard',
+    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH], menerangkan bahwa:
+
+Nama    : [NAMA_SISWA]
+NISN    : [NISN]
+Kelas   : [KELAS]
+
+Adalah benar-benar siswa aktif di sekolah kami pada Tahun Ajaran 2023/2024. Surat keterangan ini dibuat untuk keperluan [KEPERLUAN].
+
+Demikian surat keterangan ini dibuat agar dapat dipergunakan sebagaimana mestinya.`
+  }
+];
+
 export const MOCK_INITIAL_DATA = [
   {
     id: '1',

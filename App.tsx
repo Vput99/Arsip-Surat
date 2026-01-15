@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import MailList from './components/MailList';
 import Settings from './components/Settings';
+import LetterCreator from './components/LetterCreator';
 import { MailType } from './types';
 
 const App: React.FC = () => {
@@ -20,6 +21,7 @@ const App: React.FC = () => {
             path="/outbox" 
             element={<MailList type={MailType.OUTGOING} />} 
           />
+          <Route path="/create" element={<LetterCreator />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

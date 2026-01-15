@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
+import { Mail, MailType, UrgencyLevel } from '../types';
 import { getMails, deleteMail, getSchoolConfig } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply } from '../services/geminiService';
 
@@ -26,20 +26,18 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       const allMails = getMails();
       setMails(allMails.filter(m => m.type === type));
     };
-    
     loadData();
     window.addEventListener('storage-update', loadData);
     return () => window.removeEventListener('storage-update', loadData);
   }, [type]);
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus surat ini?')) {
+    if (window.confirm('Hapus arsip ini secara permanen?')) {
       deleteMail(id);
       if (selectedMail?.id === id) setSelectedMail(null);
     }
   };
 
-  // Cetak Lembar Disposisi / Arsip (Hanya Metadata)
   const handlePrintDisposition = (mail: Mail) => {
     const config = getSchoolConfig();
     const printWindow = window.open('', '', 'width=800,height=600');
@@ -47,7 +45,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Cetak Lembar Arsip - ${mail.referenceNumber}</title>
+            <title>Arsip - ${mail.referenceNumber}</title>
             <style>
               body { font-family: 'Times New Roman', serif; padding: 40px; }
               .header-container { display: flex; align-items: center; justify-content: center; border-bottom: 3px double black; padding-bottom: 10px; margin-bottom: 20px; }
@@ -61,9 +59,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
               .label { width: 160px; font-weight: bold; }
               .box { border: 1px solid black; padding: 15px; margin-top: 20px; min-height: 100px; }
               .footer { margin-top: 50px; text-align: right; }
-              @media print {
-                .no-print { display: none; }
-              }
             </style>
           </head>
           <body>
@@ -75,63 +70,20 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                 <p>Email: ${config.email}</p>
               </div>
             </div>
-
             <div class="title">LEMBAR ARSIP / DISPOSISI DIGITAL</div>
-
             <table class="content-table">
-              <tr>
-                <td class="label">Nomor Surat</td>
-                <td>: ${mail.referenceNumber}</td>
-              </tr>
-              <tr>
-                <td class="label">Tanggal Surat</td>
-                <td>: ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</td>
-              </tr>
-              <tr>
-                <td class="label">Diterima/Dikirim</td>
-                <td>: ${format(new Date(mail.receivedDate), 'dd MMMM yyyy', { locale: id })}</td>
-              </tr>
-              <tr>
-                <td class="label">${type === MailType.INCOMING ? 'Pengirim' : 'Penerima'}</td>
-                <td>: ${mail.sender}</td>
-              </tr>
-              <tr>
-                <td class="label">Perihal</td>
-                <td>: ${mail.subject}</td>
-              </tr>
-              <tr>
-                <td class="label">Kategori</td>
-                <td>: ${mail.category}</td>
-              </tr>
-              <tr>
-                <td class="label">Sifat</td>
-                <td>: ${mail.urgency}</td>
-              </tr>
-              <tr>
-                <td class="label">Status Berkas</td>
-                <td>: ${mail.fileUrl ? 'Terlampir' : 'Tidak ada lampiran fisik'}</td>
-              </tr>
+              <tr><td class="label">Nomor Surat</td><td>: ${mail.referenceNumber}</td></tr>
+              <tr><td class="label">Tanggal Surat</td><td>: ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</td></tr>
+              <tr><td class="label">${type === 'Masuk' ? 'Pengirim' : 'Penerima'}</td><td>: ${mail.sender}</td></tr>
+              <tr><td class="label">Perihal</td><td>: ${mail.subject}</td></tr>
+              <tr><td class="label">Kategori</td><td>: ${mail.category}</td></tr>
+              <tr><td class="label">Sifat</td><td>: ${mail.urgency}</td></tr>
             </table>
-
             <div style="border: 1px solid #000; padding: 10px;">
-              <strong>Isi Ringkas / Keterangan:</strong><br/>
-              <p>${mail.description}</p>
-              ${mail.aiSummary ? `<br/><strong>Ringkasan AI:</strong><br/><i>${mail.aiSummary}</i>` : ''}
+              <strong>Isi Ringkas:</strong><br/><p>${mail.description}</p>
             </div>
-
-            <div class="box">
-              <strong>Catatan / Disposisi:</strong>
-            </div>
-
-            <div class="footer">
-              <p>Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}</p>
-              <br/><br/><br/>
-              <p>( Petugas Arsip )</p>
-            </div>
-
-            <script>
-              window.onload = function() { window.print(); }
-            </script>
+            <div class="box"><strong>Catatan:</strong></div>
+            <script>window.onload = function() { window.print(); }</script>
           </body>
         </html>
       `);
@@ -139,53 +91,16 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     }
   };
 
-  // Cetak/Lihat File Lampiran Asli
-  const handleViewOrPrintFile = (mail: Mail) => {
-    if (mail.fileUrl && mail.fileUrl.startsWith('data:')) {
-      // Buka data base64 di tab baru agar browser native viewer (PDF/Image) terbuka
-      // Dari sana user bisa klik ikon Print bawaan browser
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(
-          `<iframe src="${mail.fileUrl}" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`
-        );
-        newWindow.document.title = `Lampiran - ${mail.referenceNumber}`;
-        newWindow.document.close();
-      }
-    } else if (mail.fileUrl) {
-      alert(`File simulasi lama: ${mail.fileUrl}. Upload file baru untuk bisa dicetak.`);
-    } else {
-      alert("Tidak ada file lampiran.");
-    }
-  };
-
   const handleDownload = (mail: Mail) => {
-    if (mail.fileUrl && mail.fileUrl.startsWith('data:')) {
-      // Download file asli dari Base64
+    if (mail.fileUrl?.startsWith('data:')) {
       const link = document.createElement('a');
       link.href = mail.fileUrl;
-      // Mencoba menebak ekstensi dari mime type di string base64
-      let ext = 'bin';
-      if (mail.fileUrl.includes('application/pdf')) ext = 'pdf';
-      else if (mail.fileUrl.includes('image/jpeg')) ext = 'jpg';
-      else if (mail.fileUrl.includes('image/png')) ext = 'png';
-      
-      link.download = `Dokumen-${mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-')}.${ext}`;
+      link.download = `Dokumen-${mail.referenceNumber}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } else {
-      // Fallback: Download resume text
-      const content = `ARSIP SURAT - SD PINTAR\nNomor: ${mail.referenceNumber}\nPerihal: ${mail.subject}\n\n${mail.description}`;
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Resume-${mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      alert("Tidak ada file lampiran.");
     }
   };
 
@@ -196,86 +111,78 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     setReplyLoading(false);
   };
 
-  // Extract unique months from mails for the filter dropdown
   const availableMonths = Array.from(new Set(mails.map(m => m.date.substring(0, 7)))).sort().reverse();
-
   const filteredMails = mails.filter(mail => {
     const matchesSearch = 
       mail.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
       mail.sender.toLowerCase().includes(searchTerm.toLowerCase()) ||
       mail.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesCategory = filterCategory === 'Semua' || mail.category === filterCategory;
-    
     const matchesMonth = filterMonth === 'all' || mail.date.startsWith(filterMonth);
-
     return matchesSearch && matchesCategory && matchesMonth;
   });
 
-  const getUrgencyColor = (u: UrgencyLevel) => {
-    switch (u) {
-      case UrgencyLevel.HIGH: return 'bg-red-100 text-red-700 border-red-200';
-      case UrgencyLevel.MEDIUM: return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      default: return 'bg-green-100 text-green-700 border-green-200';
-    }
+  const getUrgencyBadge = (u: UrgencyLevel) => {
+    const styles = {
+      'Biasa': 'bg-slate-100 text-slate-600 border-slate-200',
+      'Penting': 'bg-amber-50 text-amber-600 border-amber-200',
+      'Segera': 'bg-rose-50 text-rose-600 border-rose-200'
+    };
+    return styles[u] || styles['Biasa'];
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
+      {/* Header Area */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">
-            {type === MailType.INCOMING ? 'Surat Masuk' : 'Surat Keluar'}
+          <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+            {type === 'Masuk' ? 'Surat Masuk' : 'Surat Keluar'}
           </h2>
-          <p className="text-gray-500 text-sm">Kelola arsip surat {type === MailType.INCOMING ? 'yang diterima' : 'yang dikirim'} sekolah.</p>
+          <p className="text-slate-500 mt-1 font-medium">Kelola database arsip {type.toLowerCase()} sekolah.</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          className="flex items-center justify-center px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 font-bold text-sm"
         >
-          <Plus size={20} className="mr-2" />
-          Tambah Baru
+          <Plus size={18} className="mr-2" />
+          Tambah Data
         </button>
       </div>
 
-      {/* Search and Filter */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col xl:flex-row gap-4">
+      {/* Floating Filter Bar */}
+      <div className="bg-white p-2 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col xl:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Cari nomor surat, perihal, atau pengirim..."
+            placeholder="Cari surat..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="w-full pl-11 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm font-medium"
           />
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4">
-           {/* Month Filter */}
-          <div className="flex items-center gap-2 bg-gray-50 px-3 rounded-lg border border-gray-200">
-            <Calendar className="text-gray-400" size={20} />
+        <div className="flex gap-2 overflow-x-auto pb-2 xl:pb-0">
+          <div className="relative group">
             <select
               value={filterMonth}
               onChange={(e) => setFilterMonth(e.target.value)}
-              className="px-2 py-2 bg-transparent focus:outline-none text-gray-600 text-sm min-w-[140px]"
+              className="appearance-none pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-slate-700 text-sm font-semibold cursor-pointer min-w-[160px] hover:border-indigo-300 transition-colors"
             >
               <option value="all">Semua Bulan</option>
               {availableMonths.map(month => (
-                <option key={month} value={month}>
-                  {format(new Date(month + '-01'), 'MMMM yyyy', { locale: id })}
-                </option>
+                <option key={month} value={month}>{format(new Date(month + '-01'), 'MMMM yyyy', { locale: id })}</option>
               ))}
             </select>
+            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
           </div>
 
-          {/* Category Filter */}
-          <div className="flex items-center gap-2 bg-gray-50 px-3 rounded-lg border border-gray-200">
-            <Filter className="text-gray-400" size={20} />
+          <div className="relative group">
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-2 py-2 bg-transparent focus:outline-none text-gray-600 text-sm min-w-[140px]"
+              className="appearance-none pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-slate-700 text-sm font-semibold cursor-pointer min-w-[160px] hover:border-indigo-300 transition-colors"
             >
               <option value="Semua">Semua Kategori</option>
               <option value="Undangan">Undangan</option>
@@ -283,201 +190,151 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
               <option value="Pemberitahuan">Pemberitahuan</option>
               <option value="Lainnya">Lainnya</option>
             </select>
+            <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* List Column */}
-        <div className="lg:col-span-2 space-y-4">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+        {/* List Column (Scrollable) */}
+        <div className="lg:col-span-7 overflow-y-auto pr-2 space-y-3">
           {filteredMails.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
-              <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="text-gray-400" size={32} />
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <div className="bg-slate-100 p-4 rounded-full mb-3">
+                <Search className="text-slate-400" size={32} />
               </div>
-              <h3 className="text-lg font-medium text-gray-800">Tidak ada data ditemukan</h3>
-              <p className="text-gray-500">Coba ubah filter bulan, kategori, atau kata kunci pencarian.</p>
+              <h3 className="text-slate-900 font-bold">Tidak ditemukan</h3>
+              <p className="text-slate-500 text-sm">Coba kata kunci lain.</p>
             </div>
           ) : (
             filteredMails.map((mail) => (
               <div 
                 key={mail.id} 
                 onClick={() => setSelectedMail(mail)}
-                className={`group bg-white p-5 rounded-xl border transition-all cursor-pointer hover:shadow-md ${selectedMail?.id === mail.id ? 'border-blue-500 ring-1 ring-blue-500 shadow-md' : 'border-gray-100 hover:border-blue-200'}`}
+                className={`group relative bg-white p-5 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-0.5 ${selectedMail?.id === mail.id ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-md z-10' : 'border-slate-100 hover:border-indigo-200'}`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold border ${getUrgencyColor(mail.urgency)}`}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${getUrgencyBadge(mail.urgency)}`}>
                       {mail.urgency}
                     </span>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
                       {mail.category}
                     </span>
-                    {mail.fileUrl && (
-                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded flex items-center gap-1">
-                        <FileText size={10} />
-                        File
-                      </span>
-                    )}
                   </div>
-                  <span className="text-xs text-gray-400 font-mono">
+                  <span className="text-xs font-semibold text-slate-400 font-mono">
                     {format(new Date(mail.date), 'dd MMM yyyy', { locale: id })}
                   </span>
                 </div>
-                <h3 className="font-bold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors">{mail.subject}</h3>
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{mail.description}</p>
-                <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                  <div className="flex items-center text-xs text-gray-500">
-                    <span className="font-semibold mr-1">{type === MailType.INCOMING ? 'Dari:' : 'Kepada:'}</span>
+                <h3 className="font-bold text-slate-800 text-base mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{mail.subject}</h3>
+                <p className="text-sm text-slate-500 mb-3 line-clamp-2 leading-relaxed">{mail.description}</p>
+                
+                <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                  <div className="flex items-center text-xs font-medium text-slate-500">
+                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center mr-2 text-slate-400">
+                       {type === 'Masuk' ? 'D' : 'K'}
+                    </div>
                     {mail.sender}
                   </div>
-                  <span className="text-xs text-gray-400">{mail.referenceNumber}</span>
+                  {mail.fileUrl && <FileText size={14} className="text-indigo-400" />}
                 </div>
+                {selectedMail?.id === mail.id && (
+                  <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-12 bg-indigo-500 rounded-r-lg lg:block hidden"></div>
+                )}
               </div>
             ))
           )}
         </div>
 
-        {/* Detail Column (Sticky) */}
-        <div className="lg:col-span-1">
+        {/* Detail Column (Sticky/Fixed) */}
+        <div className="lg:col-span-5 h-full hidden lg:block">
           {selectedMail ? (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden sticky top-6">
-              <div className="bg-blue-600 p-4 text-white flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-lg">Detail Surat</h3>
-                  <p className="text-blue-100 text-xs opacity-90">{selectedMail.referenceNumber}</p>
-                </div>
-                <div className="flex gap-1">
-                  <button 
-                    onClick={() => handlePrintDisposition(selectedMail)} 
-                    className="text-white hover:bg-white/20 p-2 rounded transition-colors"
-                    title="Cetak Lembar Disposisi/Arsip"
-                  >
-                    <Printer size={18} />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(selectedMail.id)} 
-                    className="text-white hover:bg-white/20 p-2 rounded transition-colors"
-                    title="Hapus Surat"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-              <div className="p-5 space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Perihal</label>
-                  <p className="text-gray-800 font-semibold">{selectedMail.subject}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                   <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tanggal</label>
-                    <p className="text-sm text-gray-700">{format(new Date(selectedMail.date), 'dd MMM yyyy', { locale: id })}</p>
-                  </div>
-                   <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Kategori</label>
-                    <p className="text-sm text-gray-700">{selectedMail.category}</p>
-                  </div>
-                </div>
-
-                <div>
-                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                     {type === MailType.INCOMING ? 'Pengirim' : 'Penerima'}
-                   </label>
-                   <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">{selectedMail.sender}</p>
-                </div>
-
-                {selectedMail.fileUrl && (
-                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex flex-col gap-2">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <FileText className="text-blue-500 shrink-0" size={20} />
-                      <div className="overflow-hidden">
-                        <p className="text-xs text-gray-500 uppercase font-bold">File Terlampir</p>
-                        <p className="text-sm text-blue-700 truncate">
-                          {selectedMail.fileUrl.startsWith('data:') ? 'Dokumen Tersimpan' : selectedMail.fileUrl}
-                        </p>
-                      </div>
+            <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full flex flex-col overflow-hidden animate-fade-in">
+              {/* Detail Header */}
+              <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white relative overflow-hidden shrink-0">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                 <div className="flex justify-between items-start relative z-10">
+                    <div>
+                      <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">{selectedMail.category}</p>
+                      <h3 className="font-bold text-lg leading-tight">{selectedMail.subject}</h3>
                     </div>
-                    {selectedMail.fileUrl.startsWith('data:') && (
-                       <button 
-                        onClick={() => handleViewOrPrintFile(selectedMail)}
-                        className="text-xs bg-white border border-blue-200 text-blue-600 px-3 py-1 rounded-full hover:bg-blue-50 transition-colors w-full text-center"
-                       >
-                         Cetak Dokumen Lampiran
-                       </button>
-                    )}
+                    <div className="flex gap-2">
+                       <button onClick={() => handlePrintDisposition(selectedMail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors"><Printer size={16}/></button>
+                       <button onClick={() => handleDelete(selectedMail.id)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors"><Trash2 size={16}/></button>
+                    </div>
+                 </div>
+              </div>
+              
+              {/* Detail Content (Scrollable) */}
+              <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nomor Surat</label>
+                    <p className="text-sm font-semibold text-slate-700 truncate" title={selectedMail.referenceNumber}>{selectedMail.referenceNumber}</p>
                   </div>
-                )}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Tanggal</label>
+                     <p className="text-sm font-semibold text-slate-700">{format(new Date(selectedMail.date), 'dd MMM yyyy', { locale: id })}</p>
+                  </div>
+                </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Isi Ringkas</label>
-                  <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg leading-relaxed">
-                    {selectedMail.description}
-                  </div>
+                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Isi Ringkas</label>
+                   <div className="text-sm text-slate-600 leading-relaxed">
+                     {selectedMail.description}
+                   </div>
                 </div>
 
                 {selectedMail.aiSummary && (
-                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                     <div className="flex items-center text-blue-700 mb-1">
-                       <Sparkles size={14} className="mr-1 text-yellow-500" />
-                       <span className="text-xs font-bold">Ringkasan AI</span>
+                  <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 relative overflow-hidden">
+                     <div className="absolute -left-2 -top-2 w-16 h-16 bg-indigo-200 rounded-full blur-xl opacity-50"></div>
+                     <div className="flex items-center gap-2 mb-2 relative z-10">
+                        <Sparkles size={14} className="text-indigo-600" />
+                        <span className="text-xs font-bold text-indigo-700">Analisis AI</span>
                      </div>
-                     <p className="text-xs text-blue-900 italic">"{selectedMail.aiSummary}"</p>
+                     <p className="text-xs text-indigo-900 leading-relaxed italic relative z-10">"{selectedMail.aiSummary}"</p>
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="pt-4 border-t border-gray-100 flex flex-col gap-2">
-                   {type === MailType.INCOMING && (
-                     <>
-                        <button 
-                          onClick={() => handleGenerateReply(selectedMail)}
-                          disabled={replyLoading}
-                          className="w-full flex items-center justify-center px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-semibold"
-                        >
-                          {replyLoading ? 'Sedang membuat...' : 'Buat Draf Balasan (AI)'}
-                          <Sparkles size={16} className="ml-2" />
-                        </button>
-                        {aiReply && (
-                          <div className="mt-2 p-3 bg-purple-50 rounded text-xs text-gray-700 border border-purple-100 whitespace-pre-wrap">
-                            <h5 className="font-bold mb-1 text-purple-800">Saran Balasan:</h5>
-                            {aiReply}
-                          </div>
-                        )}
-                     </>
-                   )}
-                   <div className="flex gap-2">
-                     <button 
-                       onClick={() => handleViewOrPrintFile(selectedMail)}
-                       className={`flex-1 flex items-center justify-center px-4 py-2 border rounded-lg transition-colors text-sm font-semibold ${selectedMail.fileUrl ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`}
-                     >
-                        <Eye size={16} className="mr-2" />
-                        Lihat
-                     </button>
+                {/* Actions */}
+                <div className="space-y-3 pt-2">
+                  {type === 'Masuk' && (
+                    <div className="p-1">
+                      <button 
+                         onClick={() => handleGenerateReply(selectedMail)}
+                         disabled={replyLoading}
+                         className="w-full py-2.5 bg-gradient-to-r from-violet-100 to-indigo-100 text-indigo-700 rounded-xl hover:from-violet-200 hover:to-indigo-200 transition-colors text-sm font-bold flex items-center justify-center gap-2"
+                      >
+                         {replyLoading ? 'Memproses...' : 'Buat Balasan Otomatis'}
+                         <Sparkles size={16} className={replyLoading ? "animate-spin" : ""} />
+                      </button>
+                      {aiReply && (
+                        <div className="mt-3 p-3 bg-white border border-indigo-100 rounded-xl text-xs text-slate-600 shadow-sm animate-fade-in">
+                          <p className="font-bold text-indigo-600 mb-1">Saran Balasan:</p>
+                          {aiReply}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {selectedMail.fileUrl && (
                      <button 
                        onClick={() => handleDownload(selectedMail)}
-                       className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold"
+                       className="w-full py-3 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2 group"
                      >
-                        <Download size={16} className="mr-2" />
-                        Unduh
+                       <Download size={16} className="text-slate-400 group-hover:text-slate-600" />
+                       Unduh Lampiran Asli
                      </button>
-                   </div>
-                   
-                   <button 
-                      onClick={() => handlePrintDisposition(selectedMail)}
-                      className="w-full flex items-center justify-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors text-sm font-semibold mt-1"
-                   >
-                      <Printer size={16} className="mr-2" />
-                      Cetak Lembar Disposisi
-                   </button>
+                  )}
                 </div>
               </div>
             </div>
           ) : (
-             <div className="hidden lg:flex flex-col items-center justify-center h-64 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 text-center p-6">
-               <AlertCircle size={48} className="mb-2 opacity-50" />
-               <p className="font-medium">Pilih surat untuk melihat detail</p>
+             <div className="h-full bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                 <Eye size={24} className="opacity-50" />
+               </div>
+               <p className="font-medium">Pilih surat dari daftar<br/>untuk melihat detail lengkap.</p>
              </div>
           )}
         </div>

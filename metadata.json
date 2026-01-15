@@ -1,0 +1,8 @@
+{
+  "name": "ArsipSurat SD Pintar",
+  "description": "Aplikasi manajemen arsip surat masuk dan keluar untuk Sekolah Dasar dengan fitur analisis AI otomatis dan database lokal.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

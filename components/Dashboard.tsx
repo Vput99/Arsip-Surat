@@ -1,16 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Send, AlertTriangle, FileText, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { getStats } from '../services/storage';
+import { getStats, getSchoolConfig } from '../services/storage';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState(getStats());
+  const [schoolConfig, setSchoolConfig] = useState(getSchoolConfig());
 
   useEffect(() => {
     // Listen for mock realtime updates
-    const handleUpdate = () => setStats(getStats());
+    const handleUpdate = () => {
+      setStats(getStats());
+      setSchoolConfig(getSchoolConfig());
+    };
+    
     window.addEventListener('storage-update', handleUpdate);
-    return () => window.removeEventListener('storage-update', handleUpdate);
+    window.addEventListener('config-update', handleUpdate);
+    
+    return () => {
+      window.removeEventListener('storage-update', handleUpdate);
+      window.removeEventListener('config-update', handleUpdate);
+    };
   }, []);
 
   const statCards = [
@@ -33,7 +43,7 @@ const Dashboard: React.FC = () => {
       <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-6">
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border-4 border-white shadow-lg flex-shrink-0 overflow-hidden relative">
            <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png" 
+            src={schoolConfig.logoUrl} 
             alt="Logo Sekolah" 
             className="w-full h-full object-contain p-1"
             onError={(e) => {
@@ -43,10 +53,10 @@ const Dashboard: React.FC = () => {
            />
         </div>
         <div className="text-center md:text-left">
-          <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight">SD NEGERI TEMPUREJO 1</h2>
+          <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight uppercase">{schoolConfig.name}</h2>
           <div className="h-1.5 w-24 bg-blue-600 rounded-full my-2 mx-auto md:mx-0"></div>
           <p className="text-gray-600 text-lg font-medium">Sistem Informasi Manajemen Arsip Surat</p>
-          <p className="text-gray-400 text-sm">Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri</p>
+          <p className="text-gray-400 text-sm">{schoolConfig.address}</p>
         </div>
       </div>
 

@@ -47,3 +47,10 @@ export interface AIAnalysisResult {
   urgency: UrgencyLevel;
   sentiment: string;
 }
+
+export interface SchoolConfig {
+  name: string;
+  address: string;
+  email: string;
+  logoUrl: string;
+}

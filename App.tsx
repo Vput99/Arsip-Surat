@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import MailList from './components/MailList';
+import Settings from './components/Settings';
 import { MailType } from './types';
 
 const App: React.FC = () => {
@@ -19,6 +20,7 @@ const App: React.FC = () => {
             path="/outbox" 
             element={<MailList type={MailType.OUTGOING} />} 
           />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
-import { getMails, deleteMail } from '../services/storage';
+import { getMails, deleteMail, getSchoolConfig } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText } from 'lucide-react';
@@ -41,6 +41,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
 
   // Cetak Lembar Disposisi / Arsip (Hanya Metadata)
   const handlePrintDisposition = (mail: Mail) => {
+    const config = getSchoolConfig();
     const printWindow = window.open('', '', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(`
@@ -67,11 +68,11 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
           </head>
           <body>
             <div class="header-container">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png" class="logo" alt="Logo" />
+              <img src="${config.logoUrl}" class="logo" alt="Logo" />
               <div class="header-text">
-                <h1>SD NEGERI TEMPUREJO 1</h1>
-                <p>Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri</p>
-                <p>Email: admin@sdntempurejo1.sch.id</p>
+                <h1>${config.name}</h1>
+                <p>${config.address}</p>
+                <p>Email: ${config.email}</p>
               </div>
             </div>
 

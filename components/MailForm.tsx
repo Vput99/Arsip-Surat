@@ -27,11 +27,25 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
     description: '',
     referenceNumber: '',
     sender: '',
+    fileUrl: '', // Inisialisasi field file
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Fungsi baru untuk menangani input file
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Dalam aplikasi nyata, di sini kita akan upload ke server (Firebase/AWS S3)
+      // Untuk demo local storage, kita simpan nama filenya saja sebagai simulasi
+      setFormData(prev => ({ 
+        ...prev, 
+        fileUrl: file.name 
+      }));
+    }
   };
 
   const handleAIAnalysis = async () => {
@@ -72,7 +86,8 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
       category: formData.category!,
       urgency: formData.urgency!,
       status: formData.status!,
-      aiSummary: formData.aiSummary
+      aiSummary: formData.aiSummary,
+      fileUrl: formData.fileUrl // Simpan info file
     };
 
     saveMail(newMail);
@@ -217,10 +232,12 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">File Dokumen</label>
               <input
                 type="file"
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors"
-                disabled
+                onChange={handleFileChange}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer"
               />
-              <p className="text-xs text-gray-400 mt-1">*Upload dinonaktifkan di demo</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {formData.fileUrl ? `File terpilih: ${formData.fileUrl}` : 'Format: PDF, JPG, PNG (Simulasi)'}
+              </p>
             </div>
           </div>
 

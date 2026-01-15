@@ -183,17 +183,25 @@ const LetterCreator: React.FC = () => {
            <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl p-[20mm] mx-auto relative print:shadow-none print:w-full print:m-0 flex flex-col">
               
               {/* Kop Surat */}
-              <div className="flex items-center justify-center border-b-[3px] border-double border-black pb-4 mb-6">
-                 {config.logoUrl && (
-                   <img src={config.logoUrl} className="w-24 h-24 object-contain absolute left-[20mm]" alt="Logo"/>
+              <div className="relative border-b-[3px] border-double border-black pb-4 mb-6 pt-2">
+                 {/* Logo Daerah (Kiri) */}
+                 {config.logoDaerahUrl && (
+                   <img src={config.logoDaerahUrl} className="w-24 h-24 object-contain absolute left-0 top-0" alt="Logo Daerah"/>
                  )}
-                 <div className="text-center w-full px-20">
-                    <h3 className="text-lg font-bold uppercase">PEMERINTAH KOTA KEDIRI</h3>
-                    <h3 className="text-lg font-bold uppercase">DINAS PENDIDIKAN</h3>
-                    <h1 className="text-2xl font-extrabold uppercase my-1">{config.name}</h1>
-                    <p className="text-sm font-serif italic">{config.address}</p>
-                    <p className="text-sm font-serif">Email: {config.email}</p>
+                 
+                 {/* Text Header */}
+                 <div className="text-center w-full px-28">
+                    <h3 className="text-lg font-bold uppercase tracking-wide">{config.headerLine1}</h3>
+                    <h3 className="text-lg font-bold uppercase tracking-wide">{config.headerLine2}</h3>
+                    <h1 className="text-2xl font-extrabold uppercase my-1 leading-tight">{config.name}</h1>
+                    <p className="text-sm font-serif italic leading-tight">{config.address}</p>
+                    <p className="text-sm font-serif leading-tight">Email: {config.email}</p>
                  </div>
+
+                 {/* Logo Sekolah (Kanan) */}
+                 {config.logoUrl && (
+                   <img src={config.logoUrl} className="w-24 h-24 object-contain absolute right-0 top-0" alt="Logo Sekolah"/>
+                 )}
               </div>
 
               {/* Body */}
@@ -210,17 +218,35 @@ const LetterCreator: React.FC = () => {
                    </div>
                  ) : (
                    /* Standard Layout (Undangan / Dinas Biasa) */
-                   <div className="flex justify-between mb-8">
-                      <div>
-                         <p>Nomor : {formData.refNumber}</p>
-                         <p>Lamp  : -</p>
-                         <p>Hal   : <span className="font-bold">{selectedTemplate.subject}</span></p>
-                      </div>
-                      <div className="text-right">
-                         <p>{format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
-                         <p className="mt-4">Kepada Yth.</p>
-                         <p className="font-bold">{formData.recipient || '......................'}</p>
-                         <p>di Tempat</p>
+                   /* UPDATED: Menggunakan Tabel agar titik dua lurus rapi */
+                   <div className="flex justify-between mb-8 items-start">
+                      <table className="w-auto border-collapse">
+                        <tbody>
+                          <tr>
+                            <td className="align-top pb-1 pr-2 w-20">Nomor</td>
+                            <td className="align-top pb-1 px-1">:</td>
+                            <td className="align-top pb-1">{formData.refNumber}</td>
+                          </tr>
+                          <tr>
+                            <td className="align-top pb-1 pr-2">Lampiran</td>
+                            <td className="align-top pb-1 px-1">:</td>
+                            <td className="align-top pb-1">-</td>
+                          </tr>
+                          <tr>
+                            <td className="align-top pb-1 pr-2">Hal</td>
+                            <td className="align-top pb-1 px-1">:</td>
+                            <td className="align-top pb-1 font-bold underline decoration-1 underline-offset-2">{selectedTemplate.subject}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      
+                      <div className="flex flex-col items-end">
+                         <p className="mb-4">{format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
+                         <div className="text-left w-52">
+                             <p>Kepada Yth.</p>
+                             <p className="font-bold">{formData.recipient || '......................'}</p>
+                             <p>di Tempat</p>
+                         </div>
                       </div>
                    </div>
                  )}

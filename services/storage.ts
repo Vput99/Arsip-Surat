@@ -9,7 +9,10 @@ const DEFAULT_CONFIG: SchoolConfig = {
   name: 'SD NEGERI TEMPUREJO 1',
   address: 'Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri',
   email: 'admin@sdntempurejo1.sch.id',
-  logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png'
+  headerLine1: 'PEMERINTAH KOTA KEDIRI',
+  headerLine2: 'DINAS PENDIDIKAN',
+  logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg', // Logo Sekolah (Kanan)
+  logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png' // Logo Daerah (Kiri)
 };
 
 // Initialize DB if empty
@@ -26,6 +29,12 @@ const initDB = () => {
   const existingConfig = localStorage.getItem(CONFIG_KEY);
   if (!existingConfig) {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULT_CONFIG));
+  } else {
+    // Migration for existing config that might miss new fields
+    const parsed = JSON.parse(existingConfig);
+    if (!parsed.headerLine1 || !parsed.logoDaerahUrl) {
+       localStorage.setItem(CONFIG_KEY, JSON.stringify({ ...DEFAULT_CONFIG, ...parsed }));
+    }
   }
 };
 

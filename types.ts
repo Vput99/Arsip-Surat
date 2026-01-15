@@ -53,5 +53,8 @@ export interface SchoolConfig {
   name: string;
   address: string;
   email: string;
-  logoUrl: string;
+  headerLine1: string; // e.g. PEMERINTAH KOTA KEDIRI
+  headerLine2: string; // e.g. DINAS PENDIDIKAN
+  logoUrl: string; // Logo Sekolah (Kanan)
+  logoDaerahUrl: string; // Logo Daerah (Kiri)
 }

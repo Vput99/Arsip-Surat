@@ -49,13 +49,15 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
             <title>Cetak Lembar Arsip - ${mail.referenceNumber}</title>
             <style>
               body { font-family: 'Times New Roman', serif; padding: 40px; }
-              .header { text-align: center; border-bottom: 3px double black; padding-bottom: 10px; margin-bottom: 20px; }
-              .header h1 { margin: 0; font-size: 18pt; text-transform: uppercase; }
-              .header p { margin: 0; font-size: 12pt; }
+              .header-container { display: flex; align-items: center; justify-content: center; border-bottom: 3px double black; padding-bottom: 10px; margin-bottom: 20px; }
+              .logo { width: 80px; height: 80px; margin-right: 20px; object-fit: contain; }
+              .header-text { text-align: center; }
+              .header-text h1 { margin: 0; font-size: 18pt; text-transform: uppercase; line-height: 1.2; }
+              .header-text p { margin: 0; font-size: 12pt; }
               .title { text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 20px; font-size: 14pt; }
               .content-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
               .content-table td { padding: 8px; vertical-align: top; }
-              .label { width: 150px; font-weight: bold; }
+              .label { width: 160px; font-weight: bold; }
               .box { border: 1px solid black; padding: 15px; margin-top: 20px; min-height: 100px; }
               .footer { margin-top: 50px; text-align: right; }
               @media print {
@@ -64,10 +66,13 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>SD PINTAR INDONESIA</h1>
-              <p>Jalan Pendidikan No. 1, Kota Belajar</p>
-              <p>Telp: (021) 1234567 | Email: admin@sdpintar.sch.id</p>
+            <div class="header-container">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png" class="logo" alt="Logo" />
+              <div class="header-text">
+                <h1>SD NEGERI TEMPUREJO 1</h1>
+                <p>Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri</p>
+                <p>Email: admin@sdntempurejo1.sch.id</p>
+              </div>
             </div>
 
             <div class="title">LEMBAR ARSIP / DISPOSISI DIGITAL</div>

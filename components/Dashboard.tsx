@@ -29,9 +29,25 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800">Dashboard Sekolah</h2>
-        <p className="text-gray-500">Ringkasan aktivitas surat menyurat SD Pintar.</p>
+      {/* Header dengan Logo Sekolah */}
+      <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-6">
+        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border-4 border-white shadow-lg flex-shrink-0 overflow-hidden relative">
+           <img 
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png" 
+            alt="Logo Sekolah" 
+            className="w-full h-full object-contain p-1"
+            onError={(e) => {
+              // Fallback jika gambar gagal dimuat, menggunakan placeholder sekolah umum
+              e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg";
+            }}
+           />
+        </div>
+        <div className="text-center md:text-left">
+          <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight">SD NEGERI TEMPUREJO 1</h2>
+          <div className="h-1.5 w-24 bg-blue-600 rounded-full my-2 mx-auto md:mx-0"></div>
+          <p className="text-gray-600 text-lg font-medium">Sistem Informasi Manajemen Arsip Surat</p>
+          <p className="text-gray-400 text-sm">Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

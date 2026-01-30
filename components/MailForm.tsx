@@ -56,20 +56,26 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
     setAnalyzing(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     // Simpan dengan timestamp realtime saat ini
     const mailData: Mail = {
       ...formData,
-      id: Date.now().toString(),
+      // Jika ID baru, biarkan firestore generate atau gunakan timestamp jika ingin ID client-side
+      // id: Date.now().toString(), // Di storage.ts kita bisa biarkan firestore generate ID jika kosong
       createdAt: new Date().toISOString() // Waktu Realtime saat tombol simpan ditekan
     } as Mail;
 
-    saveMail(mailData);
-    setLoading(false);
-    onClose();
+    try {
+      await saveMail(mailData);
+      setLoading(false);
+      onClose();
+    } catch (e) {
+      setLoading(false);
+      // Alert sudah ditangani di service
+    }
   };
 
   const inputClass = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm font-medium text-slate-700 placeholder-slate-400";

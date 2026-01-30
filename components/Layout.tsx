@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight, PenTool } from 'lucide-react';
+import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight, PenTool, Wifi, WifiOff } from 'lucide-react';
 import { exportDatabase, importDatabase } from '../services/storage';
 import { format } from 'date-fns';
 
@@ -9,13 +9,27 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
   const isActive = (path: string) => location.pathname === path;
+
+  // Monitor Online/Offline Status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -25,20 +39,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/settings', label: 'Pengaturan', icon: <Settings size={20} /> },
   ];
 
-  const handleBackup = () => {
-    const dataStr = exportDatabase();
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `backup-arsip-${format(new Date(), 'yyyy-MM-dd')}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleBackup = async () => {
+    try {
+      const dataStr = await exportDatabase();
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `backup-arsip-${format(new Date(), 'yyyy-MM-dd')}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Backup failed", error);
+      alert("Gagal melakukan backup database.");
+    }
   };
 
   const triggerImport = () => {
-    if (confirm("Restore data akan menimpa data yang ada. Lanjutkan?")) {
+    if (confirm("Restore data akan menimpa/memperbarui data yang ada. Lanjutkan?")) {
       fileInputRef.current?.click();
     }
   };
@@ -48,9 +67,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const content = event.target?.result as string;
-      const success = importDatabase(content);
+      const success = await importDatabase(content);
       if (success) {
         alert("Database berhasil dipulihkan!");
         window.location.reload();
@@ -119,6 +138,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Footer Actions */}
         <div className="p-4 m-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
+          {/* Connection Status Badge */}
+          <div className={`flex items-center justify-center mb-3 px-3 py-1.5 rounded-lg border ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+            {isOnline ? <Wifi size={14} className="mr-2"/> : <WifiOff size={14} className="mr-2"/>}
+            <span className="text-xs font-bold uppercase tracking-wider">{isOnline ? 'Online (Firebase)' : 'Offline (Lokal)'}</span>
+          </div>
+
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Data & System</p>
           <div className="grid grid-cols-2 gap-2">
             <button 

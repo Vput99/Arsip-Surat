@@ -1,124 +1,264 @@
+import { db, COLLECTIONS } from './firebase';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  setDoc,
+  getDocs
+} from "firebase/firestore";
 import { Mail, SchoolConfig } from '../types';
 import { MOCK_INITIAL_DATA } from '../constants';
 
-const STORAGE_KEY = 'arsip_surat_db_v1';
-const CONFIG_KEY = 'arsip_surat_config_v1';
-
-// Default Config
+// Default Config (Fallback)
 const DEFAULT_CONFIG: SchoolConfig = {
   name: 'SD NEGERI TEMPUREJO 1',
   address: 'Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri',
   email: 'admin@sdntempurejo1.sch.id',
   headerLine1: 'PEMERINTAH KOTA KEDIRI',
   headerLine2: 'DINAS PENDIDIKAN',
-  logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg', // Logo Sekolah (Kanan)
-  logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png' // Logo Daerah (Kiri)
+  logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg',
+  logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png'
 };
 
-// Initialize DB if empty
-const initDB = () => {
-  if (typeof window === 'undefined') return;
+// --- LOCAL STORAGE HELPERS (OFFLINE MODE) ---
+
+const getLocalMails = (): Mail[] => {
+  try {
+    const saved = localStorage.getItem('OFFLINE_MAILS');
+    return saved ? JSON.parse(saved) : MOCK_INITIAL_DATA;
+  } catch {
+    return MOCK_INITIAL_DATA;
+  }
+};
+
+const getLocalConfig = (): SchoolConfig => {
+  try {
+    const saved = localStorage.getItem('OFFLINE_CONFIG');
+    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+  } catch {
+    return DEFAULT_CONFIG;
+  }
+};
+
+// Store active listeners to update them manually when offline actions happen
+let mailListeners: ((mails: Mail[]) => void)[] = [];
+let configListeners: ((config: SchoolConfig) => void)[] = [];
+
+// --- REALTIME LISTENERS ---
+
+// Subscribe to Mails
+export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
+  mailListeners.push(onData);
   
-  // Mail Data
-  const existing = localStorage.getItem(STORAGE_KEY);
-  if (!existing) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_INITIAL_DATA));
-  }
+  // 1. Load data from local storage immediately (Fast render)
+  onData(getLocalMails());
 
-  // Config Data
-  const existingConfig = localStorage.getItem(CONFIG_KEY);
-  if (!existingConfig) {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULT_CONFIG));
-  } else {
-    // Migration for existing config that might miss new fields
-    const parsed = JSON.parse(existingConfig);
-    if (!parsed.headerLine1 || !parsed.logoDaerahUrl) {
-       localStorage.setItem(CONFIG_KEY, JSON.stringify({ ...DEFAULT_CONFIG, ...parsed }));
-    }
-  }
-};
+  // 2. Try connecting to Firebase
+  const q = query(collection(db, COLLECTIONS.MAILS), orderBy("createdAt", "desc"));
+  
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const mails: Mail[] = [];
+    snapshot.forEach((doc) => {
+      mails.push({ id: doc.id, ...doc.data() } as Mail);
+    });
+    
+    // Sync to local storage for backup
+    localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
+    onData(mails);
+  }, (error) => {
+    console.error("Firestore Error (Switching to Offline Mode):", error.message);
+    // If Firebase fails, we rely on the local data already loaded.
+    // We don't need to do anything else, as local data is already active.
+  });
 
-initDB();
-
-// --- MAIL FUNCTIONS ---
-
-export const getMails = (): Mail[] => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-};
-
-export const saveMail = (mail: Mail): void => {
-  const mails = getMails();
-  const index = mails.findIndex(m => m.id === mail.id);
-  if (index >= 0) {
-    mails[index] = mail;
-  } else {
-    mails.unshift(mail); // Add to top
-  }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(mails));
-  window.dispatchEvent(new Event('storage-update'));
-};
-
-export const deleteMail = (id: string): void => {
-  const mails = getMails();
-  const newMails = mails.filter(m => m.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newMails));
-  window.dispatchEvent(new Event('storage-update'));
-};
-
-export const getStats = () => {
-  const mails = getMails();
-  return {
-    total: mails.length,
-    incoming: mails.filter(m => m.type === 'Masuk').length,
-    outgoing: mails.filter(m => m.type === 'Keluar').length,
-    urgent: mails.filter(m => m.urgency === 'Segera').length
+  return () => {
+    unsubscribe();
+    mailListeners = mailListeners.filter(l => l !== onData);
   };
 };
 
-// --- CONFIG FUNCTIONS ---
+// Subscribe to Config
+export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
+  configListeners.push(onData);
+  
+  // 1. Load local config immediately
+  onData(getLocalConfig());
 
-export const getSchoolConfig = (): SchoolConfig => {
-  const data = localStorage.getItem(CONFIG_KEY);
-  return data ? JSON.parse(data) : DEFAULT_CONFIG;
-};
-
-export const saveSchoolConfig = (config: SchoolConfig): void => {
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-  window.dispatchEvent(new Event('config-update'));
-};
-
-// --- EXPORT/IMPORT ---
-
-export const exportDatabase = (): string => {
-  const mails = localStorage.getItem(STORAGE_KEY);
-  const config = localStorage.getItem(CONFIG_KEY);
-  return JSON.stringify({
-    mails: mails ? JSON.parse(mails) : [],
-    config: config ? JSON.parse(config) : DEFAULT_CONFIG
-  });
-};
-
-export const importDatabase = (jsonString: string): boolean => {
-  try {
-    const parsed = JSON.parse(jsonString);
-    // Support legacy array format or new object format
-    if (Array.isArray(parsed)) {
-       localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-    } else if (parsed.mails && Array.isArray(parsed.mails)) {
-       localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed.mails));
-       if (parsed.config) {
-         localStorage.setItem(CONFIG_KEY, JSON.stringify(parsed.config));
-       }
+  // 2. Try Firebase
+  const docRef = doc(db, COLLECTIONS.CONFIG, 'main_settings');
+  
+  const unsubscribe = onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const config = docSnap.data() as SchoolConfig;
+      localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
+      onData(config);
     } else {
-      return false;
+      // Init config if not exists
+      saveSchoolConfig(DEFAULT_CONFIG);
     }
+  }, (error) => {
+    console.error("Firestore Config Error (Offline Mode):", error.message);
+  });
+
+  return () => {
+    unsubscribe();
+    configListeners = configListeners.filter(l => l !== onData);
+  };
+};
+
+// --- ACTIONS ---
+
+export const saveMail = async (mail: Mail): Promise<void> => {
+  // 1. Optimistic Update (Update Local First)
+  const currentMails = getLocalMails();
+  // Ensure ID exists. If creating, use timestamp. If updating, use existing.
+  const mailId = mail.id || Date.now().toString();
+  const mailToSave = { ...mail, id: mailId };
+
+  const existingIdx = currentMails.findIndex(m => m.id === mailId);
+  let newMails;
+  
+  if (existingIdx >= 0) {
+    newMails = [...currentMails];
+    newMails[existingIdx] = mailToSave;
+  } else {
+    newMails = [mailToSave, ...currentMails];
+  }
+
+  // Save to LocalStorage
+  localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
+  // Notify listeners manually (updates UI immediately without waiting for network)
+  mailListeners.forEach(l => l(newMails));
+
+  // 2. Try Saving to Firebase (Background)
+  try {
+    const dataToSave = JSON.parse(JSON.stringify(mailToSave));
+    delete dataToSave.id; // Don't save ID inside doc
+
+    // Logic: If ID is long string -> Firestore ID. If numbers -> Timestamp ID (Local)
+    // If it's a Timestamp ID, we should technically addDoc to get a real ID, 
+    // but for hybrid offline sync simply, we might treat it as a custom ID document.
     
-    window.dispatchEvent(new Event('storage-update'));
-    window.dispatchEvent(new Event('config-update'));
+    if (existingIdx >= 0 && mail.id && !(/^\d+$/.test(mail.id))) {
+       // Update existing Firestore doc
+       await updateDoc(doc(db, COLLECTIONS.MAILS, mail.id), dataToSave);
+    } else {
+       // New doc or local-only doc being synced
+       if (mail.id && /^\d+$/.test(mail.id)) {
+           // It's a timestamp ID, let's use setDoc to force this ID so it matches local
+           // OR use addDoc and accept divergence. Using setDoc with custom ID is safer for sync.
+           // However, Firestore IDs are usually strings. Using timestamp string is fine.
+           await setDoc(doc(db, COLLECTIONS.MAILS, mailId), dataToSave);
+       } else {
+           await addDoc(collection(db, COLLECTIONS.MAILS), dataToSave);
+       }
+    }
+  } catch (error) {
+    console.warn("Save to Cloud failed (Offline Mode active):", error);
+    // Silent fail is okay because we already updated local state
+  }
+};
+
+export const deleteMail = async (id: string): Promise<void> => {
+  // 1. Optimistic Delete (Local)
+  const currentMails = getLocalMails();
+  const newMails = currentMails.filter(m => m.id !== id);
+  localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
+  mailListeners.forEach(l => l(newMails));
+
+  // 2. Try Firebase
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.MAILS, id));
+  } catch (error) {
+    console.warn("Delete from Cloud failed (Offline Mode active):", error);
+  }
+};
+
+export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
+  // 1. Local
+  localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
+  configListeners.forEach(l => l(config));
+
+  // 2. Firebase
+  try {
+    await setDoc(doc(db, COLLECTIONS.CONFIG, 'main_settings'), config);
+  } catch (error) {
+    console.warn("Save Config to Cloud failed:", error);
+  }
+};
+
+// --- BACKUP & RESTORE ---
+
+export const exportDatabase = async (): Promise<string> => {
+  try {
+    // Try to get latest from Cloud, fallback to Local
+    let mails: any[] = [];
+    let configs: any[] = [];
+
+    try {
+        const mailsSnapshot = await getDocs(collection(db, COLLECTIONS.MAILS));
+        mails = mailsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const configSnapshot = await getDocs(collection(db, COLLECTIONS.CONFIG));
+        configs = configSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+        console.warn("Exporting from Offline Storage");
+        mails = getLocalMails();
+        configs = [getLocalConfig()];
+    }
+
+    const backup = {
+      version: 1,
+      timestamp: new Date().toISOString(),
+      mails,
+      configs
+    };
+
+    return JSON.stringify(backup, null, 2);
+  } catch (error) {
+    console.error("Export failed:", error);
+    throw new Error("Gagal mengekspor database.");
+  }
+};
+
+export const importDatabase = async (jsonString: string): Promise<boolean> => {
+  try {
+    const data = JSON.parse(jsonString);
+
+    if (data.mails && Array.isArray(data.mails)) {
+      // Update Local
+      localStorage.setItem('OFFLINE_MAILS', JSON.stringify(data.mails));
+      mailListeners.forEach(l => l(data.mails));
+
+      // Try Push to Cloud (Best effort)
+      for (const mail of data.mails) {
+        const { id, ...rest } = mail;
+        try {
+            if (id) await setDoc(doc(db, COLLECTIONS.MAILS, id), rest);
+            else await addDoc(collection(db, COLLECTIONS.MAILS), rest);
+        } catch (e) { /* ignore cloud errors */ }
+      }
+    }
+
+    if (data.configs && Array.isArray(data.configs)) {
+      const config = data.configs[0];
+      if (config) {
+         localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
+         configListeners.forEach(l => l(config));
+         try {
+             const { id, ...rest } = config;
+             await setDoc(doc(db, COLLECTIONS.CONFIG, 'main_settings'), rest);
+         } catch(e) { /* ignore */ }
+      }
+    }
+
     return true;
-  } catch (e) {
-    console.error("Invalid JSON format", e);
+  } catch (error) {
+    console.error("Import failed:", error);
     return false;
   }
 };

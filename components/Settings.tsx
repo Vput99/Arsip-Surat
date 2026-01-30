@@ -1,45 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, Upload, School, Loader2, Info, Building2 } from 'lucide-react';
-import { getSchoolConfig, saveSchoolConfig } from '../services/storage';
+import { subscribeToConfig, saveSchoolConfig } from '../services/storage';
 import { SchoolConfig } from '../types';
 
 const Settings: React.FC = () => {
-  const [config, setConfig] = useState<SchoolConfig>(getSchoolConfig());
+  const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig({ ...config, [e.target.name]: e.target.value });
+  useEffect(() => {
+    const unsubscribe = subscribeToConfig((newConfig) => {
+      setConfig(newConfig);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (config) {
+      setConfig({ ...config, [e.target.name]: e.target.value });
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'logoDaerahUrl') => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && config) {
       if (file.size > 500 * 1024) {
         setMessage({ text: 'Ukuran maksimal 500KB', type: 'error' });
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setConfig(prev => ({ ...prev, [field]: reader.result as string }));
+        setConfig(prev => prev ? ({ ...prev, [field]: reader.result as string }) : null);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!config) return;
+
     setLoading(true);
     try {
-      saveSchoolConfig(config);
-      setMessage({ text: 'Pengaturan tersimpan', type: 'success' });
+      await saveSchoolConfig(config);
+      setMessage({ text: 'Pengaturan tersimpan ke Database', type: 'success' });
     } catch {
-      setMessage({ text: 'Gagal menyimpan', type: 'error' });
+      setMessage({ text: 'Gagal menyimpan. Periksa config Firebase.', type: 'error' });
     } finally {
       setLoading(false);
       setTimeout(() => setMessage({ text: '', type: '' }), 3000);
     }
   };
+
+  if (!config) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-8 animate-fade-in">
@@ -153,7 +172,7 @@ const Settings: React.FC = () => {
                     name="address" 
                     rows={3}
                     value={config.address} 
-                    onChange={(e) => setConfig({ ...config, address: e.target.value })} 
+                    onChange={handleChange} 
                     className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-medium text-slate-700 transition-all text-sm resize-none"
                   />
                 </div>

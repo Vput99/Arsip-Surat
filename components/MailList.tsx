@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, MailType, UrgencyLevel } from '../types';
-import { getMails, deleteMail, getSchoolConfig } from '../services/storage';
+import { subscribeToMails, deleteMail, subscribeToConfig } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply } from '../services/geminiService';
+import { SchoolConfig } from '../types';
 
 interface MailListProps {
   type: MailType;
@@ -13,6 +14,7 @@ interface MailListProps {
 
 const MailList: React.FC<MailListProps> = ({ type }) => {
   const [mails, setMails] = useState<Mail[]>([]);
+  const [schoolConfig, setSchoolConfig] = useState<SchoolConfig | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('Semua');
@@ -22,24 +24,36 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const [replyLoading, setReplyLoading] = useState(false);
 
   useEffect(() => {
-    const loadData = () => {
-      const allMails = getMails();
+    // Listen to mails
+    const unsubscribeMails = subscribeToMails((allMails) => {
       setMails(allMails.filter(m => m.type === type));
+    });
+
+    // Listen to config (needed for print)
+    const unsubscribeConfig = subscribeToConfig((config) => {
+      setSchoolConfig(config);
+    });
+
+    return () => {
+      unsubscribeMails();
+      unsubscribeConfig();
     };
-    loadData();
-    window.addEventListener('storage-update', loadData);
-    return () => window.removeEventListener('storage-update', loadData);
   }, [type]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Hapus arsip ini secara permanen?')) {
-      deleteMail(id);
-      if (selectedMail?.id === id) setSelectedMail(null);
+      try {
+        await deleteMail(id);
+        if (selectedMail?.id === id) setSelectedMail(null);
+      } catch (e) {
+        alert('Gagal menghapus surat.');
+      }
     }
   };
 
   const handlePrintDisposition = (mail: Mail) => {
-    const config = getSchoolConfig();
+    if (!schoolConfig) return;
+    const config = schoolConfig;
     const printWindow = window.open('', '', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(`
@@ -215,7 +229,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                 <Search className="text-slate-400" size={32} />
               </div>
               <h3 className="text-slate-900 font-bold">Tidak ditemukan</h3>
-              <p className="text-slate-500 text-sm">Coba kata kunci lain.</p>
+              <p className="text-slate-500 text-sm">Coba kata kunci lain atau periksa koneksi internet.</p>
             </div>
           ) : (
             filteredMails.map((mail) => (

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Save, Printer, FileText, ChevronDown, Copy, RefreshCw, CheckCircle2, Scissors } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2 } from 'lucide-react';
 import { LETTER_TEMPLATES } from '../constants';
-import { getSchoolConfig, saveMail } from '../services/storage';
+import { subscribeToConfig, saveMail } from '../services/storage';
 import { Mail, MailType, MailStatus, UrgencyLevel, SchoolConfig } from '../types';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -117,7 +117,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 };
 
 const LetterCreator: React.FC = () => {
-  const [config, setConfig] = useState<SchoolConfig>(getSchoolConfig());
+  const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState(LETTER_TEMPLATES[0]);
   const [formData, setFormData] = useState({
     refNumber: `422/150/419.42.03.135/${new Date().getFullYear()}`, // Format sesuai contoh
@@ -128,10 +128,14 @@ const LetterCreator: React.FC = () => {
     signerNip: '...................................',
     content: LETTER_TEMPLATES[0].content
   });
+  const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    setConfig(getSchoolConfig());
+    const unsubscribe = subscribeToConfig((newConfig) => {
+      setConfig(newConfig);
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -160,31 +164,42 @@ const LetterCreator: React.FC = () => {
     window.print();
   };
 
-  const handleSaveToOutbox = () => {
-    const newMail: Mail = {
-      id: Date.now().toString(),
-      type: MailType.OUTGOING,
-      referenceNumber: formData.refNumber,
-      date: formData.date,
-      receivedDate: new Date().toISOString().split('T')[0],
-      createdAt: new Date().toISOString(),
-      sender: formData.recipient || 'Pihak Terkait',
-      subject: selectedTemplate.subject,
-      description: `Surat dibuat menggunakan template: ${selectedTemplate.name}`,
-      category: selectedTemplate.category,
-      urgency: UrgencyLevel.LOW,
-      status: MailStatus.ARCHIVED,
-      fileUrl: '', 
-      aiSummary: 'Surat dibuat otomatis melalui fitur Buat Surat.'
-    };
+  const handleSaveToOutbox = async () => {
+    setIsSaving(true);
+    try {
+      const newMail: Mail = {
+        id: Date.now().toString(),
+        type: MailType.OUTGOING,
+        referenceNumber: formData.refNumber,
+        date: formData.date,
+        receivedDate: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+        sender: formData.recipient || 'Pihak Terkait',
+        subject: selectedTemplate.subject,
+        description: `Surat dibuat menggunakan template: ${selectedTemplate.name}`,
+        category: selectedTemplate.category,
+        urgency: UrgencyLevel.LOW,
+        status: MailStatus.ARCHIVED,
+        fileUrl: '', 
+        aiSummary: 'Surat dibuat otomatis melalui fitur Buat Surat.'
+      };
 
-    saveMail(newMail);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+      await saveMail(newMail);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (e) {
+      alert('Gagal menyimpan surat.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // @ts-ignore
   const isCentered = selectedTemplate.layout === 'centered';
+
+  if (!config) {
+     return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in">
@@ -197,9 +212,10 @@ const LetterCreator: React.FC = () => {
         <div className="flex gap-2 w-full md:w-auto">
           <button 
             onClick={handleSaveToOutbox}
+            disabled={isSaving}
             className={`flex-1 md:flex-none flex items-center justify-center px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${isSaved ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
           >
-            {isSaved ? <CheckCircle2 size={18} className="mr-2"/> : <Save size={18} className="mr-2"/>}
+            {isSaving ? <Loader2 size={18} className="animate-spin mr-2"/> : (isSaved ? <CheckCircle2 size={18} className="mr-2"/> : <Save size={18} className="mr-2"/>)}
             {isSaved ? 'Tersimpan' : 'Simpan ke Arsip'}
           </button>
           <button 

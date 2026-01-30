@@ -1,26 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { getStats, getSchoolConfig } from '../services/storage';
+import { subscribeToMails, subscribeToConfig } from '../services/storage';
+import { SchoolConfig } from '../types';
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState(getStats());
-  const [schoolConfig, setSchoolConfig] = useState(getSchoolConfig());
+  const [stats, setStats] = useState({ total: 0, incoming: 0, outgoing: 0, urgent: 0 });
+  const [schoolConfig, setSchoolConfig] = useState<SchoolConfig | null>(null);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setStats(getStats());
-      setSchoolConfig(getSchoolConfig());
-    };
-    
-    window.addEventListener('storage-update', handleUpdate);
-    window.addEventListener('config-update', handleUpdate);
+    // 1. Subscribe to Mails
+    const unsubscribeMails = subscribeToMails((mails) => {
+      setStats({
+        total: mails.length,
+        incoming: mails.filter(m => m.type === 'Masuk').length,
+        outgoing: mails.filter(m => m.type === 'Keluar').length,
+        urgent: mails.filter(m => m.urgency === 'Segera').length
+      });
+    });
+
+    // 2. Subscribe to Config
+    const unsubscribeConfig = subscribeToConfig((config) => {
+      setSchoolConfig(config);
+    });
     
     return () => {
-      window.removeEventListener('storage-update', handleUpdate);
-      window.removeEventListener('config-update', handleUpdate);
+      unsubscribeMails();
+      unsubscribeConfig();
     };
   }, []);
+
+  if (!schoolConfig) {
+    return <div className="p-8 text-center text-slate-500">Memuat data dashboard...</div>;
+  }
 
   const statCards = [
     { title: 'Total Surat', value: stats.total, icon: <FileText size={24} />, color: 'from-blue-500 to-blue-600', text: 'text-blue-600', bg: 'bg-blue-50' },
@@ -78,7 +90,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className={`mt-4 pt-4 border-t border-slate-50 flex items-center text-xs font-semibold ${card.text}`}>
                <div className={`px-2 py-1 rounded-md ${card.bg} mr-2`}>Update</div>
-               Realtime
+               Realtime via Firebase
             </div>
           </div>
         ))}

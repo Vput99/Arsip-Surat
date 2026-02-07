@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2, QrCode } from 'lucide-react';
+import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2, QrCode, Key } from 'lucide-react';
 import { LETTER_TEMPLATES } from '../constants';
 import { subscribeToConfig, saveMail } from '../services/storage';
 import { Mail, MailType, MailStatus, UrgencyLevel, SchoolConfig } from '../types';
@@ -334,10 +334,10 @@ const LetterCreator: React.FC = () => {
           </div>
         </div>
 
-        {/* Preview Column (A4 Paper) - Dikurangi jadi 7/12 */}
+        {/* Preview Column (F4 Paper: 215mm x 330mm) - Dikurangi jadi 7/12 */}
         <div className="w-full lg:w-7/12 bg-slate-200/50 rounded-2xl border border-slate-200 overflow-y-auto p-4 md:p-8 flex justify-center print:bg-white print:p-0 print:border-0 print:overflow-visible print:w-full print:absolute print:top-0 print:left-0 print:z-50">
-           {/* A4 Container */}
-           <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl p-[20mm] mx-auto relative print:shadow-none print:w-full print:m-0 flex flex-col">
+           {/* F4 Container */}
+           <div className="bg-white w-[215mm] min-h-[330mm] shadow-2xl p-[20mm] mx-auto relative print:shadow-none print:w-full print:m-0 flex flex-col">
               
               {/* Kop Surat yang Diperbaiki (Lebih Simetris dan Font Serif) */}
               <div className="border-b-[4px] border-double border-black pb-4 mb-6 pt-2 grid grid-cols-[120px_1fr_120px] items-center">
@@ -445,6 +445,32 @@ const LetterCreator: React.FC = () => {
                        <p>NIP. {formData.signerNip}</p>
                     </div>
                  </div>
+
+                 {/* BSrE Footer (Recreated using CSS/SVG to look like the image) */}
+                 {useQRCode && (
+                   <div className="mt-12 border border-slate-400 p-2 flex items-center gap-3 w-full">
+                     {/* Logo Section */}
+                     <div className="flex items-center gap-2 shrink-0 border-r-2 border-[#009ee0] pr-3">
+                        <div className="w-10 h-10 rounded-full bg-[#009ee0] flex items-center justify-center text-white relative overflow-hidden">
+                           <Key size={20} className="-rotate-45" strokeWidth={2.5} />
+                           {/* Decorative arc for logo likeness */}
+                           <div className="absolute top-0 right-0 w-5 h-5 border-l-2 border-b-2 border-white rounded-bl-full opacity-50"></div>
+                        </div>
+                        <div className="flex flex-col text-[8pt] font-extrabold text-[#009ee0] leading-[1.1] tracking-tight">
+                          <span>Balai</span>
+                          <span>Sertifikasi</span>
+                          <span>Elektronik</span>
+                        </div>
+                     </div>
+
+                     {/* Text Section */}
+                     <div className="text-[7.5pt] font-sans text-slate-800 leading-[1.3]">
+                       <p className="mb-0">Catatan :</p>
+                       <p className="mb-0">- UU ITE No. 19 Tahun 2016 tentang Informasi dan Transaksi Elektronik pasal 5 ayat 1: 'Informasi Elektronik dan/atau Dokumen Elektronik dan/atau hasil cetaknya merupakan alat bukti hukum yang sah.'</p>
+                       <p className="mb-0">- Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan BSrE</p>
+                     </div>
+                   </div>
+                 )}
               </div>
 
            </div>
@@ -454,13 +480,13 @@ const LetterCreator: React.FC = () => {
       {/* Print Styles */}
       <style>{`
         @media print {
-          @page { size: A4; margin: 0; }
+          @page { size: 215mm 330mm; margin: 0; }
           body * { visibility: hidden; }
           .print\\:block { display: block !important; }
           .print\\:hidden { display: none !important; }
           .bg-slate-200\\/50 { background: white !important; padding: 0 !important; overflow: visible !important; }
-          .bg-white.w-\\[210mm\\] { visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; margin: 0; box-shadow: none; }
-          .bg-white.w-\\[210mm\\] * { visibility: visible; }
+          .bg-white.w-\\[215mm\\] { visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; margin: 0; box-shadow: none; }
+          .bg-white.w-\\[215mm\\] * { visibility: visible; }
         }
       `}</style>
     </div>

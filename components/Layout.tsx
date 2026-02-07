@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight, PenTool, Wifi, WifiOff } from 'lucide-react';
-import { exportDatabase, importDatabase } from '../services/storage';
+import { exportDatabase, importDatabase, subscribeToConnectionStatus } from '../services/storage';
 import { format } from 'date-fns';
 
 interface LayoutProps {
@@ -10,7 +10,12 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [netConnected, setNetConnected] = useState(navigator.onLine);
+  const [dbConnected, setDbConnected] = useState(true);
+  
+  // Combine statuses: We are "Online" only if we have Net + DB Permission
+  const isOnline = netConnected && dbConnected;
+  
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -19,15 +24,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Monitor Online/Offline Status
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    // Network Listeners
+    const handleOnline = () => setNetConnected(true);
+    const handleOffline = () => setNetConnected(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Database Status Listener (Permission Denied / Unavailable)
+    const unsubscribeDb = subscribeToConnectionStatus((isConnected) => {
+      setDbConnected(isConnected);
+    });
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      unsubscribeDb();
     };
   }, []);
 

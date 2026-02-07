@@ -25,6 +25,26 @@ const DEFAULT_CONFIG: SchoolConfig = {
   logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png'
 };
 
+// --- CONNECTION STATE MANAGEMENT ---
+let isDatabaseConnected = true; 
+const connectionListeners: ((isConnected: boolean) => void)[] = [];
+
+export const subscribeToConnectionStatus = (callback: (isConnected: boolean) => void) => {
+  connectionListeners.push(callback);
+  callback(isDatabaseConnected);
+  return () => {
+    const index = connectionListeners.indexOf(callback);
+    if (index > -1) connectionListeners.splice(index, 1);
+  };
+};
+
+const setConnectionStatus = (status: boolean) => {
+  if (isDatabaseConnected !== status) {
+    isDatabaseConnected = status;
+    connectionListeners.forEach(cb => cb(status));
+  }
+};
+
 // --- LOCAL STORAGE HELPERS (OFFLINE MODE) ---
 
 const getLocalMails = (): Mail[] => {
@@ -62,6 +82,7 @@ export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   const q = query(collection(db, COLLECTIONS.MAILS), orderBy("createdAt", "desc"));
   
   const unsubscribe = onSnapshot(q, (snapshot) => {
+    setConnectionStatus(true);
     const mails: Mail[] = [];
     snapshot.forEach((doc) => {
       mails.push({ id: doc.id, ...doc.data() } as Mail);
@@ -70,10 +91,14 @@ export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
     // Sync to local storage for backup
     localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
     onData(mails);
-  }, (error) => {
-    console.error("Firestore Error (Switching to Offline Mode):", error.message);
-    // If Firebase fails, we rely on the local data already loaded.
-    // We don't need to do anything else, as local data is already active.
+  }, (error: any) => {
+    // Graceful error handling for offline/permission issues
+    if (error?.code === 'permission-denied' || error?.code === 'unavailable') {
+      console.warn(`Firestore Unavailable (${error.code}). Switching to Offline Mode.`);
+      setConnectionStatus(false);
+    } else {
+      console.error("Firestore Error:", error);
+    }
   });
 
   return () => {
@@ -93,6 +118,7 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
   const docRef = doc(db, COLLECTIONS.CONFIG, 'main_settings');
   
   const unsubscribe = onSnapshot(docRef, (docSnap) => {
+    setConnectionStatus(true);
     if (docSnap.exists()) {
       const config = docSnap.data() as SchoolConfig;
       localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
@@ -101,8 +127,13 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
       // Init config if not exists
       saveSchoolConfig(DEFAULT_CONFIG);
     }
-  }, (error) => {
-    console.error("Firestore Config Error (Offline Mode):", error.message);
+  }, (error: any) => {
+    if (error?.code === 'permission-denied' || error?.code === 'unavailable') {
+       console.warn(`Firestore Config Unavailable (${error.code}). Switching to Offline Mode.`);
+       setConnectionStatus(false);
+    } else {
+       console.error("Firestore Config Error:", error);
+    }
   });
 
   return () => {

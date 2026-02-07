@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2 } from 'lucide-react';
+import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2, QrCode } from 'lucide-react';
 import { LETTER_TEMPLATES } from '../constants';
 import { subscribeToConfig, saveMail } from '../services/storage';
 import { Mail, MailType, MailStatus, UrgencyLevel, SchoolConfig } from '../types';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import QRCode from 'react-qr-code';
 
 // Komponen Pembantu untuk Merender Isi Surat agar Titik Dua Lurus Otomatis
 const SmartContentRenderer = ({ text }: { text: string }) => {
@@ -119,6 +120,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 const LetterCreator: React.FC = () => {
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState(LETTER_TEMPLATES[0]);
+  const [useQRCode, setUseQRCode] = useState(false);
   const [formData, setFormData] = useState({
     refNumber: `422/150/419.42.03.135/${new Date().getFullYear()}`, // Format sesuai contoh
     date: new Date().toISOString().split('T')[0],
@@ -196,6 +198,16 @@ const LetterCreator: React.FC = () => {
 
   // @ts-ignore
   const isCentered = selectedTemplate.layout === 'centered';
+
+  // Data untuk QR Code
+  const qrData = JSON.stringify({
+    tipe: "Surat Resmi Digital",
+    sekolah: config?.name,
+    nomor: formData.refNumber,
+    tanggal: formData.date,
+    ttd: formData.signerName.replace(/[()]/g, '').trim(),
+    nip: formData.signerNip
+  });
 
   if (!config) {
      return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
@@ -287,6 +299,19 @@ const LetterCreator: React.FC = () => {
                        <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500" />
                      </div>
                   </div>
+                  {/* Toggle QR Code */}
+                  <label className="flex items-center p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                     <input 
+                       type="checkbox" 
+                       checked={useQRCode} 
+                       onChange={(e) => setUseQRCode(e.target.checked)}
+                       className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                     />
+                     <div className="ml-3 flex items-center">
+                        <QrCode size={16} className="text-slate-500 mr-2"/>
+                        <span className="text-sm font-bold text-slate-700">Tanda Tangan Digital (QR)</span>
+                     </div>
+                  </label>
                 </div>
              </div>
           </div>
@@ -399,7 +424,23 @@ const LetterCreator: React.FC = () => {
                            : `Kediri, ${format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}`}
                        </p>
                        <p>{formData.signatureTitle}</p>
-                       <div className="h-24"></div> {/* Space for signature */}
+                       
+                       {/* QR Code Logic */}
+                       {useQRCode ? (
+                         <div className="h-24 flex justify-center items-center my-1 relative">
+                             <div className="border-2 border-slate-900 p-1 rounded-lg">
+                               <QRCode 
+                                 value={qrData} 
+                                 size={80} 
+                                 level="M"
+                               />
+                             </div>
+                             <div className="absolute -bottom-2 text-[8px] font-mono bg-white px-1">Digital Signature</div>
+                         </div>
+                       ) : (
+                         <div className="h-24"></div> 
+                       )}
+
                        <p className="font-bold underline">{formData.signerName}</p>
                        <p>NIP. {formData.signerNip}</p>
                     </div>

@@ -5,7 +5,7 @@ import { subscribeToConfig, saveMail } from '../services/storage';
 import { Mail, MailType, MailStatus, UrgencyLevel, SchoolConfig } from '../types';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import QRCode from 'react-qr-code';
+import { QRCodeSVG } from 'qrcode.react';
 
 // Komponen Pembantu untuk Merender Isi Surat agar Titik Dua Lurus Otomatis
 const SmartContentRenderer = ({ text }: { text: string }) => {
@@ -429,7 +429,7 @@ const LetterCreator: React.FC = () => {
                        {useQRCode ? (
                          <div className="h-24 flex justify-center items-center my-1 relative">
                              <div className="border-2 border-slate-900 p-1 rounded-lg">
-                               <QRCode 
+                               <QRCodeSVG 
                                  value={qrData} 
                                  size={80} 
                                  level="M"

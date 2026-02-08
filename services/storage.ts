@@ -2,8 +2,10 @@ import { turso, initTables, isTursoConfigured } from './turso';
 import { Mail, SchoolConfig } from '../types';
 import { MOCK_INITIAL_DATA } from '../constants';
 
-// Inisialisasi tabel saat file di-import (Akan mengecek konfigurasi internal)
-initTables();
+// Initial sync on module load
+if (isTursoConfigured()) {
+  initTables().catch(console.error);
+}
 
 // Default Config (Fallback)
 const DEFAULT_CONFIG: SchoolConfig = {
@@ -85,11 +87,11 @@ const fetchConfig = async () => {
       const config = rs.rows[0] as unknown as SchoolConfig;
       localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
       configListeners.forEach(l => l(config));
+      setConnectionStatus(true);
     } else {
       // Inisialisasi jika kosong
       await saveSchoolConfig(getLocalConfig());
     }
-    setConnectionStatus(true);
   } catch (e) {
     console.warn("Turso Fetch Config Failed:", e);
     setConnectionStatus(false);

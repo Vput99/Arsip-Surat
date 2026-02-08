@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight, PenTool, Wifi, WifiOff } from 'lucide-react';
+import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight, PenTool, Wifi, WifiOff, Cloud } from 'lucide-react';
 import { exportDatabase, importDatabase, subscribeToConnectionStatus } from '../services/storage';
 import { format } from 'date-fns';
 
@@ -11,10 +11,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [netConnected, setNetConnected] = useState(navigator.onLine);
-  const [dbConnected, setDbConnected] = useState(true);
-  
-  // Combine statuses: We are "Online" only if we have Net + DB Permission
-  const isOnline = netConnected && dbConnected;
+  const [dbConnected, setDbConnected] = useState(false);
   
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -22,16 +19,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const isActive = (path: string) => location.pathname === path;
 
-  // Monitor Online/Offline Status
   useEffect(() => {
-    // Network Listeners
     const handleOnline = () => setNetConnected(true);
     const handleOffline = () => setNetConnected(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Database Status Listener (Permission Denied / Unavailable)
     const unsubscribeDb = subscribeToConnectionStatus((isConnected) => {
       setDbConnected(isConnected);
     });
@@ -116,7 +110,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">ArsipSurat</h1>
-            <p className="text-xs text-slate-400 font-medium">SD Pintar v1.0</p>
+            <p className="text-xs text-slate-400 font-medium">SD Pintar v1.1</p>
           </div>
         </div>
 
@@ -151,9 +145,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Footer Actions */}
         <div className="p-4 m-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
           {/* Connection Status Badge */}
-          <div className={`flex items-center justify-center mb-3 px-3 py-1.5 rounded-lg border ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
-            {isOnline ? <Wifi size={14} className="mr-2"/> : <WifiOff size={14} className="mr-2"/>}
-            <span className="text-xs font-bold uppercase tracking-wider">{isOnline ? 'Online (Firebase)' : 'Offline (Lokal)'}</span>
+          <div className={`flex items-center justify-center mb-3 px-3 py-1.5 rounded-lg border ${dbConnected ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+            {dbConnected ? <Cloud size={14} className="mr-2"/> : <WifiOff size={14} className="mr-2"/>}
+            <span className="text-xs font-bold uppercase tracking-wider">{dbConnected ? 'Turso Cloud' : 'Offline Mode'}</span>
           </div>
 
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Data & System</p>
@@ -178,10 +172,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Background Decoration */}
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-50 to-slate-50 -z-10"></div>
 
-        {/* Mobile Header */}
         <header className="flex items-center justify-between h-16 px-6 lg:hidden bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10">
           <div className="font-bold text-slate-800 text-lg flex items-center">
             <School className="mr-2 text-indigo-600" size={20} />

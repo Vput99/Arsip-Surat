@@ -7,9 +7,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Agar process.env.API_KEY bisa terbaca dari file .env atau system environment
       'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
-      // Polyfill object process.env kosong agar library lain tidak error
+      'process.env.TURSO_DATABASE_URL': JSON.stringify(env.TURSO_DATABASE_URL || ''),
+      'process.env.TURSO_AUTH_TOKEN': JSON.stringify(env.TURSO_AUTH_TOKEN || ''),
       'process.env': {}
     }
   };

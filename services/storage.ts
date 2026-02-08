@@ -1,18 +1,9 @@
-import { db, COLLECTIONS } from './firebase';
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  setDoc,
-  getDocs
-} from "firebase/firestore";
+import { turso, initTables, isTursoConfigured } from './turso';
 import { Mail, SchoolConfig } from '../types';
 import { MOCK_INITIAL_DATA } from '../constants';
+
+// Inisialisasi tabel saat file di-import (Akan mengecek konfigurasi internal)
+initTables();
 
 // Default Config (Fallback)
 const DEFAULT_CONFIG: SchoolConfig = {
@@ -26,7 +17,7 @@ const DEFAULT_CONFIG: SchoolConfig = {
 };
 
 // --- CONNECTION STATE MANAGEMENT ---
-let isDatabaseConnected = true; 
+let isDatabaseConnected = isTursoConfigured(); 
 const connectionListeners: ((isConnected: boolean) => void)[] = [];
 
 export const subscribeToConnectionStatus = (callback: (isConnected: boolean) => void) => {
@@ -46,7 +37,6 @@ const setConnectionStatus = (status: boolean) => {
 };
 
 // --- LOCAL STORAGE HELPERS (OFFLINE MODE) ---
-
 const getLocalMails = (): Mail[] => {
   try {
     const saved = localStorage.getItem('OFFLINE_MAILS');
@@ -65,148 +55,136 @@ const getLocalConfig = (): SchoolConfig => {
   }
 };
 
-// Store active listeners to update them manually when offline actions happen
+// Listeners Aktif
 let mailListeners: ((mails: Mail[]) => void)[] = [];
 let configListeners: ((config: SchoolConfig) => void)[] = [];
 
-// --- REALTIME LISTENERS ---
+// --- TURSO FETCHERS ---
 
-// Subscribe to Mails
+const fetchAllMails = async () => {
+  if (!turso) return;
+  try {
+    const rs = await turso.execute("SELECT * FROM mails ORDER BY createdAt DESC");
+    const mails = rs.rows.map(row => ({ ...row } as unknown as Mail));
+    
+    // Sync ke LocalStorage
+    localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
+    mailListeners.forEach(l => l(mails));
+    setConnectionStatus(true);
+  } catch (e) {
+    console.warn("Turso Fetch Mails Failed:", e);
+    setConnectionStatus(false);
+  }
+};
+
+const fetchConfig = async () => {
+  if (!turso) return;
+  try {
+    const rs = await turso.execute("SELECT * FROM school_config WHERE id = 'main_settings'");
+    if (rs.rows.length > 0) {
+      const config = rs.rows[0] as unknown as SchoolConfig;
+      localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
+      configListeners.forEach(l => l(config));
+    } else {
+      // Inisialisasi jika kosong
+      await saveSchoolConfig(getLocalConfig());
+    }
+    setConnectionStatus(true);
+  } catch (e) {
+    console.warn("Turso Fetch Config Failed:", e);
+    setConnectionStatus(false);
+  }
+};
+
+// --- REALTIME SUBSCRIPTIONS ---
+
 export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   mailListeners.push(onData);
-  
-  // 1. Load data from local storage immediately (Fast render)
   onData(getLocalMails());
-
-  // 2. Try connecting to Firebase
-  const q = query(collection(db, COLLECTIONS.MAILS), orderBy("createdAt", "desc"));
   
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    setConnectionStatus(true);
-    const mails: Mail[] = [];
-    snapshot.forEach((doc) => {
-      mails.push({ id: doc.id, ...doc.data() } as Mail);
-    });
-    
-    // Sync to local storage for backup
-    localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
-    onData(mails);
-  }, (error: any) => {
-    // Graceful error handling for offline/permission issues
-    if (error?.code === 'permission-denied' || error?.code === 'unavailable') {
-      console.warn(`Firestore Unavailable (${error.code}). Switching to Offline Mode.`);
-      setConnectionStatus(false);
-    } else {
-      console.error("Firestore Error:", error);
-    }
-  });
-
-  return () => {
-    unsubscribe();
-    mailListeners = mailListeners.filter(l => l !== onData);
-  };
+  if (isTursoConfigured()) {
+    fetchAllMails();
+    const interval = setInterval(fetchAllMails, 5000);
+    return () => {
+      clearInterval(interval);
+      mailListeners = mailListeners.filter(l => l !== onData);
+    };
+  }
+  return () => { mailListeners = mailListeners.filter(l => l !== onData); };
 };
 
-// Subscribe to Config
 export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
   configListeners.push(onData);
-  
-  // 1. Load local config immediately
   onData(getLocalConfig());
 
-  // 2. Try Firebase
-  const docRef = doc(db, COLLECTIONS.CONFIG, 'main_settings');
-  
-  const unsubscribe = onSnapshot(docRef, (docSnap) => {
-    setConnectionStatus(true);
-    if (docSnap.exists()) {
-      const config = docSnap.data() as SchoolConfig;
-      localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
-      onData(config);
-    } else {
-      // Init config if not exists
-      saveSchoolConfig(DEFAULT_CONFIG);
-    }
-  }, (error: any) => {
-    if (error?.code === 'permission-denied' || error?.code === 'unavailable') {
-       console.warn(`Firestore Config Unavailable (${error.code}). Switching to Offline Mode.`);
-       setConnectionStatus(false);
-    } else {
-       console.error("Firestore Config Error:", error);
-    }
-  });
-
-  return () => {
-    unsubscribe();
-    configListeners = configListeners.filter(l => l !== onData);
-  };
+  if (isTursoConfigured()) {
+    fetchConfig();
+    const interval = setInterval(fetchConfig, 30000);
+    return () => {
+      clearInterval(interval);
+      configListeners = configListeners.filter(l => l !== onData);
+    };
+  }
+  return () => { configListeners = configListeners.filter(l => l !== onData); };
 };
 
-// --- ACTIONS ---
+// --- ACTIONS (SQL) ---
 
 export const saveMail = async (mail: Mail): Promise<void> => {
-  // 1. Optimistic Update (Update Local First)
-  const currentMails = getLocalMails();
-  // Ensure ID exists. If creating, use timestamp. If updating, use existing.
   const mailId = mail.id || Date.now().toString();
   const mailToSave = { ...mail, id: mailId };
 
+  // 1. Optimistic Update (UI Instan)
+  const currentMails = getLocalMails();
   const existingIdx = currentMails.findIndex(m => m.id === mailId);
   let newMails;
-  
   if (existingIdx >= 0) {
     newMails = [...currentMails];
     newMails[existingIdx] = mailToSave;
   } else {
     newMails = [mailToSave, ...currentMails];
   }
-
-  // Save to LocalStorage
   localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
-  // Notify listeners manually (updates UI immediately without waiting for network)
   mailListeners.forEach(l => l(newMails));
 
-  // 2. Try Saving to Firebase (Background)
-  try {
-    const dataToSave = JSON.parse(JSON.stringify(mailToSave));
-    delete dataToSave.id; // Don't save ID inside doc
-
-    // Logic: If ID is long string -> Firestore ID. If numbers -> Timestamp ID (Local)
-    // If it's a Timestamp ID, we should technically addDoc to get a real ID, 
-    // but for hybrid offline sync simply, we might treat it as a custom ID document.
-    
-    if (existingIdx >= 0 && mail.id && !(/^\d+$/.test(mail.id))) {
-       // Update existing Firestore doc
-       await updateDoc(doc(db, COLLECTIONS.MAILS, mail.id), dataToSave);
-    } else {
-       // New doc or local-only doc being synced
-       if (mail.id && /^\d+$/.test(mail.id)) {
-           // It's a timestamp ID, let's use setDoc to force this ID so it matches local
-           // OR use addDoc and accept divergence. Using setDoc with custom ID is safer for sync.
-           // However, Firestore IDs are usually strings. Using timestamp string is fine.
-           await setDoc(doc(db, COLLECTIONS.MAILS, mailId), dataToSave);
-       } else {
-           await addDoc(collection(db, COLLECTIONS.MAILS), dataToSave);
-       }
+  // 2. Turso Save (Background)
+  if (turso) {
+    try {
+      await turso.execute({
+        sql: `INSERT OR REPLACE INTO mails (
+          id, type, referenceNumber, date, receivedDate, createdAt, 
+          sender, subject, description, fileUrl, category, urgency, status, aiSummary
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          mailToSave.id, mailToSave.type, mailToSave.referenceNumber, mailToSave.date, 
+          mailToSave.receivedDate, mailToSave.createdAt, mailToSave.sender, 
+          mailToSave.subject, mailToSave.description, mailToSave.fileUrl || null, 
+          mailToSave.category, mailToSave.urgency, mailToSave.status, mailToSave.aiSummary || null
+        ]
+      });
+    } catch (e) {
+      console.error("Turso Save Failed:", e);
     }
-  } catch (error) {
-    console.warn("Save to Cloud failed (Offline Mode active):", error);
-    // Silent fail is okay because we already updated local state
   }
 };
 
 export const deleteMail = async (id: string): Promise<void> => {
-  // 1. Optimistic Delete (Local)
+  // 1. Local
   const currentMails = getLocalMails();
   const newMails = currentMails.filter(m => m.id !== id);
   localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
   mailListeners.forEach(l => l(newMails));
 
-  // 2. Try Firebase
-  try {
-    await deleteDoc(doc(db, COLLECTIONS.MAILS, id));
-  } catch (error) {
-    console.warn("Delete from Cloud failed (Offline Mode active):", error);
+  // 2. Turso
+  if (turso) {
+    try {
+      await turso.execute({
+        sql: "DELETE FROM mails WHERE id = ?",
+        args: [id]
+      });
+    } catch (e) {
+      console.error("Turso Delete Failed:", e);
+    }
   }
 };
 
@@ -215,81 +193,50 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
   localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
   configListeners.forEach(l => l(config));
 
-  // 2. Firebase
-  try {
-    await setDoc(doc(db, COLLECTIONS.CONFIG, 'main_settings'), config);
-  } catch (error) {
-    console.warn("Save Config to Cloud failed:", error);
+  // 2. Turso
+  if (turso) {
+    try {
+      await turso.execute({
+        sql: `INSERT OR REPLACE INTO school_config (
+          id, name, address, email, headerLine1, headerLine2, logoUrl, logoDaerahUrl
+        ) VALUES ('main_settings', ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          config.name, config.address, config.email, config.headerLine1, 
+          config.headerLine2, config.logoUrl, config.logoDaerahUrl
+        ]
+      });
+    } catch (e) {
+      console.error("Turso Config Save Failed:", e);
+    }
   }
 };
 
 // --- BACKUP & RESTORE ---
 
 export const exportDatabase = async (): Promise<string> => {
-  try {
-    // Try to get latest from Cloud, fallback to Local
-    let mails: any[] = [];
-    let configs: any[] = [];
-
-    try {
-        const mailsSnapshot = await getDocs(collection(db, COLLECTIONS.MAILS));
-        mails = mailsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const configSnapshot = await getDocs(collection(db, COLLECTIONS.CONFIG));
-        configs = configSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (e) {
-        console.warn("Exporting from Offline Storage");
-        mails = getLocalMails();
-        configs = [getLocalConfig()];
-    }
-
-    const backup = {
-      version: 1,
-      timestamp: new Date().toISOString(),
-      mails,
-      configs
-    };
-
-    return JSON.stringify(backup, null, 2);
-  } catch (error) {
-    console.error("Export failed:", error);
-    throw new Error("Gagal mengekspor database.");
-  }
+  const mails = getLocalMails();
+  const config = getLocalConfig();
+  const backup = {
+    version: 2,
+    timestamp: new Date().toISOString(),
+    mails,
+    configs: [config]
+  };
+  return JSON.stringify(backup, null, 2);
 };
 
 export const importDatabase = async (jsonString: string): Promise<boolean> => {
   try {
     const data = JSON.parse(jsonString);
-
-    if (data.mails && Array.isArray(data.mails)) {
-      // Update Local
-      localStorage.setItem('OFFLINE_MAILS', JSON.stringify(data.mails));
-      mailListeners.forEach(l => l(data.mails));
-
-      // Try Push to Cloud (Best effort)
-      for (const mail of data.mails) {
-        const { id, ...rest } = mail;
-        try {
-            if (id) await setDoc(doc(db, COLLECTIONS.MAILS, id), rest);
-            else await addDoc(collection(db, COLLECTIONS.MAILS), rest);
-        } catch (e) { /* ignore cloud errors */ }
-      }
+    if (data.mails) {
+      for (const m of data.mails) await saveMail(m);
     }
-
-    if (data.configs && Array.isArray(data.configs)) {
-      const config = data.configs[0];
-      if (config) {
-         localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
-         configListeners.forEach(l => l(config));
-         try {
-             const { id, ...rest } = config;
-             await setDoc(doc(db, COLLECTIONS.CONFIG, 'main_settings'), rest);
-         } catch(e) { /* ignore */ }
-      }
+    if (data.configs && data.configs[0]) {
+      await saveSchoolConfig(data.configs[0]);
     }
-
     return true;
-  } catch (error) {
-    console.error("Import failed:", error);
+  } catch (e) {
+    console.error("Import failed:", e);
     return false;
   }
 };

@@ -136,7 +136,7 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   const mailId = mail.id || Date.now().toString();
   const mailToSave = { ...mail, id: mailId };
 
-  // 1. Optimistic Update (UI Instan)
+  // 1. Optimistic Update (UI Instan & Local Storage)
   const currentMails = getLocalMails();
   const existingIdx = currentMails.findIndex(m => m.id === mailId);
   let newMails;
@@ -146,8 +146,18 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   } else {
     newMails = [mailToSave, ...currentMails];
   }
-  localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
-  mailListeners.forEach(l => l(newMails));
+
+  try {
+    localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
+    mailListeners.forEach(l => l(newMails));
+  } catch (e: any) {
+    // Tangani error QuotaExceededError (Penyimpanan Penuh)
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      console.error("LocalStorage Full!");
+      throw new Error("Penyimpanan lokal penuh. Mohon hapus data lama atau lampiran besar.");
+    }
+    throw e;
+  }
 
   // 2. Turso Save (Background)
   if (turso) {
@@ -168,6 +178,7 @@ export const saveMail = async (mail: Mail): Promise<void> => {
     } catch (e) {
       console.error("Turso Save Failed:", e);
       setConnectionStatus(false);
+      // Jangan throw error di sini, karena data sudah tersimpan di lokal (fallback offline)
     }
   }
 };

@@ -3,7 +3,7 @@ import { MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { saveMail } from '../services/storage';
 import { analyzeLetter } from '../services/geminiService';
 import { CATEGORIES } from '../constants';
-import { Save, X, Sparkles, Loader2, UploadCloud, FileType, FileImage } from 'lucide-react';
+import { Save, X, Sparkles, Loader2, UploadCloud, FileType, FileImage, AlertTriangle } from 'lucide-react';
 
 interface MailFormProps {
   type: MailType;
@@ -13,6 +13,7 @@ interface MailFormProps {
 const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Mail>>({
     type: type,
     status: MailStatus.PENDING,
@@ -25,19 +26,22 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    if (error) setError(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { 
-        alert("Ukuran file maksimal 2MB"); 
+      // BATAS UKURAN FILE: 1MB agar LocalStorage tidak cepat penuh saat Offline
+      if (file.size > 1024 * 1024) { 
+        setError("Ukuran file terlalu besar! Maksimal 1MB agar dapat disimpan saat offline.");
+        e.target.value = ''; // Reset input
         return; 
       }
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Simpan file asli sebagai Base64 string (termasuk mime-type header)
         setFormData(prev => ({ ...prev, fileUrl: reader.result as string }));
       };
       reader.readAsDataURL(file);
@@ -45,13 +49,19 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
   };
 
   const handleAIAnalysis = async () => {
-    if (!formData.description) return alert("Isi deskripsi dulu!");
+    if (!formData.description) {
+      setError("Mohon isi kolom keterangan/isi ringkas terlebih dahulu.");
+      return;
+    }
     setAnalyzing(true);
+    setError(null);
     const result = await analyzeLetter(`Perihal: ${formData.subject}\nIsi: ${formData.description}`);
     if (result) {
       setFormData(prev => ({
         ...prev, category: result.category || prev.category, urgency: result.urgency || prev.urgency, aiSummary: result.summary
       }));
+    } else {
+      setError("Gagal melakukan analisis AI. Periksa koneksi internet.");
     }
     setAnalyzing(false);
   };
@@ -59,29 +69,32 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
-    // Simpan dengan timestamp realtime saat ini
     const mailData: Mail = {
       ...formData,
-      // Jika ID baru, biarkan firestore generate atau gunakan timestamp jika ingin ID client-side
-      // id: Date.now().toString(), // Di storage.ts kita bisa biarkan firestore generate ID jika kosong
-      createdAt: new Date().toISOString() // Waktu Realtime saat tombol simpan ditekan
+      createdAt: new Date().toISOString()
     } as Mail;
 
     try {
       await saveMail(mailData);
       setLoading(false);
       onClose();
-    } catch (e) {
+    } catch (e: any) {
       setLoading(false);
-      // Alert sudah ditangani di service
+      console.error("Submit Error:", e);
+      // Tampilkan pesan error yang user-friendly
+      if (e.message && e.message.includes("Penyimpanan lokal penuh")) {
+        setError("Penyimpanan Browser Penuh! Hapus beberapa surat lama atau simpan tanpa lampiran file.");
+      } else {
+        setError("Gagal menyimpan data. " + (e.message || "Terjadi kesalahan sistem."));
+      }
     }
   };
 
   const inputClass = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm font-medium text-slate-700 placeholder-slate-400";
   const labelClass = "block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5";
 
-  // Helper untuk menampilkan icon tipe file
   const getFileIcon = () => {
     if (!formData.fileUrl) return <UploadCloud size={16} className="mr-2 text-slate-400" />;
     if (formData.fileUrl.startsWith('data:image')) return <FileImage size={16} className="mr-2 text-emerald-500" />;
@@ -89,9 +102,8 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
   };
 
   const getFileName = () => {
-    if (!formData.fileUrl) return "Upload File";
+    if (!formData.fileUrl) return "Upload File (Maks 1MB)";
     if (formData.fileUrl.startsWith('data:image')) return "Gambar Terlampir";
-    if (formData.fileUrl.startsWith('data:application/pdf')) return "Dokumen PDF";
     return "File Terlampir";
   }
 
@@ -106,6 +118,13 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-sm font-bold flex items-start animate-pulse-soft">
+              <AlertTriangle className="mr-2 shrink-0 mt-0.5" size={16} />
+              {error}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-5">
             <div><label className={labelClass}>Nomor Surat</label><input name="referenceNumber" required value={formData.referenceNumber} onChange={handleChange} className={inputClass} placeholder="No. Agenda" /></div>
             <div><label className={labelClass}>{type === MailType.INCOMING ? 'Pengirim' : 'Tujuan'}</label><input name="sender" required value={formData.sender} onChange={handleChange} className={inputClass} placeholder="Nama Instansi" /></div>
@@ -144,11 +163,11 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
              </div>
              <div>
                <label className={labelClass}>Lampiran (Asli)</label>
-               <label className={`flex items-center justify-center w-full px-4 py-2.5 bg-slate-50 border border-dashed rounded-xl cursor-pointer transition-colors hover:bg-slate-100 border-slate-300`}>
+               <label className={`flex items-center justify-center w-full px-4 py-2.5 bg-slate-50 border border-dashed rounded-xl cursor-pointer transition-colors hover:bg-slate-100 border-slate-300 ${formData.fileUrl ? 'bg-emerald-50 border-emerald-200' : ''}`}>
                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} />
                  
                  {getFileIcon()}
-                 <span className={`text-xs font-bold ${formData.fileUrl ? 'text-emerald-600' : 'text-slate-500'}`}>
+                 <span className={`text-xs font-bold truncate ${formData.fileUrl ? 'text-emerald-600' : 'text-slate-500'}`}>
                    {getFileName()}
                  </span>
                </label>

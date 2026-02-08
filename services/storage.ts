@@ -17,7 +17,7 @@ const DEFAULT_CONFIG: SchoolConfig = {
 };
 
 // --- CONNECTION STATE MANAGEMENT ---
-let isDatabaseConnected = isTursoConfigured(); 
+let isDatabaseConnected = false; 
 const connectionListeners: ((isConnected: boolean) => void)[] = [];
 
 export const subscribeToConnectionStatus = (callback: (isConnected: boolean) => void) => {
@@ -162,8 +162,10 @@ export const saveMail = async (mail: Mail): Promise<void> => {
           mailToSave.category, mailToSave.urgency, mailToSave.status, mailToSave.aiSummary || null
         ]
       });
+      setConnectionStatus(true);
     } catch (e) {
       console.error("Turso Save Failed:", e);
+      setConnectionStatus(false);
     }
   }
 };
@@ -182,8 +184,10 @@ export const deleteMail = async (id: string): Promise<void> => {
         sql: "DELETE FROM mails WHERE id = ?",
         args: [id]
       });
+      setConnectionStatus(true);
     } catch (e) {
       console.error("Turso Delete Failed:", e);
+      setConnectionStatus(false);
     }
   }
 };
@@ -205,8 +209,10 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
           config.headerLine2, config.logoUrl, config.logoDaerahUrl
         ]
       });
+      setConnectionStatus(true);
     } catch (e) {
       console.error("Turso Config Save Failed:", e);
+      setConnectionStatus(false);
     }
   }
 };

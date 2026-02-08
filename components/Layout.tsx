@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Database, Download, Upload, Settings, ChevronRight, PenTool, Wifi, WifiOff, Cloud } from 'lucide-react';
+import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Download, Upload, Settings, ChevronRight, PenTool, WifiOff, Cloud, CloudOff, CheckCircle2, RefreshCw, Database } from 'lucide-react';
 import { exportDatabase, importDatabase, subscribeToConnectionStatus } from '../services/storage';
 import { format } from 'date-fns';
 
@@ -10,8 +10,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [netConnected, setNetConnected] = useState(navigator.onLine);
   const [dbConnected, setDbConnected] = useState(false);
+  const [lastSync, setLastSync] = useState<Date>(new Date());
   
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,19 +20,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isActive = (path: string) => location.pathname === path;
 
   useEffect(() => {
-    const handleOnline = () => setNetConnected(true);
-    const handleOffline = () => setNetConnected(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
     const unsubscribeDb = subscribeToConnectionStatus((isConnected) => {
       setDbConnected(isConnected);
+      if (isConnected) setLastSync(new Date());
     });
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
       unsubscribeDb();
     };
   }, []);
@@ -58,7 +51,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Backup failed", error);
-      alert("Gagal melakukan backup database.");
     }
   };
 
@@ -79,8 +71,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       if (success) {
         alert("Database berhasil dipulihkan!");
         window.location.reload();
-      } else {
-        alert("Gagal memulihkan database.");
       }
     };
     reader.readAsText(file);
@@ -110,7 +100,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">ArsipSurat</h1>
-            <p className="text-xs text-slate-400 font-medium">SD Pintar v1.1</p>
+            <p className="text-xs text-slate-400 font-medium">SD Pintar v1.2</p>
           </div>
         </div>
 
@@ -144,34 +134,73 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Footer Actions */}
         <div className="p-4 m-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-          {/* Connection Status Badge */}
-          <div className={`flex items-center justify-center mb-3 px-3 py-1.5 rounded-lg border ${dbConnected ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
-            {dbConnected ? <Cloud size={14} className="mr-2"/> : <WifiOff size={14} className="mr-2"/>}
-            <span className="text-xs font-bold uppercase tracking-wider">{dbConnected ? 'Turso Cloud' : 'Offline Mode'}</span>
+          {/* Connection Status Badge Sidebar */}
+          <div className={`flex flex-col gap-1 mb-4 p-3 rounded-xl border transition-all ${dbConnected ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {dbConnected ? <Cloud size={14} className="text-indigo-400" /> : <CloudOff size={14} className="text-rose-400" />}
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${dbConnected ? 'text-indigo-300' : 'text-rose-300'}`}>
+                  {dbConnected ? 'Database Cloud' : 'Koneksi Terputus'}
+                </span>
+              </div>
+              {dbConnected && (
+                <div className="flex items-center">
+                   <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                </div>
+              )}
+            </div>
+            <p className="text-[9px] text-slate-500 font-medium">
+              {dbConnected ? `Sinkron: ${format(lastSync, 'HH:mm:ss')}` : 'Gunakan Restore Manual'}
+            </p>
           </div>
 
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Data & System</p>
           <div className="grid grid-cols-2 gap-2">
-            <button 
-              onClick={handleBackup}
-              className="flex flex-col items-center justify-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all text-emerald-400 hover:text-emerald-300 hover:border-emerald-500/30 group"
-            >
-              <Download size={18} className="mb-1 group-hover:-translate-y-0.5 transition-transform" />
+            <button onClick={handleBackup} className="flex flex-col items-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all text-emerald-400">
+              <Download size={18} className="mb-1" />
               <span className="text-[10px] font-semibold">Backup</span>
             </button>
-            <button 
-              onClick={triggerImport}
-              className="flex flex-col items-center justify-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all text-amber-400 hover:text-amber-300 hover:border-amber-500/30 group"
-            >
-              <Upload size={18} className="mb-1 group-hover:-translate-y-0.5 transition-transform" />
+            <button onClick={triggerImport} className="flex flex-col items-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all text-amber-400">
+              <Upload size={18} className="mb-1" />
               <span className="text-[10px] font-semibold">Restore</span>
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* BIG CONNECTION INDICATOR (TOP RIGHT) */}
+        <div className="absolute top-6 right-8 z-20 flex items-center gap-3">
+           <div className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl backdrop-blur-xl border shadow-2xl transition-all duration-700 ${dbConnected ? 'bg-indigo-600/10 border-indigo-500/30 text-indigo-700 ring-4 ring-indigo-500/5' : 'bg-white/90 border-slate-200 text-slate-500'}`}>
+              <div className="relative">
+                 {dbConnected ? (
+                   <div className="flex items-center justify-center">
+                     <div className="absolute w-8 h-8 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
+                     <Database size={18} className="relative z-10 text-emerald-600 drop-shadow-sm" />
+                   </div>
+                 ) : (
+                   <CloudOff size={18} className="text-rose-500" />
+                 )}
+              </div>
+              <div className="flex flex-col">
+                 <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-extrabold uppercase tracking-widest">
+                      {dbConnected ? 'DATABASE TERHUBUNG' : 'MODE OFFLINE'}
+                    </span>
+                    {dbConnected && <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>}
+                 </div>
+                 {dbConnected ? (
+                   <span className="text-[9px] font-bold text-indigo-500 mt-0.5 flex items-center gap-1">
+                     <RefreshCw size={10} className="animate-spin-slow" />
+                     SINKRONISASI AKTIF (REALTIME)
+                   </span>
+                 ) : (
+                   <span className="text-[9px] font-bold text-rose-400 mt-0.5">MENUNGGU KONFIGURASI TOKEN...</span>
+                 )}
+              </div>
+           </div>
+        </div>
+
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-50 to-slate-50 -z-10"></div>
 
         <header className="flex items-center justify-between h-16 px-6 lg:hidden bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10">
@@ -190,6 +219,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </main>
       </div>
+
+      <style>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 4s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

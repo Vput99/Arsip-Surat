@@ -2,15 +2,19 @@ import { createClient } from "@libsql/client/web";
 
 /**
  * Konfigurasi Turso Database.
+ * Menggunakan URL yang diberikan oleh user sebagai fallback jika env var tidak ada.
  */
-const rawUrl = process.env.TURSO_DATABASE_URL || "";
+const rawUrl = process.env.TURSO_DATABASE_URL || "libsql://arsip-surat-vput99.aws-ap-northeast-1.turso.io";
 const authToken = process.env.TURSO_AUTH_TOKEN || "";
 
-// Bersihkan URL agar kompatibel dengan lingkungan web (fetch)
-// Browser memerlukan https:// untuk HRANA protocol jika menggunakan @libsql/client/web
+/**
+ * Penting: @libsql/client/web membutuhkan protokol https:// atau wss://
+ * Kita konversi libsql:// menjadi https:// untuk kompatibilitas browser (HRANA protocol)
+ */
 const url = rawUrl.replace("libsql://", "https://");
 
 export const isTursoConfigured = () => {
+  // Database dianggap terkonfigurasi jika URL bukan default kosong dan token tersedia
   return url !== "" && url !== "https://default-db.turso.io" && authToken !== "";
 };
 
@@ -23,7 +27,7 @@ export const turso = isTursoConfigured()
  */
 export const initTables = async () => {
   if (!turso) {
-    console.warn("Turso not configured. Using local storage only.");
+    console.warn("Turso not fully configured (Missing Auth Token). Using local storage only.");
     return;
   }
 
@@ -58,8 +62,8 @@ export const initTables = async () => {
         logoDaerahUrl TEXT
       )`
     ], "write");
-    console.log("Turso Tables Ready");
+    console.log("Turso Database connected and tables are ready.");
   } catch (e) {
-    console.error("Turso Initialization Error (Check CORS or Token):", e);
+    console.error("Turso Connection Error. Please check your Auth Token and Network:", e);
   }
 };

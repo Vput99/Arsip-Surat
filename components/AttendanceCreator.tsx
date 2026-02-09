@@ -110,9 +110,6 @@ const AttendanceCreator: React.FC = () => {
     });
     
     // Total Presence = Working Days - (S + I + A + C). 
-    // DL usually counts as 'Present' for work purposes but physically away. 
-    // Here we strictly calculate physical presence + DL as 'Hadir' or standard convention.
-    // Standard: Hadir = Working - (S + I + A + C)
     const presence = workingDays - (s + i + a + c); 
 
     return { s, i, a, c, dl, presence, workingDays };
@@ -355,9 +352,9 @@ const AttendanceCreator: React.FC = () => {
                    return (
                      <tr key={staff.id} className="h-8">
                        <td className="border border-black text-center">{idx + 1}</td>
-                       <td className="border border-black px-2 py-1">
-                         <div className="font-bold">{staff.name || '...'}</div>
-                         <div className="text-[8pt] text-slate-600 print:text-black">NIP. {staff.nip || '-'}</div>
+                       <td className="border border-black px-2 py-1 align-middle">
+                         <div className="font-bold text-[9pt] leading-tight">{staff.name || '...'}</div>
+                         <div className="text-[8pt] text-slate-600 print:text-black mt-0.5">NIP. {staff.nip || '-'}</div>
                        </td>
                        <td className="border border-black text-center">{staff.rank || '-'}</td>
                        <td className="border border-black text-center font-bold">{r.workingDays}</td>
@@ -410,15 +407,15 @@ const AttendanceCreator: React.FC = () => {
                   return (
                     <tr key={staff.id} className="h-10">
                       <td className="border border-black text-center text-black">{sIdx + 1}</td>
-                      <td className="border border-black px-1 leading-tight overflow-hidden">
-                        <div className="font-bold truncate text-black">{staff.name || '...'}</div>
-                        <div className="text-[7pt] text-slate-500 print:text-black truncate">NIP. {staff.nip || '...'}</div>
+                      <td className="border border-black px-1 py-1 leading-tight overflow-hidden align-middle">
+                        <div className="font-bold text-black text-[8pt] whitespace-normal leading-tight mb-0.5">{staff.name || '...'}</div>
+                        <div className="text-[7pt] text-slate-500 print:text-black">NIP. {staff.nip || '...'}</div>
                       </td>
-                      <td className="border border-black text-center text-[7pt] leading-tight truncate px-0.5 text-black">{staff.rank || '-'}</td>
+                      <td className="border border-black text-center text-[7pt] leading-tight px-0.5 text-black align-middle whitespace-normal">{staff.rank || '-'}</td>
                       {dateRange.map(d => (
                         <td key={`cell-${d}`} className={`border border-black p-0 relative ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
                            <div className="flex flex-col h-full min-h-[32px]">
-                              <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black/10 transition-colors ${isDayOff(d) ? 'cursor-not-allowed border-none' : 'cursor-pointer hover:bg-slate-50'}`}>
+                              <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
                                 {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
                               </div>
                               <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
@@ -475,7 +472,7 @@ const AttendanceCreator: React.FC = () => {
           .bg-rose-100 { background-color: #fee2e2 !important; -webkit-print-color-adjust: exact; }
           table { width: 100% !important; border-collapse: collapse !important; }
           th, td { border: 0.5pt solid black !important; }
-          .border-b { border-bottom: 0.2pt solid #eee !important; }
+          .border-b { border-bottom: 0.5pt solid black !important; }
           .break-inside-avoid { break-inside: avoid !important; }
         }
       `}</style>

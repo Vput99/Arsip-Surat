@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Download, Upload, Settings, ChevronRight, PenTool, WifiOff, Cloud, CloudOff, CheckCircle2, RefreshCw, Database, Activity, AlertCircle } from 'lucide-react';
-import { exportDatabase, importDatabase, subscribeToConnectionStatus } from '../services/storage';
+import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, AlertCircle, RefreshCw, CalendarCheck } from 'lucide-react';
+import { subscribeToConnectionStatus } from '../services/storage';
 import { format } from 'date-fns';
 
 interface LayoutProps {
@@ -15,7 +15,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [lastSync, setLastSync] = useState<Date>(new Date());
   
   const location = useLocation();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const isActive = (path: string) => location.pathname === path;
@@ -38,13 +37,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/inbox', label: 'Surat Masuk', icon: <Inbox size={20} /> },
     { path: '/outbox', label: 'Surat Keluar', icon: <Send size={20} /> },
     { path: '/create', label: 'Buat Surat', icon: <PenTool size={20} /> },
+    { path: '/attendance', label: 'Buat Absensi', icon: <CalendarCheck size={20} /> },
     { path: '/settings', label: 'Pengaturan', icon: <Settings size={20} /> },
   ];
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
-      <input type="file" ref={fileInputRef} className="hidden" accept=".json"/>
-
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)}/>
       )}
@@ -77,7 +75,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           })}
         </nav>
 
-        {/* Status Indicator Sidebar (Bottom) */}
+        {/* Status Indicator Sidebar */}
         <div className="p-4 mx-4 mb-8 bg-slate-800/40 rounded-2xl border border-white/5 backdrop-blur-md">
           <div className={`flex flex-col gap-1.5 p-3 rounded-xl border transition-all duration-500 ${dbConnected ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
             <div className="flex items-center justify-between">
@@ -87,18 +85,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {dbConnected ? 'Status: Online' : 'Status: Offline'}
                 </span>
               </div>
-              {dbConnected && (
-                <div className="relative flex items-center justify-center">
-                  <div className="absolute w-3 h-3 rounded-full bg-emerald-500 animate-ping opacity-40"></div>
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-               {isSyncing ? <RefreshCw size={10} className="text-indigo-400 animate-spin" /> : <Activity size={10} className={dbConnected ? "text-emerald-400" : "text-rose-400"} />}
-               <p className="text-[9px] text-slate-500 font-bold">
-                 {dbConnected ? `Sinkron: ${format(lastSync, 'HH:mm:ss')}` : 'Periksa Database'}
-               </p>
             </div>
           </div>
         </div>
@@ -106,36 +92,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        
-        {/* Background Gradient */}
-        <div className="absolute top-0 left-0 w-full h-80 bg-gradient-to-b from-indigo-100/50 to-transparent -z-10"></div>
-
-        {/* Mobile Header (Visible only on small screens) */}
         <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30">
-          <div className="flex flex-col">
-            <div className="font-black text-slate-900 text-lg flex items-center">
-              <School className="mr-2 text-indigo-600" size={22} />
-              ArsipSurat
-            </div>
-            <div className="flex items-center mt-0.5 gap-1.5">
-               <div className={`w-2 h-2 rounded-full ${dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'}`}></div>
-               <span className={`text-[10px] font-black uppercase tracking-tighter ${dbConnected ? 'text-emerald-600' : 'text-rose-500'}`}>
-                 {dbConnected ? 'Cloud Online' : 'Offline'}
-               </span>
-            </div>
+          <div className="font-black text-slate-900 text-lg flex items-center">
+            <School className="mr-2 text-indigo-600" size={22} />
+            ArsipSurat
           </div>
-          <button onClick={toggleSidebar} className="p-3 text-indigo-600 bg-indigo-50 rounded-2xl shadow-sm border border-indigo-100">
+          <button onClick={toggleSidebar} className="p-3 text-indigo-600 bg-indigo-50 rounded-2xl">
             {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </header>
-
-        {/* Desktop - Top Right Minimalist Sync Indicator (Optional, non-blocking) */}
-        {dbConnected && (
-          <div className="hidden lg:flex absolute top-6 right-10 items-center gap-2 px-3 py-1.5 rounded-full bg-white/50 backdrop-blur-sm border border-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-400 pointer-events-none select-none">
-            <RefreshCw size={10} className={isSyncing ? "animate-spin text-indigo-500" : ""} />
-            {isSyncing ? 'Sinkronisasi...' : 'Cloud Aktif'}
-          </div>
-        )}
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-10">
           <div className="max-w-7xl mx-auto">

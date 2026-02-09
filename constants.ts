@@ -15,6 +15,50 @@ export const CATEGORIES = [
 
 export const LETTER_TEMPLATES = [
   {
+    id: 't_honor_ekskul',
+    name: 'Daftar Honor Ekstrakurikuler',
+    subject: 'DAFTAR PENERIMAAN HONORARIUM PELATIH EKSTRAKURIKULER',
+    category: 'Kerjasama',
+    layout: 'centered',
+    content: `DAFTAR PENERIMAAN HONORARIUM PELATIH EKSTRAKURIKULER
+Bulan : ...........................................................
+Tahun Pelajaran : ...........................................................
+
+No : Nama Pelatih : Ekstrakurikuler : Jml Pertemuan : Honor/Sesi : Total : Tanda Tangan
+1. : ....................... : Pramuka : ..... : Rp ........... : Rp ........... : 1. ........
+2. : ....................... : Tari : ..... : Rp ........... : Rp ........... : 2. ........
+3. : ....................... : Karate : ..... : Rp ........... : Rp ........... : 3. ........
+4. : ....................... : Drumband : ..... : Rp ........... : Rp ........... : 4. ........
+5. : ....................... : Keagamaan : ..... : Rp ........... : Rp ........... : 5. ........
+
+JUMLAH TOTAL : Rp ............................
+
+Pembayaran dilakukan berdasarkan absensi kehadiran pelatih yang telah diverifikasi.`
+  },
+  {
+    id: 't_rolstan_pekerja',
+    name: 'Rolstan / Daftar Hadir & Upah Tukang',
+    subject: 'DAFTAR HADIR DAN PENERIMAAN UPAH TENAGA KERJA (ROLSTAN)',
+    category: 'Kerjasama',
+    layout: 'centered',
+    content: `DAFTAR HADIR DAN PENERIMAAN UPAH TENAGA KERJA
+Pekerjaan : ...........................................................
+Lokasi : SDN [NAMA_SEKOLAH]
+Minggu ke / Bulan : ...........................................................
+
+No : Nama Pekerja : Jabatan : Upah/Hari : Hari : Total : Tanda Tangan
+1. : ....................... : Tukang : Rp ........... : ..... : Rp ........... : 1. ........
+2. : ....................... : Tukang : Rp ........... : ..... : Rp ........... : 2. ........
+3. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 3. ........
+4. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 4. ........
+5. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 5. ........
+6. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 6. ........
+
+JUMLAH TOTAL : Rp ............................
+
+Catatan: Upah dibayarkan sesuai dengan hari kehadiran nyata di lokasi pekerjaan.`
+  },
+  {
     id: 't_mou_tukang_harian',
     name: 'MOU Jasa Tukang (Harian/Non-Borongan)',
     subject: 'SURAT PERJANJIAN KERJA JASA PERBAIKAN (UPAH HARIAN)',
@@ -43,12 +87,10 @@ PASAL 1 - LINGKUP PEKERJAAN
 PIHAK PERTAMA menunjuk PIHAK KEDUA untuk melaksanakan pekerjaan perbaikan berupa:
 1. ...........................................................
 2. ...........................................................
-3. ...........................................................
 
 PASAL 2 - JANGKA WAKTU DAN JAM KERJA
 1. Pekerjaan diperkirakan berlangsung selama ........... hari kerja, terhitung mulai tanggal ...................
-2. Jam kerja disepakati mulai pukul 08.00 WIB s.d 16.00 WIB (dengan waktu istirahat 1 jam).
-3. Apabila diperlukan kerja lembur, hal tersebut harus atas persetujuan PIHAK PERTAMA.
+2. Jam kerja disepakati mulai pukul 08.00 WIB s.d 16.00 WIB.
 
 PASAL 3 - UPAH DAN SISTEM PEMBAYARAN
 1. Besaran upah harian yang disepakati adalah:
@@ -56,19 +98,8 @@ PASAL 3 - UPAH DAN SISTEM PEMBAYARAN
    - Tukang : Rp ............................ / hari
    - Ladang / Pembantu : Rp ............................ / hari
 2. Pembayaran upah dilakukan setiap ( Hari Sabtu / Akhir Pekerjaan* ).
-3. PIHAK PERTAMA tidak menanggung biaya makan dan rokok, kecuali ditentukan lain atas kebijaksanaan sekolah.
 
-PASAL 4 - PENYEDIAAN MATERIAL DAN ALAT
-1. Semua material/bahan bangunan disediakan oleh PIHAK PERTAMA.
-2. PIHAK KEDUA berkewajiban menyiapkan alat-alat kerja standar milik pribadi.
-3. PIHAK KEDUA wajib menginformasikan kebutuhan material kepada PIHAK PERTAMA minimal 1 (satu) hari sebelum material tersebut habis/digunakan agar pekerjaan tidak terhambat.
-
-PASAL 5 - TANGGUNG JAWAB DAN KEAMANAN
-1. PIHAK KEDUA bertanggung jawab atas kualitas hasil kerja yang rapi dan kuat.
-2. PIHAK KEDUA wajib menjaga ketertiban dan tidak mengganggu jalannya kegiatan belajar mengajar di lingkungan sekolah.
-3. Segala resiko kecelakaan kerja yang disebabkan oleh kelalaian PIHAK KEDUA menjadi tanggung jawab PIHAK KEDUA.
-
-PASAL 6 - PENUTUP
+PASAL 4 - PENUTUP
 Demikian perjanjian ini dibuat dengan sebenar-benarnya untuk dipatuhi oleh kedua belah pihak.`
   },
   {
@@ -99,24 +130,18 @@ PASAL 1 - LINGKUP PEKERJAAN
 PIHAK PERTAMA memberikan pekerjaan kepada PIHAK KEDUA, dan PIHAK KEDUA menerima pekerjaan tersebut berupa:
 1. ...........................................................
 2. ...........................................................
-(Sebutkan rincian seperti pengecatan, perbaikan atap, atau pintu)
 
 PASAL 2 - JANGKA WAKTU
-Pekerjaan tersebut harus diselesaikan dalam jangka waktu ........... ( ........................ ) hari kalender, terhitung sejak tanggal ditetapkan.
+Pekerjaan tersebut harus diselesaikan dalam jangka waktu ........... ( ........................ ) hari kalender.
 
 PASAL 3 - BIAYA DAN SISTEM PEMBAYARAN
-1. Total biaya perbaikan yang disepakati adalah sebesar Rp ............................ ( ........................................................... ).
-2. Biaya tersebut sudah termasuk upah tenaga kerja dan bahan bangunan (jika disepakati borongan).
-3. Pembayaran dilakukan dengan sistem:
+1. Total biaya perbaikan yang disepakati adalah sebesar Rp ............................
+2. Pembayaran dilakukan dengan sistem:
    - Uang Muka (DP) : Rp ............................ ( ......... % )
-   - Pelunasan : Setelah pekerjaan selesai 100% dan diperiksa.
+   - Pelunasan : Setelah pekerjaan selesai 100%.
 
-PASAL 4 - KUALITAS PEKERJAAN
-1. PIHAK KEDUA wajib menggunakan bahan bangunan dengan kualitas yang baik sesuai standar yang disepakati.
-2. Apabila hasil pekerjaan tidak sesuai atau terdapat kerusakan dalam waktu 1 minggu setelah selesai, PIHAK KEDUA wajib melakukan perbaikan kembali tanpa biaya tambahan.
-
-PASAL 5 - PENUTUP
-Demikian perjanjian ini dibuat dengan penuh kesadaran tanpa ada paksaan dari pihak manapun untuk dipergunakan sebagaimana mestinya.`
+PASAL 4 - PENUTUP
+Demikian perjanjian ini dibuat dengan penuh kesadaran tanpa ada paksaan dari pihak manapun.`
   },
   {
     id: 't_mou_ekskul',
@@ -135,47 +160,29 @@ Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ......
    Dalam hal ini bertindak untuk dan atas nama SDN [NAMA_SEKOLAH], selanjutnya disebut PIHAK PERTAMA.
 
 2. Nama : ...........................................................
-   Tempat/Tgl Lahir : ...........................................................
    Alamat : ...........................................................
    Keahlian : ...........................................................
-   Dalam hal ini bertindak untuk dan atas nama pribadi, selanjutnya disebut PIHAK KEDUA.
+   Selanjutnya disebut PIHAK KEDUA.
 
 Kedua belah pihak telah sepakat untuk mengadakan Perjanjian Kerja Sama sebagai Tenaga Pengajar Ekstrakurikuler ............................ dengan ketentuan sebagai berikut:
 
 PASAL 1 - TUGAS DAN LINGKUP PEKERJAAN
-1. PIHAK PERTAMA memberikan tugas kepada PIHAK KEDUA untuk melaksanakan bimbingan ekstrakurikuler kepada siswa-siswi SDN [NAMA_SEKOLAH].
-2. PIHAK KEDUA wajib menyusun Program Kerja tahunan dan Absensi Kehadiran Siswa di setiap pertemuan.
+1. PIHAK PERTAMA memberikan tugas kepada PIHAK KEDUA untuk melaksanakan bimbingan ekstrakurikuler.
+2. PIHAK KEDUA wajib menyusun Program Kerja tahunan.
 
 PASAL 2 - JANGKA WAKTU
-Perjanjian ini berlaku selama 1 (satu) tahun pelajaran, terhitung sejak tanggal ditetapkan dan dapat diperpanjang atas kesepakatan kedua belah pihak setelah melalui evaluasi kinerja.
+Perjanjian ini berlaku selama 1 (satu) tahun pelajaran.
 
-PASAL 3 - WAKTU PELAKSANAAN
-Kegiatan ekstrakurikuler dilaksanakan sesuai jadwal yang telah ditentukan yaitu:
-Hari : ...........................................................
-Pukul : ........................................................... s.d ...........................................................
+PASAL 3 - HONORARIUM (GAJI)
+PIHAK KEDUA berhak menerima honorarium sebesar Rp ............................ per pertemuan.
 
-PASAL 4 - HONORARIUM (GAJI) DAN PEMBAYARAN
-1. PIHAK KEDUA berhak menerima honorarium sebesar Rp ............................ ( ........................................................... ) per pertemuan/bulan*.
-2. Pembayaran honorarium dilakukan oleh Bendahara Sekolah pada minggu pertama setiap bulannya melalui dana [SUMBER_DANA_BOS/KOMITE].
-3. Pembayaran dilakukan secara tunai/transfer setelah PIHAK KEDUA menyerahkan daftar hadir dan laporan kegiatan bulanan.
-
-PASAL 5 - HAK DAN KEWAJIBAN
-1. PIHAK PERTAMA berhak mengevaluasi metode pengajaran yang diberikan oleh PIHAK KEDUA.
-2. PIHAK KEDUA wajib menjaga ketertiban, keamanan, dan kebersihan sarana prasarana sekolah selama kegiatan berlangsung.
-3. PIHAK KEDUA wajib memberikan laporan perkembangan kemampuan siswa di setiap akhir semester.
-
-PASAL 6 - PEMUTUSAN HUBUNGAN KERJA
-PIHAK PERTAMA berhak memutus perjanjian ini secara sepihak apabila:
-1. PIHAK KEDUA tidak hadir 3 (tiga) kali berturut-turut tanpa alasan yang sah.
-2. PIHAK KEDUA melakukan tindakan yang melanggar norma hukum dan norma susila di lingkungan sekolah.
-
-PASAL 7 - PENUTUP
-Demikian surat perjanjian ini dibuat dalam rangkap 2 (dua) di atas materai yang cukup, di mana masing-masing mempunyai kekuatan hukum yang sama.`
+PASAL 4 - PENUTUP
+Demikian surat perjanjian ini dibuat dalam rangkap 2 (dua) untuk dipergunakan sebagaimana mestinya.`
   },
   {
     id: 't_sppd',
     name: 'Surat Perintah Perjalanan Dinas (SPPD) Resmi',
-    subject: 'SURAT PERINTAH PERJALANAN DINAS (SPPD)',
+    subject: 'SURAT PERINTAH PERJANJAN DINAS (SPPD)',
     category: 'Tugas',
     layout: 'centered',
     content: `Lembar Ke : ...................................
@@ -184,9 +191,8 @@ Nomor : [NOMOR_SURAT]
 
 1. Pejabat Berwenang yang memberi perintah : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
 2. Nama Pegawai yang diperintah : ...........................................................
-3. a. Pangkat dan Golongan menurut PP No. 6 Tahun 1997 : ...........................................................
+3. a. Pangkat dan Golongan : ...........................................................
    b. Jabatan / Instansi : ...........................................................
-   c. Tingkat menurut peraturan perjalanan : ...........................................................
 4. Maksud Perjalanan Dinas : ...........................................................
 5. Alat angkut yang dipergunakan : ...........................................................
 6. a. Tempat Berangkat : [NAMA_SEKOLAH]
@@ -194,13 +200,9 @@ Nomor : [NOMOR_SURAT]
 7. a. Lamanya Perjalanan Dinas : ........... ( ........................ ) Hari
    b. Tanggal Berangkat : ...........................................................
    c. Tanggal Harus Kembali : ...........................................................
-8. Pengikut : Nama / NIP
-   1. ...........................................................
-   2. ...........................................................
-9. Pembebanan Anggaran : 
+8. Pembebanan Anggaran : 
    a. Instansi : Dinas Pendidikan Kota Kediri
-   b. Mata Anggaran : ...........................................................
-10. Keterangan Lain-lain : ...........................................................`
+   b. Mata Anggaran : ...........................................................`
   },
   {
     id: 't_spt',
@@ -209,18 +211,15 @@ Nomor : [NOMOR_SURAT]
     category: 'Tugas',
     layout: 'centered',
     content: `Dasar : ............................................................................................
-        ............................................................................................
 
 MENUGASKAN :
 
 Kepada :
 Nama : ...........................................................
 NIP : ...........................................................
-Pangkat/Gol : ...........................................................
 Jabatan : ...........................................................
 
 Untuk : ............................................................................................
-      ............................................................................................
 
 Tempat : ...........................................................
 Waktu : ...........................................................
@@ -238,8 +237,6 @@ Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.`
 Nama : ........................................................................
 NIP : ........................................................................
 Jabatan : Kepala Sekolah
-Unit Kerja : ........................................................................
-Alamat : ........................................................................
 
 Menerangkan Bahwa :
 
@@ -247,7 +244,6 @@ Nama : ........................................................................
 Tempat/Tgl Lahir : ........................................................................
 Kelas : ........................................................................
 Nama Sekolah Asal : ........................................................................
-Alamat : ........................................................................
 
 Bahwa yang bersangkutan DITERIMA sebagai siswa di Sekolah Dasar Negeri ......................................
 
@@ -259,11 +255,10 @@ Demikian Surat Keterangan ini, agar dapat dipergunakan mestinya.`
     subject: 'SURAT KETERANGAN PINDAH SEKOLAH',
     category: 'Dinas',
     layout: 'centered',
-    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH] Kecamatan Pesantren Kota Kediri Provinsi Jawa Timur, menerangkan bahwa :
+    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH], menerangkan bahwa :
 
 Nama : ...........................................................
 Tempat/Tgl Lahir : ...........................................................
-Jenis Kelamin : ...........................................................
 NISN : ...........................................................
 Murid Tingkat / Kelas : ...........................................................
 
@@ -273,46 +268,23 @@ Nama : ...........................................................
 Pekerjaan : ...........................................................
 
 Telah mengajukan pindah ke salah satu Sekolah ...........................................................
-Kecamatan ........................... Kabupaten ...........................
-Provinsi ........................... dengan alasan ...........................................................
-
-Yang bersangkutan belum memiliki Buku Laporan Hasil Belajar ( Raport ) maka bersangkutan akan membawa Surat permohonan pindah orang tua/ wali murid.
 
 Demikian Surat Keterangan Pindah Sekolah ini dibuat untuk dapat dipergunakan sebagaimana mestinya.
 
-(Area Tanda Tangan Kepala Sekolah Asal - Silakan Edit manual jika perlu)
-
-Kediri, ...........................................
-Kepala Sekolah,
-
-
-( ........................................... )
-NIP. ...........................................
-
 ✂-CUT-LINE
-
-Setelah anak diterima di sekolah ini, isian di bawah ini harap dikirim kembali pada kami.
 
 NSS : [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
 
 Nama Sekolah : ...........................................................
-Status Sekolah : ...........................................................
 Alamat : ...........................................................
 Nama Siswa : ...........................................................
 Diterima di kelas : ...........................................................
-Diterima tanggal : ...........................................................
-
-......................, ...........................
-Kepala Sekolah Penerima,
-
-
-( ........................................ )
-NIP. ........................................`
+Diterima tanggal : ...........................................................`
   },
   {
     id: 't_laporan',
     name: 'Laporan Perjalanan Dinas',
-    subject: 'LAPORAN PERJALANAN DINAS',
+    subject: 'LAPORAN PERINTAH DINAS',
     category: 'Dinas',
     layout: 'centered',
     signatureTitle: 'Pelaksana Perjalanan Dinas',
@@ -332,19 +304,10 @@ IV. PELAKSANA PERJALANAN DINAS
 V. DAERAH TUJUAN/INSTANSI
 ............................................................................................
 
-VI. HADIR DALAM PERTEMUAN
+VI. PETUNJUK/ARAHAN
 ............................................................................................
 
-VII. PETUNJUK/ARAHAN
-............................................................................................
-
-VIII. MASALAH/TEMUAN
-............................................................................................
-
-IX. SARAN TINDAKAN
-............................................................................................
-
-X. LIAN-LIAN
+VII. MASALAH/TEMUAN
 ............................................................................................`
   },
   {
@@ -355,16 +318,16 @@ X. LIAN-LIAN
     layout: 'standard',
     content: `Dengan hormat,
 
-Sehubungan dengan berakhirnya kegiatan pembelajaran Semester Genap Tahun Ajaran 2023/2024, kami mengundang Bapak/Ibu Wali Murid untuk hadir pada:
+Sehubungan dengan berakhirnya kegiatan pembelajaran, kami mengundang Bapak/Ibu Wali Murid untuk hadir pada:
 
 Hari/Tanggal : [HARI], [TANGGAL]
 Pukul : 08.00 WIB - Selesai
 Tempat : Ruang Kelas [KELAS]
-Acara : Pengambilan Rapor Semester Genap
+Acara : Pengambilan Rapor
 
 Mengingat pentingnya acara ini, kami mengharapkan kehadiran Bapak/Ibu tepat pada waktunya.
 
-Demikian undangan ini kami sampaikan. Atas perhatian dan kehadirannya, kami ucapkan terima kasih.`
+Demikian undangan ini kami sampaikan.`
   },
   {
     id: 't3',
@@ -399,20 +362,5 @@ export const MOCK_INITIAL_DATA = [
     urgency: UrgencyLevel.HIGH,
     status: MailStatus.PROCESSED,
     aiSummary: 'Rapat wajib Kepsek mengenai kurikulum baru pada tanggal 25 Mei.'
-  },
-  {
-    id: '2',
-    type: MailType.OUTGOING,
-    referenceNumber: '421.2/010/SD-01/2024',
-    date: '2024-05-22',
-    receivedDate: '2024-05-22',
-    createdAt: '2024-05-22T10:15:00.000Z',
-    sender: 'SD Negeri 01 Pagi', // Recipient in context of outgoing
-    subject: 'Balasan Permohonan Izin Kunjungan Museum',
-    description: 'Surat balasan menyetujui jadwal kunjungan siswa kelas 5 ke Museum Sejarah.',
-    category: 'Dinas',
-    urgency: UrgencyLevel.MEDIUM,
-    status: MailStatus.ARCHIVED,
-    aiSummary: 'Konfirmasi kunjungan museum untuk kelas 5 disetujui.'
   }
 ];

@@ -320,15 +320,20 @@ const LetterCreator: React.FC = () => {
         @media print {
           @page { 
             size: 215mm 330mm portrait; /* F4 Portrait */
-            margin: 20mm 20mm 20mm 25mm; /* Top, Right, Bottom, Left (Standard Dinas) */
+            margin: 20mm 20mm 20mm 25mm; /* Top, Right, Bottom, Left */
           }
-          body {
-            background: white !important;
+          
+          /* RESET OVERFLOW CONTAINER UTAMA agar halaman bisa memanjang */
+          html, body, #root {
+            height: auto !important;
+            overflow: visible !important;
+            position: static !important;
+            width: 100% !important;
             margin: 0 !important;
           }
-          body * { visibility: hidden; }
           
-          /* Hanya tampilkan kertas surat */
+          /* Hide everything except print area */
+          body * { visibility: hidden; }
           .letter-paper, .letter-paper * { visibility: visible !important; }
           
           .letter-paper { 
@@ -336,13 +341,13 @@ const LetterCreator: React.FC = () => {
             left: 0 !important; 
             top: 0 !important; 
             width: 100% !important;
+            height: auto !important; /* Biarkan tinggi otomatis */
             margin: 0 !important;
-            padding: 0 !important; /* Margin sudah dihandle oleh @page */
-            border: none !important; 
-            box-shadow: none !important; 
+            padding: 0 !important;
             background: transparent !important;
-            height: auto !important; /* Allow growing for multi-page */
-            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+            z-index: 9999 !important;
           }
           
           /* Table styling untuk print */

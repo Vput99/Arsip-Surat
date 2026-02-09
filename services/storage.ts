@@ -6,6 +6,15 @@ if (isTursoConfigured()) {
   initTables().catch(console.error);
 }
 
+// Interface Staff untuk internal storage
+export interface StaffMember {
+  id: string;
+  category: string;
+  name: string;
+  nip: string;
+  rank: string;
+}
+
 const DEFAULT_CONFIG: SchoolConfig = {
   name: 'SD NEGERI TEMPUREJO 1',
   address: 'Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri',
@@ -37,6 +46,60 @@ const setConnectionStatus = (status: boolean) => {
   }
 };
 
+// --- STAFF MANAGEMENT ---
+let staffListeners: ((staff: StaffMember[]) => void)[] = [];
+
+export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
+  staffListeners.push(onData);
+  
+  const fetchStaff = async () => {
+    if (!turso) return;
+    try {
+      const rs = await turso.execute("SELECT * FROM staff ORDER BY createdAt ASC");
+      const staff = rs.rows.map(row => ({ ...row } as unknown as StaffMember));
+      onData(staff);
+      setConnectionStatus(true);
+    } catch (e) {
+      setConnectionStatus(false);
+    }
+  };
+
+  fetchStaff();
+  const interval = setInterval(fetchStaff, 10000);
+  return () => {
+    clearInterval(interval);
+    staffListeners = staffListeners.filter(l => l !== onData);
+  };
+};
+
+export const saveStaff = async (member: StaffMember): Promise<void> => {
+  if (!turso) return;
+  try {
+    await turso.execute({
+      sql: `INSERT OR REPLACE INTO staff (id, category, name, nip, rank, createdAt) 
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [member.id, member.category, member.name, member.nip, member.rank, new Date().toISOString()]
+    });
+    setConnectionStatus(true);
+  } catch (e) {
+    setConnectionStatus(false);
+  }
+};
+
+export const deleteStaff = async (id: string): Promise<void> => {
+  if (!turso) return;
+  try {
+    await turso.execute({
+      sql: "DELETE FROM staff WHERE id = ?",
+      args: [id]
+    });
+    setConnectionStatus(true);
+  } catch (e) {
+    setConnectionStatus(false);
+  }
+};
+
+// --- MAIL & CONFIG (KEEP EXISTING) ---
 const getLocalMails = (): Mail[] => {
   try {
     const saved = localStorage.getItem('OFFLINE_MAILS');
@@ -187,11 +250,9 @@ export const deleteMail = async (id: string): Promise<void> => {
 };
 
 export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
-  // 1. Local Update (Cepat)
   localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
   configListeners.forEach(l => l(config));
 
-  // 2. Turso Sync
   if (turso) {
     try {
       await turso.execute({
@@ -206,12 +267,8 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
       });
       setConnectionStatus(true);
     } catch (e: any) {
-      console.error("Database Save Error:", e.message);
       setConnectionStatus(false);
-      // Jika error karena kolom tidak ada, inisialisasi ulang tabel
-      if (e.message.includes("no such column") || e.message.includes("has no column")) {
-        await initTables();
-      }
+      if (e.message.includes("no such column")) await initTables();
       throw new Error(`Gagal menyimpan ke database cloud: ${e.message}`);
     }
   }

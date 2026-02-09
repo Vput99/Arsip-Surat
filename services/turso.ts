@@ -48,12 +48,18 @@ export const initTables = async () => {
         headerLine2 TEXT,
         logoUrl TEXT,
         logoDaerahUrl TEXT
+      )`,
+      `CREATE TABLE IF NOT EXISTS staff (
+        id TEXT PRIMARY KEY,
+        category TEXT,
+        name TEXT,
+        nip TEXT,
+        rank TEXT,
+        createdAt TEXT
       )`
     ], "write");
 
     // 2. Patching Kolom Baru (Migration)
-    // SQLite tidak mendukung ADD COLUMN IF NOT EXISTS secara langsung, 
-    // maka kita coba satu per satu dalam try-catch
     try {
       await turso.execute("ALTER TABLE school_config ADD COLUMN principalName TEXT");
     } catch (e) { /* Kolom mungkin sudah ada */ }

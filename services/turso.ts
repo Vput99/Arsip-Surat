@@ -1,11 +1,13 @@
 import { createClient } from "@libsql/client/web";
 
 // Menggunakan Token yang diberikan sebagai fallback jika environment variable kosong
+// Dalam Vite, process.env.VAR diganti dengan string literal oleh 'define' di vite.config.ts.
+// Jika tidak diganti (karena undefined), kita gunakan operator OR.
 const rawUrl = process.env.TURSO_DATABASE_URL || "libsql://arsip-surat-vput99.aws-ap-northeast-1.turso.io";
 const authToken = process.env.TURSO_AUTH_TOKEN || "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1M2JmYzBmYy01Yzc1LTQ0MTktYmIzNi0zM2RkNTMxYzFmZDQiLCJpYXQiOjE3NzA1MTU2MjcsInJpZCI6ImZjMzE2ZDVjLTlhYjAtNDY2ZC1hMGUyLTJjYmQ3MzZiYzIxMyJ9.5qtEGpdmXXQy4mpFWmUNmu_TVWTqs67UiCZrwJZwsl9YPG5zTUvmyFPjCmYpgqavrzAPEzi3gT6ZgV1NFX3tDQ";
 
 // Penting: Browser SDK memerlukan protokol https:// (bukan libsql://)
-const url = rawUrl.startsWith("libsql://") 
+const url = rawUrl && rawUrl.startsWith("libsql://") 
   ? rawUrl.replace("libsql://", "https://") 
   : rawUrl;
 
@@ -25,8 +27,6 @@ export const initTables = async () => {
   }
 
   try {
-    console.log(`Mencoba koneksi ke Turso: ${url}`);
-    
     // Tes koneksi sederhana
     await turso.execute("SELECT 1");
     
@@ -56,7 +56,9 @@ export const initTables = async () => {
         headerLine1 TEXT,
         headerLine2 TEXT,
         logoUrl TEXT,
-        logoDaerahUrl TEXT
+        logoDaerahUrl TEXT,
+        principalName TEXT,
+        principalNip TEXT
       )`
     ], "write");
     
@@ -65,13 +67,8 @@ export const initTables = async () => {
     const errorMsg = e instanceof Error ? e.message : String(e);
     console.error("Koneksi Turso Gagal:", errorMsg);
     
-    if (errorMsg.includes("Failed to fetch")) {
-      console.error(
-        "DIAGNOSA ERROR:\n" +
-        "1. Pastikan Database Turso anda berstatus 'Active'.\n" +
-        "2. Jika menggunakan Vercel, pastikan TURSO_AUTH_TOKEN sudah dimasukkan di Environment Variables.\n" +
-        "3. Token JWT yang anda berikan telah dipasang sebagai fallback."
-      );
+    if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError")) {
+       console.log("Mode Offline aktif. Aplikasi akan menggunakan LocalStorage.");
     }
   }
 };

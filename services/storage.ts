@@ -15,7 +15,9 @@ const DEFAULT_CONFIG: SchoolConfig = {
   headerLine1: 'PEMERINTAH KOTA KEDIRI',
   headerLine2: 'DINAS PENDIDIKAN',
   logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg',
-  logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png'
+  logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png',
+  principalName: 'Nita Ekaningkarti Adji, S.Pd',
+  principalNip: '19860213 201409 2 002'
 };
 
 // --- CONNECTION STATE MANAGEMENT ---
@@ -215,11 +217,12 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
     try {
       await turso.execute({
         sql: `INSERT OR REPLACE INTO school_config (
-          id, name, address, email, headerLine1, headerLine2, logoUrl, logoDaerahUrl
-        ) VALUES ('main_settings', ?, ?, ?, ?, ?, ?, ?)`,
+          id, name, address, email, headerLine1, headerLine2, logoUrl, logoDaerahUrl, principalName, principalNip
+        ) VALUES ('main_settings', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           config.name, config.address, config.email, config.headerLine1, 
-          config.headerLine2, config.logoUrl, config.logoDaerahUrl
+          config.headerLine2, config.logoUrl, config.logoDaerahUrl,
+          config.principalName, config.principalNip
         ]
       });
       setConnectionStatus(true);

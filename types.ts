@@ -57,4 +57,6 @@ export interface SchoolConfig {
   headerLine2: string; // e.g. DINAS PENDIDIKAN
   logoUrl: string; // Logo Sekolah (Kanan)
   logoDaerahUrl: string; // Logo Daerah (Kiri)
+  principalName: string; // Nama Kepala Sekolah Default
+  principalNip: string; // NIP Kepala Sekolah Default
 }

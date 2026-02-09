@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2, QrCode, Key } from 'lucide-react';
+import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2, QrCode, Key, AlertTriangle } from 'lucide-react';
 import { LETTER_TEMPLATES } from '../constants';
 import { subscribeToConfig, saveMail } from '../services/storage';
 import { Mail, MailType, MailStatus, UrgencyLevel, SchoolConfig } from '../types';
@@ -126,16 +126,23 @@ const LetterCreator: React.FC = () => {
     date: new Date().toISOString().split('T')[0],
     recipient: '',
     signatureTitle: 'Kepala Sekolah',
-    signerName: '( Nama Kepala Sekolah )',
-    signerNip: '...................................',
+    signerName: '',
+    signerNip: '',
     content: LETTER_TEMPLATES[0].content
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
+      // Sinkronkan Nama dan NIP dari config sekolah saat pertama kali dimuat
+      setFormData(prev => ({
+        ...prev,
+        signerName: prev.signerName || `( ${newConfig.principalName} )`,
+        signerNip: prev.signerNip || newConfig.principalNip
+      }));
     });
     return () => unsubscribe();
   }, []);
@@ -151,8 +158,8 @@ const LetterCreator: React.FC = () => {
         ...prev, 
         content: template.content,
         signatureTitle: isMutasiKeluar ? 'Kepala Sekolah,' : (template.signatureTitle || 'Kepala Sekolah'),
-        signerName: isMutasiKeluar ? '( ........................................... )' : '( Nama Kepala Sekolah )',
-        signerNip: isMutasiKeluar ? '...........................................' : '...................................'
+        signerName: isMutasiKeluar ? '( ........................................... )' : `( ${config?.principalName || 'Nama Kepala Sekolah'} )`,
+        signerNip: isMutasiKeluar ? '...........................................' : (config?.principalNip || '...................................')
       }));
     }
   };
@@ -160,6 +167,7 @@ const LetterCreator: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setIsSaved(false);
+    setSaveError(null);
   };
 
   const handlePrint = () => {
@@ -168,6 +176,7 @@ const LetterCreator: React.FC = () => {
 
   const handleSaveToOutbox = async () => {
     setIsSaving(true);
+    setSaveError(null);
     try {
       const newMail: Mail = {
         id: Date.now().toString(),
@@ -189,8 +198,13 @@ const LetterCreator: React.FC = () => {
       await saveMail(newMail);
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (e) {
-      alert('Gagal menyimpan surat.');
+    } catch (e: any) {
+      console.error(e);
+      if (e.message && e.message.includes("Penyimpanan lokal penuh")) {
+        setSaveError("Penyimpanan Browser Penuh! Hapus arsip lama.");
+      } else {
+        setSaveError("Gagal menyimpan surat. Periksa koneksi atau memori.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -221,22 +235,29 @@ const LetterCreator: React.FC = () => {
           <h2 className="text-xl font-extrabold text-slate-800">Buat Surat</h2>
           <p className="text-slate-500 text-sm">Pilih template dan edit surat dengan mudah.</p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
-          <button 
-            onClick={handleSaveToOutbox}
-            disabled={isSaving}
-            className={`flex-1 md:flex-none flex items-center justify-center px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${isSaved ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-          >
-            {isSaving ? <Loader2 size={18} className="animate-spin mr-2"/> : (isSaved ? <CheckCircle2 size={18} className="mr-2"/> : <Save size={18} className="mr-2"/>)}
-            {isSaved ? 'Tersimpan' : 'Simpan ke Arsip'}
-          </button>
-          <button 
-            onClick={handlePrint}
-            className="flex-1 md:flex-none flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm"
-          >
-            <Printer size={18} className="mr-2"/>
-            Cetak / PDF
-          </button>
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto items-end">
+          {saveError && (
+             <div className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-2 rounded-lg flex items-center mb-2 md:mb-0">
+               <AlertTriangle size={14} className="mr-1"/> {saveError}
+             </div>
+          )}
+          <div className="flex gap-2 w-full md:w-auto">
+            <button 
+              onClick={handleSaveToOutbox}
+              disabled={isSaving}
+              className={`flex-1 md:flex-none flex items-center justify-center px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${isSaved ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            >
+              {isSaving ? <Loader2 size={18} className="animate-spin mr-2"/> : (isSaved ? <CheckCircle2 size={18} className="mr-2"/> : <Save size={18} className="mr-2"/>)}
+              {isSaved ? 'Tersimpan' : 'Simpan ke Arsip'}
+            </button>
+            <button 
+              onClick={handlePrint}
+              className="flex-1 md:flex-none flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm"
+            >
+              <Printer size={18} className="mr-2"/>
+              Cetak / PDF
+            </button>
+          </div>
         </div>
       </div>
 

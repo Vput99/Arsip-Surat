@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Upload, School, Loader2, Info, Building2 } from 'lucide-react';
+import { Save, Upload, School, Loader2, Info, Building2, UserCircle } from 'lucide-react';
 import { subscribeToConfig, saveSchoolConfig } from '../services/storage';
 import { SchoolConfig } from '../types';
 
@@ -45,7 +45,7 @@ const Settings: React.FC = () => {
       await saveSchoolConfig(config);
       setMessage({ text: 'Pengaturan tersimpan ke Database', type: 'success' });
     } catch {
-      setMessage({ text: 'Gagal menyimpan. Periksa config Firebase.', type: 'error' });
+      setMessage({ text: 'Gagal menyimpan. Periksa config database.', type: 'error' });
     } finally {
       setLoading(false);
       setTimeout(() => setMessage({ text: '', type: '' }), 3000);
@@ -123,6 +123,38 @@ const Settings: React.FC = () => {
                     </label>
                   </div>
                   <span className="text-[10px] text-slate-400">Klik untuk ubah</span>
+                </div>
+             </div>
+           </div>
+
+           <div className="h-px bg-slate-100 w-full my-6"></div>
+
+           {/* Principal Info Section */}
+           <div>
+             <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+               <UserCircle size={18} className="text-indigo-600"/>
+               Pejabat Penanda Tangan (Default)
+             </h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Nama Lengkap (Gelar)</label>
+                  <input 
+                    name="principalName" 
+                    value={config.principalName} 
+                    onChange={handleChange} 
+                    placeholder="Contoh: Nita Ekaningkarti Adji, S.Pd"
+                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-800 transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">NIP</label>
+                  <input 
+                    name="principalNip" 
+                    value={config.principalNip} 
+                    onChange={handleChange} 
+                    placeholder="Contoh: 19860213 201409 2 002"
+                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-800 transition-all text-sm"
+                  />
                 </div>
              </div>
            </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Printer, Users, Plus, Trash2, Calendar, Settings2, Loader2, Check, Info, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Save } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, saveStaff, deleteStaff, StaffMember } from '../services/storage';
 import { SchoolConfig } from '../types';
@@ -19,12 +19,20 @@ const AttendanceCreator: React.FC = () => {
   
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Ref untuk melacak apakah pengguna sedang mengetik
+  const isEditingRef = useRef(false);
 
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig(setConfig);
+    
+    // Hanya update data dari database jika pengguna TIDAK sedang mengetik
     const unsubscribeStaff = subscribeToStaff((data) => {
-      setAllStaff(data);
+      if (!isEditingRef.current) {
+        setAllStaff(data);
+      }
     });
+    
     return () => {
       unsubscribeConfig();
       unsubscribeStaff();
@@ -102,6 +110,7 @@ const AttendanceCreator: React.FC = () => {
     else if (currentStatus === 'S') nextStatus = 'I';
     else if (currentStatus === 'I') nextStatus = 'A';
     else if (currentStatus === 'A') nextStatus = 'C';
+    else if (currentStatus === 'C') nextStatus = 'DL';
     else nextStatus = ''; 
 
     setAttendance({ ...attendance, [key]: nextStatus });
@@ -114,12 +123,13 @@ const AttendanceCreator: React.FC = () => {
       case 'I': return <span className="text-blue-600 font-bold text-[7.5pt] leading-none">I</span>;
       case 'A': return <span className="text-rose-600 font-bold text-[7.5pt] leading-none">A</span>;
       case 'C': return <span className="text-emerald-600 font-bold text-[7.5pt] leading-none">C</span>;
+      case 'DL': return <span className="text-violet-600 font-bold text-[7.5pt] leading-none">DL</span>;
       default: return null;
     }
   };
 
   const calculateRecap = (staffId: string) => {
-    let s = 0, i = 0, a = 0, c = 0;
+    let s = 0, i = 0, a = 0, c = 0, dl = 0;
     let workingDays = 0;
     dateRange.forEach(day => {
       if (!isDayOff(day)) {
@@ -130,9 +140,10 @@ const AttendanceCreator: React.FC = () => {
         else if (statusIn === 'I' || statusOut === 'I') i++;
         else if (statusIn === 'A' || statusOut === 'A') a++;
         else if (statusIn === 'C' || statusOut === 'C') c++;
+        else if (statusIn === 'DL' || statusOut === 'DL') dl++;
       }
     });
-    return { s, i, a, c, total: workingDays - (s + i + a + c) };
+    return { s, i, a, c, dl, total: workingDays - (s + i + a + c + dl) };
   };
 
   const openEditor = (cat: AttendanceCategory) => {
@@ -255,13 +266,43 @@ const AttendanceCreator: React.FC = () => {
                 <div key={staff.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-xl border border-slate-100 group">
                   <div className="md:col-span-1 text-xs font-bold text-slate-400 text-center">#{idx + 1}</div>
                   <div className="md:col-span-4">
-                    <input placeholder="Nama Lengkap" value={staff.name} onBlur={(e) => handleStaffChange(staff.id, 'name', e.target.value)} onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, name: e.target.value} : s))} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+                    <input 
+                      placeholder="Nama Lengkap" 
+                      value={staff.name} 
+                      onFocus={() => isEditingRef.current = true}
+                      onBlur={(e) => { 
+                        isEditingRef.current = false; 
+                        handleStaffChange(staff.id, 'name', e.target.value) 
+                      }} 
+                      onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, name: e.target.value} : s))} 
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                    />
                   </div>
                   <div className="md:col-span-3">
-                    <input placeholder="NIP / ID" value={staff.nip} onBlur={(e) => handleStaffChange(staff.id, 'nip', e.target.value)} onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, nip: e.target.value} : s))} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+                    <input 
+                      placeholder="NIP / ID" 
+                      value={staff.nip} 
+                      onFocus={() => isEditingRef.current = true}
+                      onBlur={(e) => { 
+                        isEditingRef.current = false; 
+                        handleStaffChange(staff.id, 'nip', e.target.value) 
+                      }} 
+                      onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, nip: e.target.value} : s))} 
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                    />
                   </div>
                   <div className="md:col-span-3">
-                    <input placeholder="Jabatan" value={staff.rank} onBlur={(e) => handleStaffChange(staff.id, 'rank', e.target.value)} onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, rank: e.target.value} : s))} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+                    <input 
+                      placeholder="Jabatan" 
+                      value={staff.rank} 
+                      onFocus={() => isEditingRef.current = true}
+                      onBlur={(e) => { 
+                        isEditingRef.current = false; 
+                        handleStaffChange(staff.id, 'rank', e.target.value) 
+                      }} 
+                      onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, rank: e.target.value} : s))} 
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                    />
                   </div>
                   <div className="md:col-span-1 flex justify-center">
                     <button onClick={() => handleRemoveStaff(staff.id)} className="p-2 text-rose-300 hover:text-rose-600 rounded-lg opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
@@ -304,7 +345,7 @@ const AttendanceCreator: React.FC = () => {
                 <th rowSpan={2} className="border border-black p-0.5 w-48">NAMA / NIP</th>
                 <th rowSpan={2} className="border border-black p-0.5 w-24">JABATAN / GOL</th>
                 <th colSpan={daysInMonth} className="border border-black p-0.5">TANGGAL (Atas=Masuk, Bawah=Pulang)</th>
-                <th colSpan={5} className="border border-black p-0.5">REKAP</th>
+                <th colSpan={6} className="border border-black p-0.5">REKAP</th>
               </tr>
               <tr className="bg-slate-50 print:bg-transparent">
                 {dateRange.map(d => (
@@ -316,6 +357,7 @@ const AttendanceCreator: React.FC = () => {
                 <th className="border border-black w-7">I</th>
                 <th className="border border-black w-7">A</th>
                 <th className="border border-black w-7">C</th>
+                <th className="border border-black w-7">DL</th>
                 <th className="border border-black w-10">TOTAL</th>
               </tr>
             </thead>
@@ -346,6 +388,7 @@ const AttendanceCreator: React.FC = () => {
                     <td className="border border-black text-center font-bold">{recap.i || ''}</td>
                     <td className="border border-black text-center font-bold">{recap.a || ''}</td>
                     <td className="border border-black text-center font-bold">{recap.c || ''}</td>
+                    <td className="border border-black text-center font-bold">{recap.dl || ''}</td>
                     <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent">{recap.total}</td>
                   </tr>
                 );

@@ -23,12 +23,12 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
 
       renderedBlocks.push(
         <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-4 break-inside-avoid">
-          <table className="w-full border-collapse border border-black text-[9pt]">
+          <table className="w-full border-collapse border border-black text-[9pt] text-black">
             <thead>
               {hasHeader && (
                 <tr className="bg-slate-50">
                   {tableRows[0].map((cell, idx) => (
-                    <th key={idx} className="border border-black p-1 text-center font-bold uppercase font-serif">{cell.trim()}</th>
+                    <th key={idx} className="border border-black p-1 text-center font-bold uppercase font-serif text-black">{cell.trim()}</th>
                   ))}
                 </tr>
               )}
@@ -37,7 +37,7 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
               {tableRows.slice(hasHeader ? 1 : 0).map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className={`border border-black p-1 font-serif ${cellIdx === 0 ? 'text-center w-8' : ''} ${cellIdx >= 3 && cellIdx <= 5 ? 'text-right' : ''}`}>
+                    <td key={cellIdx} className={`border border-black p-1 font-serif text-black ${cellIdx === 0 ? 'text-center w-8' : ''} ${cellIdx >= 3 && cellIdx <= 5 ? 'text-right' : ''}`}>
                       {cell.trim()}
                     </td>
                   ))}
@@ -67,7 +67,7 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
 
     if (trimmed.startsWith('PASAL')) {
       flushTable();
-      renderedBlocks.push(<div key={`pasal-${index}`} className="mt-6 mb-2 font-bold text-center">{trimmed}</div>);
+      renderedBlocks.push(<div key={`pasal-${index}`} className="mt-6 mb-2 font-bold text-center text-black">{trimmed}</div>);
       return;
     }
 
@@ -79,7 +79,7 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
       const label = columns[0].trim();
       const value = columns[1].trim();
       renderedBlocks.push(
-        <div key={`info-${index}`} className="flex mb-1 pl-4 break-inside-avoid">
+        <div key={`info-${index}`} className="flex mb-1 pl-4 break-inside-avoid text-black">
           <span className="w-[30%] font-serif">{label}</span>
           <span className="w-[2%] font-serif">:</span>
           <span className="flex-1 font-serif font-bold">{value}</span>
@@ -91,7 +91,7 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
          renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
       } else {
          renderedBlocks.push(
-           <p key={`p-${index}`} className={`mb-2 text-justify whitespace-pre-wrap break-inside-avoid font-serif ${isTableTemplate && trimmed.toUpperCase() === trimmed && trimmed.length > 10 ? 'font-bold text-center text-[12pt] mb-4 underline' : ''}`}>
+           <p key={`p-${index}`} className={`mb-2 text-justify whitespace-pre-wrap break-inside-avoid font-serif text-black ${isTableTemplate && trimmed.toUpperCase() === trimmed && trimmed.length > 10 ? 'font-bold text-center text-[12pt] mb-4 underline' : ''}`}>
              {line}
            </p>
          );
@@ -187,46 +187,46 @@ const LetterCreator: React.FC = () => {
              <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan / Deskripsi Pekerjaan</label>
-                   <input name="recipient" value={formData.recipient} onChange={handleInputChange} placeholder="Contoh: Honor Pembimbing Ekstrakurikuler Semester 1" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium" />
+                   <input name="recipient" value={formData.recipient} onChange={handleInputChange} placeholder="Contoh: Honor Pembimbing Ekstrakurikuler Semester 1" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
                 </div>
                 <div>
                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Dokumen</label>
-                   <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium" />
+                   <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
                 </div>
                 <div>
                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Surat (Jika Ada)</label>
-                   <input name="refNumber" value={formData.refNumber} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium" />
+                   <input name="refNumber" value={formData.refNumber} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
                 </div>
              </div>
 
              {isTableTemplate && (
                <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 space-y-3">
                   <label className="block text-[10px] font-black text-amber-600 uppercase tracking-widest">Data Bendahara Sekolah</label>
-                  <input name="signerNameBendahara" placeholder="Nama Bendahara (dengan gelar)" value={formData.signerNameBendahara} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-bold" />
-                  <input name="signerNipBendahara" placeholder="NIP Bendahara" value={formData.signerNipBendahara} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm" />
+                  <input name="signerNameBendahara" placeholder="Nama Bendahara (dengan gelar)" value={formData.signerNameBendahara} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-bold text-slate-800" />
+                  <input name="signerNipBendahara" placeholder="NIP Bendahara" value={formData.signerNipBendahara} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-slate-800" />
                </div>
              )}
 
              <div className="pt-2 border-t border-slate-100 space-y-3">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kepala Sekolah (Penanda Tangan Utama)</label>
                 <div className="grid grid-cols-2 gap-3">
-                   <input name="signerName" value={formData.signerName} onChange={handleInputChange} placeholder="Nama Lengkap" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium" />
-                   <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium" />
+                   <input name="signerName" value={formData.signerName} onChange={handleInputChange} placeholder="Nama Lengkap" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
+                   <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
                 </div>
              </div>
           </div>
           
           <div className="bg-white p-5 rounded-2xl border border-slate-200 flex-1 flex flex-col min-h-[400px]">
              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Editor Tabel (Ubah rincian di sini)</label>
-             <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono text-xs leading-relaxed" />
+             <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono text-xs leading-relaxed text-slate-800" />
           </div>
         </div>
 
         {/* Preview Paper */}
         <div className="w-full lg:w-7/12 bg-slate-200/50 rounded-2xl border border-slate-200 overflow-y-auto p-4 md:p-8 flex justify-center print:p-0 print:m-0 print:bg-white print:block">
-           <div className="letter-paper bg-white w-[215mm] min-h-[330mm] shadow-2xl p-[15mm] mx-auto relative print:shadow-none print:w-full print:p-[10mm] flex flex-col">
+           <div className="letter-paper bg-white w-[215mm] min-h-[330mm] shadow-2xl p-[15mm] mx-auto relative print:shadow-none print:w-full print:p-[10mm] flex flex-col text-black">
               {/* Header / Kop */}
-              <div className="border-b-[4px] border-double border-black pb-4 mb-6 pt-2 grid grid-cols-[80px_1fr_80px] items-center">
+              <div className="border-b-[4px] border-double border-black pb-4 mb-6 pt-2 grid grid-cols-[80px_1fr_80px] items-center text-black">
                  <div className="flex justify-center">
                    {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[18mm] h-auto" alt="Logo Daerah"/>}
                  </div>
@@ -243,14 +243,14 @@ const LetterCreator: React.FC = () => {
 
               {/* Body */}
               <div className="font-serif text-black flex-1 flex flex-col">
-                 <div className="flex-1">
+                 <div className="flex-1 text-black">
                     <SmartContentRenderer text={formData.content} isTableTemplate={isTableTemplate} />
                  </div>
 
                  {/* Tanda Tangan */}
-                 <div className={`mt-10 break-inside-avoid grid ${isTableTemplate ? 'grid-cols-3' : (isMOU ? 'grid-cols-2' : 'grid-cols-1')} gap-4 text-center text-[10pt] font-serif`}>
+                 <div className={`mt-10 break-inside-avoid grid ${isTableTemplate ? 'grid-cols-3' : (isMOU ? 'grid-cols-2' : 'grid-cols-1')} gap-4 text-center text-[10pt] font-serif text-black`}>
                     {isTableTemplate && (
-                      <div className="flex flex-col">
+                      <div className="flex flex-col text-black">
                         <p>&nbsp;</p>
                         <p>Setuju Dibayar,</p>
                         <p>Bendahara Sekolah</p>
@@ -261,7 +261,7 @@ const LetterCreator: React.FC = () => {
                     )}
                     
                     {isMOU && (
-                      <div className="flex flex-col">
+                      <div className="flex flex-col text-black">
                         <p>&nbsp;</p>
                         <p>PIHAK KEDUA,</p>
                         <div className="h-24"></div>
@@ -269,7 +269,7 @@ const LetterCreator: React.FC = () => {
                       </div>
                     )}
 
-                    <div className={`${!isTableTemplate && !isMOU ? 'ml-auto w-1/3' : ''} flex flex-col`}>
+                    <div className={`${!isTableTemplate && !isMOU ? 'ml-auto w-1/3' : ''} flex flex-col text-black`}>
                        <p>Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
                        <p>{isTableTemplate ? 'Mengetahui,' : ''}</p>
                        <p>{formData.signatureTitle}</p>
@@ -279,7 +279,7 @@ const LetterCreator: React.FC = () => {
                     </div>
                     
                     {isTableTemplate && (
-                      <div className="flex flex-col">
+                      <div className="flex flex-col text-black">
                         <p>&nbsp;</p>
                         <p>Telah Menerima,</p>
                         <p>Penerima / Pelatih</p>

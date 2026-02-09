@@ -304,7 +304,7 @@ const AttendanceCreator: React.FC = () => {
       <div className="flex justify-center overflow-x-auto p-4 bg-slate-200/30 rounded-3xl border border-slate-200 print:p-0 print:bg-white print:block">
         <div className="attendance-paper bg-white w-[330mm] min-h-[215mm] p-[10mm] shadow-2xl print:shadow-none print:p-0 print:w-full print:min-h-0 text-black">
           {/* Header Kop */}
-          <div className="border-b-[3px] border-double border-black pb-2 mb-3 grid grid-cols-[80px_1fr_80px] items-center text-black">
+          <div className="border-b-[3px] border-black pb-2 mb-3 grid grid-cols-[80px_1fr_80px] items-center text-black">
              <div className="flex justify-center">
                {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[18mm] h-auto" alt="Logo Daerah"/>}
              </div>
@@ -328,7 +328,7 @@ const AttendanceCreator: React.FC = () => {
 
           {view === 'recap' ? (
              // --- TAMPILAN REKAP ---
-             <table className="w-full border-collapse border border-black text-[9pt] font-serif text-black">
+             <table className="w-full border-collapse text-[9pt] font-serif text-black">
                <thead>
                  <tr className="bg-slate-50 print:bg-transparent">
                    <th rowSpan={2} className="border border-black p-1 w-10">NO</th>
@@ -350,7 +350,7 @@ const AttendanceCreator: React.FC = () => {
                  {currentStaffList.map((staff, idx) => {
                    const r = calculateRecap(staff.id);
                    return (
-                     <tr key={staff.id} className="h-8">
+                     <tr key={staff.id}>
                        <td className="border border-black text-center">{idx + 1}</td>
                        <td className="border border-black px-2 py-1 align-middle">
                          <div className="font-bold text-[9pt] leading-tight">{staff.name || '...'}</div>
@@ -371,7 +371,7 @@ const AttendanceCreator: React.FC = () => {
              </table>
           ) : (
              // --- TAMPILAN ABSENSI HARIAN (EDITOR) ---
-             <table className="w-full border-collapse border border-black text-[8pt] font-serif table-fixed text-black">
+             <table className="w-full border-collapse text-[8pt] font-serif table-fixed text-black">
               <colgroup>
                 <col className="w-8" />
                 <col className="w-[180px]" />
@@ -405,7 +405,7 @@ const AttendanceCreator: React.FC = () => {
                 {currentStaffList.map((staff, sIdx) => {
                   const recap = calculateRecap(staff.id);
                   return (
-                    <tr key={staff.id} className="h-10">
+                    <tr key={staff.id}>
                       <td className="border border-black text-center text-black">{sIdx + 1}</td>
                       <td className="border border-black px-1 py-1 leading-tight overflow-hidden align-middle">
                         <div className="font-bold text-black text-[8pt] whitespace-normal leading-tight mb-0.5">{staff.name || '...'}</div>
@@ -413,12 +413,12 @@ const AttendanceCreator: React.FC = () => {
                       </td>
                       <td className="border border-black text-center text-[7pt] leading-tight px-0.5 text-black align-middle whitespace-normal">{staff.rank || '-'}</td>
                       {dateRange.map(d => (
-                        <td key={`cell-${d}`} className={`border border-black p-0 relative ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
-                           <div className="flex flex-col h-full min-h-[32px]">
-                              <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
+                        <td key={`cell-${d}`} className={`border border-black p-0 relative align-top ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
+                           <div className="flex flex-col h-full w-full">
+                              <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black min-h-[16px] transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
                                 {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
                               </div>
-                              <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
+                              <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center min-h-[16px] transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
                                 {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
                               </div>
                            </div>
@@ -455,7 +455,7 @@ const AttendanceCreator: React.FC = () => {
         @media print {
           @page { 
             size: 330mm 215mm; /* F4 Landscape */
-            margin: 5mm 10mm; /* Atas-Bawah 5mm, Kiri-Kanan 10mm */
+            margin: 5mm 10mm; 
           }
           body * { visibility: hidden; }
           .attendance-paper, .attendance-paper * { visibility: visible !important; }
@@ -471,8 +471,11 @@ const AttendanceCreator: React.FC = () => {
           }
           .bg-rose-100 { background-color: #fee2e2 !important; -webkit-print-color-adjust: exact; }
           table { width: 100% !important; border-collapse: collapse !important; }
-          th, td { border: 0.5pt solid black !important; }
-          .border-b { border-bottom: 0.5pt solid black !important; }
+          
+          /* FIXED: Force borders to be 1px solid black */
+          th, td { border: 1px solid #000 !important; }
+          .border-b { border-bottom: 1px solid #000 !important; }
+          
           .break-inside-avoid { break-inside: avoid !important; }
         }
       `}</style>

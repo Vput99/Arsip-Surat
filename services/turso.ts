@@ -55,6 +55,7 @@ export const initTables = async () => {
         name TEXT,
         nip TEXT,
         rank TEXT,
+        orderIndex INTEGER DEFAULT 9999,
         createdAt TEXT
       )`
     ], "write");
@@ -66,6 +67,11 @@ export const initTables = async () => {
 
     try {
       await turso.execute("ALTER TABLE school_config ADD COLUMN principalNip TEXT");
+    } catch (e) { /* Kolom mungkin sudah ada */ }
+
+    // Migrasi kolom orderIndex untuk tabel staff
+    try {
+      await turso.execute("ALTER TABLE staff ADD COLUMN orderIndex INTEGER DEFAULT 9999");
     } catch (e) { /* Kolom mungkin sudah ada */ }
     
     console.log("Database Turso: Inisialisasi & Migrasi Berhasil.");

@@ -13,6 +13,8 @@ export interface StaffMember {
   name: string;
   nip: string;
   rank: string;
+  orderIndex?: number; // Field baru untuk menata urutan
+  createdAt?: string;
 }
 
 const DEFAULT_CONFIG: SchoolConfig = {
@@ -55,7 +57,8 @@ export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
   const fetchStaff = async () => {
     if (!turso) return;
     try {
-      const rs = await turso.execute("SELECT * FROM staff ORDER BY createdAt ASC");
+      // ORDER BY orderIndex ASC first, then createdAt for fallback
+      const rs = await turso.execute("SELECT * FROM staff ORDER BY orderIndex ASC, createdAt ASC");
       const staff = rs.rows.map(row => ({ ...row } as unknown as StaffMember));
       onData(staff);
       setConnectionStatus(true);
@@ -74,11 +77,16 @@ export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
 
 export const saveStaff = async (member: StaffMember): Promise<void> => {
   if (!turso) return;
+  
+  // Gunakan createdAt yang lama jika ada, agar posisi tidak berubah jika orderIndex sama
+  const createdTime = member.createdAt || new Date().toISOString();
+  const orderIdx = member.orderIndex !== undefined ? member.orderIndex : 9999;
+
   try {
     await turso.execute({
-      sql: `INSERT OR REPLACE INTO staff (id, category, name, nip, rank, createdAt) 
-            VALUES (?, ?, ?, ?, ?, ?)`,
-      args: [member.id, member.category, member.name, member.nip, member.rank, new Date().toISOString()]
+      sql: `INSERT OR REPLACE INTO staff (id, category, name, nip, rank, orderIndex, createdAt) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [member.id, member.category, member.name, member.nip, member.rank, orderIdx, createdTime]
     });
     setConnectionStatus(true);
   } catch (e) {

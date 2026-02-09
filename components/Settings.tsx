@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, School, Loader2, Info, Building2, UserCircle, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, Filter, UserCheck, Briefcase } from 'lucide-react';
+import { Save, Upload, School, Loader2, Info, Building2, UserCircle, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, Filter, UserCheck, Briefcase, ListOrdered } from 'lucide-react';
 import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember } from '../services/storage';
 import { SchoolConfig } from '../types';
 
@@ -87,24 +87,25 @@ const Settings: React.FC = () => {
   // --- STAFF FUNCTIONS ---
   const handleAddStaff = async () => {
     setLoading(true);
+    const existingCount = allStaff.filter(s => s.category === staffCategory).length;
     const newMember: StaffMember = {
       id: `${staffCategory}-${Date.now()}`,
       category: staffCategory,
       name: '',
       nip: '',
-      rank: ''
+      rank: '',
+      orderIndex: existingCount + 1, // Auto increment order
+      createdAt: new Date().toISOString()
     };
     await saveStaff(newMember);
     setLoading(false);
   };
 
-  const handleStaffChange = async (id: string, field: keyof StaffMember, value: string) => {
+  const handleStaffChange = async (id: string, field: keyof StaffMember, value: string | number) => {
     const member = allStaff.find(s => s.id === id);
     if (member) {
       const updatedMember = { ...member, [field]: value };
-      setAllStaff(allStaff.map(s => s.id === id ? updatedMember : s)); // Optimistic UI
-      // Kita tidak save ke DB di sini agar tidak spam request saat ngetik,
-      // user harus klik tombol Save manual per baris atau logic debounce (tapi user minta tombol save).
+      setAllStaff(allStaff.map(s => s.id === id ? updatedMember : s)); 
     }
   };
 
@@ -283,7 +284,7 @@ const Settings: React.FC = () => {
            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
               <div>
                 <h3 className="text-lg font-black text-slate-800">Manajemen Personil</h3>
-                <p className="text-slate-500 text-sm">Tambah, edit, atau hapus data Guru & Pegawai.</p>
+                <p className="text-slate-500 text-sm">Atur urutan dan data Guru & Pegawai.</p>
               </div>
               <button onClick={handleAddStaff} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all">
                 {loading ? <Loader2 className="animate-spin" size={18}/> : <Plus size={18} />} Tambah Personil
@@ -331,12 +332,28 @@ const Settings: React.FC = () => {
                filteredStaff.map((staff, idx) => (
                  <div key={staff.id} className="group bg-white border border-slate-200 rounded-xl p-4 transition-all hover:shadow-lg hover:border-indigo-200">
                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                      <div className="md:col-span-4 space-y-1">
+                      
+                      {/* No Urut Field */}
+                      <div className="md:col-span-1 space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
+                          <ListOrdered size={10} /> No
+                        </label>
+                        <input 
+                          type="number"
+                          value={staff.orderIndex || 99} 
+                          onFocus={() => isEditingRef.current = true}
+                          onBlur={(e) => handleStaffChange(staff.id, 'orderIndex', parseInt(e.target.value))}
+                          onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, orderIndex: parseInt(e.target.value)} : s))}
+                          className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-center focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3 space-y-1">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
                         <input 
                           value={staff.name} 
                           onFocus={() => isEditingRef.current = true}
-                          onBlur={(e) => handleStaffChange(staff.id, 'name', e.target.value)} // Update state only
+                          onBlur={(e) => handleStaffChange(staff.id, 'name', e.target.value)} 
                           onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, name: e.target.value} : s))}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                           placeholder="Nama Personil"

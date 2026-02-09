@@ -84,16 +84,15 @@ const AttendanceCreator: React.FC = () => {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case 'P': return <span className="text-indigo-600 font-bold text-[8pt] italic print:text-black">✓</span>;
-      case 'S': return <span className="text-amber-600 font-bold text-[7pt]">S</span>;
-      case 'I': return <span className="text-blue-600 font-bold text-[7pt]">I</span>;
-      case 'A': return <span className="text-rose-600 font-bold text-[7pt]">A</span>;
-      case 'C': return <span className="text-emerald-600 font-bold text-[7pt]">C</span>;
+      case 'P': return <span className="text-indigo-600 font-bold text-[8.5pt] italic print:text-black leading-none">✓</span>;
+      case 'S': return <span className="text-amber-600 font-bold text-[7.5pt] leading-none">S</span>;
+      case 'I': return <span className="text-blue-600 font-bold text-[7.5pt] leading-none">I</span>;
+      case 'A': return <span className="text-rose-600 font-bold text-[7.5pt] leading-none">A</span>;
+      case 'C': return <span className="text-emerald-600 font-bold text-[7.5pt] leading-none">C</span>;
       default: return null;
     }
   };
 
-  // Menghitung rekapitulasi per staf
   const calculateRecap = (staffId: string) => {
     let s = 0, i = 0, a = 0, c = 0;
     let workingDays = 0;
@@ -101,8 +100,6 @@ const AttendanceCreator: React.FC = () => {
     dateRange.forEach(day => {
       if (!isDayOff(day)) {
         workingDays++;
-        // Kita hitung satu hari jika salah satu (Masuk/Pulang) ditandai S/I/A/C
-        // Atau jika keduanya konsisten. Biasanya S/I/A/C berlaku seharian.
         const statusIn = attendance[`${staffId}-${day}-in`];
         const statusOut = attendance[`${staffId}-${day}-out`];
         
@@ -155,9 +152,9 @@ const AttendanceCreator: React.FC = () => {
           </div>
 
           <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-            <div className="flex gap-2 text-blue-700 mb-2">
+            <div className="flex gap-2 text-blue-700">
               <Info size={16} className="shrink-0" />
-              <p className="text-[10px] font-bold leading-tight">Klik kolom <b>M</b> (Masuk) atau <b>P</b> (Pulang) untuk mengisi status hadir.</p>
+              <p className="text-[10px] font-bold leading-tight">Klik sel tanggal: <b>Atas</b> untuk Masuk, <b>Bawah</b> untuk Pulang.</p>
             </div>
           </div>
 
@@ -190,33 +187,16 @@ const AttendanceCreator: React.FC = () => {
               <div key={staff.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
                 <div className="md:col-span-1 text-xs font-bold text-slate-400 text-center">#{idx + 1}</div>
                 <div className="md:col-span-4">
-                  <input 
-                    placeholder="Nama & Gelar" 
-                    value={staff.name} 
-                    onChange={(e) => handleStaffChange(staff.id, 'name', e.target.value)}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none"
-                  />
+                  <input placeholder="Nama & Gelar" value={staff.name} onChange={(e) => handleStaffChange(staff.id, 'name', e.target.value)} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none" />
                 </div>
                 <div className="md:col-span-3">
-                  <input 
-                    placeholder="NIP" 
-                    value={staff.nip} 
-                    onChange={(e) => handleStaffChange(staff.id, 'nip', e.target.value)}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none"
-                  />
+                  <input placeholder="NIP" value={staff.nip} onChange={(e) => handleStaffChange(staff.id, 'nip', e.target.value)} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none" />
                 </div>
                 <div className="md:col-span-3">
-                  <input 
-                    placeholder="Pangkat/Gol" 
-                    value={staff.rank} 
-                    onChange={(e) => handleStaffChange(staff.id, 'rank', e.target.value)}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none"
-                  />
+                  <input placeholder="Pangkat/Gol" value={staff.rank} onChange={(e) => handleStaffChange(staff.id, 'rank', e.target.value)} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none" />
                 </div>
                 <div className="md:col-span-1 flex justify-center">
-                  <button onClick={() => handleRemoveStaff(staff.id)} className="p-2 text-rose-400 hover:text-rose-600 rounded-lg">
-                    <Trash2 size={16} />
-                  </button>
+                  <button onClick={() => handleRemoveStaff(staff.id)} className="p-2 text-rose-400 hover:text-rose-600 rounded-lg"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
@@ -248,62 +228,58 @@ const AttendanceCreator: React.FC = () => {
             <p className="text-[9pt] font-serif uppercase">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
           </div>
 
-          <table className="w-full border-collapse border border-black text-[6.5pt] font-serif">
+          <table className="w-full border-collapse border border-black text-[7pt] font-serif">
             <thead>
               <tr className="bg-slate-50 print:bg-transparent">
-                <th rowSpan={3} className="border border-black p-0.5 w-6">NO</th>
-                <th rowSpan={3} className="border border-black p-0.5 w-40">NAMA / NIP</th>
-                <th rowSpan={3} className="border border-black p-0.5 w-20">PANGKAT / GOL</th>
-                <th colSpan={daysInMonth * 2} className="border border-black p-0.5">TANGGAL</th>
+                <th rowSpan={2} className="border border-black p-0.5 w-6">NO</th>
+                <th rowSpan={2} className="border border-black p-0.5 w-48">NAMA / NIP</th>
+                <th rowSpan={2} className="border border-black p-0.5 w-24">PANGKAT / GOL</th>
+                <th colSpan={daysInMonth} className="border border-black p-0.5">TANGGAL (M=Atas, P=Bawah)</th>
                 <th colSpan={5} className="border border-black p-0.5">REKAP</th>
               </tr>
               <tr className="bg-slate-50 print:bg-transparent">
                 {dateRange.map(d => (
-                  <th key={d} colSpan={2} className={`border border-black p-0.5 text-[7pt] ${isDayOff(d) ? 'bg-rose-100 text-rose-600 print:bg-rose-200' : ''}`}>
+                  <th key={d} className={`border border-black p-0.5 text-[7pt] w-7 h-8 ${isDayOff(d) ? 'bg-rose-100 text-rose-600 print:bg-rose-200' : ''}`}>
                     {d}
                   </th>
                 ))}
-                <th rowSpan={2} className="border border-black w-6">S</th>
-                <th rowSpan={2} className="border border-black w-6">I</th>
-                <th rowSpan={2} className="border border-black w-6">A</th>
-                <th rowSpan={2} className="border border-black w-6">C</th>
-                <th rowSpan={2} className="border border-black w-10">TOTAL</th>
-              </tr>
-              <tr className="bg-slate-50 print:bg-transparent">
-                {dateRange.map(d => (
-                  <React.Fragment key={`sub-${d}`}>
-                    <th className={`border border-black w-3 p-0 text-[5pt] ${isDayOff(d) ? 'bg-rose-100' : ''}`}>M</th>
-                    <th className={`border border-black w-3 p-0 text-[5pt] ${isDayOff(d) ? 'bg-rose-100' : ''}`}>P</th>
-                  </React.Fragment>
-                ))}
+                <th className="border border-black w-7">S</th>
+                <th className="border border-black w-7">I</th>
+                <th className="border border-black w-7">A</th>
+                <th className="border border-black w-7">C</th>
+                <th className="border border-black w-10">TOTAL</th>
               </tr>
             </thead>
             <tbody>
               {staffList.map((staff, sIdx) => {
                 const recap = calculateRecap(staff.id);
                 return (
-                  <tr key={staff.id} className="h-8">
+                  <tr key={staff.id} className="h-12">
                     <td className="border border-black text-center">{sIdx + 1}</td>
                     <td className="border border-black px-1 leading-tight">
-                      <div className="font-bold">{staff.name || '...'}</div>
-                      <div className="text-[5.5pt] text-slate-500 print:text-black">NIP. {staff.nip || '...'}</div>
+                      <div className="font-bold text-[8pt]">{staff.name || '...'}</div>
+                      <div className="text-[6pt] text-slate-500 print:text-black">NIP. {staff.nip || '...'}</div>
                     </td>
-                    <td className="border border-black text-center">{staff.rank || '-'}</td>
+                    <td className="border border-black text-center text-[7.5pt]">{staff.rank || '-'}</td>
                     {dateRange.map(d => (
-                      <React.Fragment key={`cell-${d}`}>
-                        <td 
-                          onClick={() => toggleAttendance(staff.id, d, 'in')}
-                          className={`border border-black text-center cursor-pointer hover:bg-slate-50 ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}
-                        >
-                          {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
-                        </td>
-                        <td 
-                          onClick={() => toggleAttendance(staff.id, d, 'out')}
-                          className={`border border-black text-center cursor-pointer hover:bg-slate-50 ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}
-                        >
-                          {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
-                        </td>
-                      </React.Fragment>
+                      <td key={`cell-${d}`} className={`border border-black p-0 relative ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
+                         <div className="flex flex-col h-full min-h-[48px]">
+                            {/* Area Absen Masuk (Atas) */}
+                            <div 
+                              onClick={() => toggleAttendance(staff.id, d, 'in')}
+                              className={`flex-1 flex items-center justify-center border-b border-black/10 cursor-pointer hover:bg-slate-50 transition-colors ${isDayOff(d) ? 'cursor-not-allowed border-none' : ''}`}
+                            >
+                              {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
+                            </div>
+                            {/* Area Absen Pulang (Bawah) */}
+                            <div 
+                              onClick={() => toggleAttendance(staff.id, d, 'out')}
+                              className={`flex-1 flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : ''}`}
+                            >
+                              {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
+                            </div>
+                         </div>
+                      </td>
                     ))}
                     <td className="border border-black text-center font-bold">{recap.s || ''}</td>
                     <td className="border border-black text-center font-bold">{recap.i || ''}</td>
@@ -316,13 +292,13 @@ const AttendanceCreator: React.FC = () => {
             </tbody>
           </table>
 
-          <div className="mt-6 grid grid-cols-2 gap-20 text-center font-serif text-[9pt]">
+          <div className="mt-6 grid grid-cols-2 gap-20 text-center font-serif text-[9.5pt]">
             <div></div>
             <div className="flex flex-col">
               <p>Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
               <p>Kepala Sekolah,</p>
               <div className="h-16"></div>
-              <p className="font-bold underline">{config.principalName}</p>
+              <p className="font-bold underline text-[10pt]">{config.principalName}</p>
               <p>NIP. {config.principalNip}</p>
             </div>
           </div>
@@ -338,6 +314,7 @@ const AttendanceCreator: React.FC = () => {
           .bg-rose-100 { background-color: #fee2e2 !important; -webkit-print-color-adjust: exact; }
           table { width: 100% !important; border-collapse: collapse !important; }
           th, td { border: 0.5pt solid black !important; }
+          .border-b { border-bottom: 0.2pt solid #eee !important; }
         }
       `}</style>
     </div>

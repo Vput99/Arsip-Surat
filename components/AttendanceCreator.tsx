@@ -455,10 +455,12 @@ const AttendanceCreator: React.FC = () => {
       <style>{`
         @media print {
           @page { 
-            size: 330mm 215mm; /* F4 Landscape */
-            margin: 5mm auto; /* Center Horizontal */
+            size: 330mm 215mm landscape; /* Explicitly set landscape F4 */
+            margin: 0mm; 
           }
           body { 
+            margin: 0;
+            padding: 0;
             -webkit-print-color-adjust: exact; 
             print-color-adjust: exact;
           }
@@ -467,13 +469,14 @@ const AttendanceCreator: React.FC = () => {
           .attendance-paper { 
             position: absolute !important; 
             left: 0 !important; 
-            right: 0 !important;
             top: 0 !important; 
-            width: 100% !important; 
-            margin: 0 auto !important;
-            padding: 0 !important; 
+            width: 330mm !important; 
+            height: 215mm !important; 
+            margin: 0 !important;
+            padding: 10mm !important; /* Margin aman cetak */
             border: none !important;
             box-shadow: none !important;
+            background: white !important;
           }
           .bg-rose-100 { background-color: #fee2e2 !important; }
           

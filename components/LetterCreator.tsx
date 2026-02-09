@@ -22,13 +22,13 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
       );
 
       renderedBlocks.push(
-        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-4 break-inside-avoid">
-          <table className="w-full border-collapse border border-black text-[9pt] text-black">
+        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-6 break-inside-avoid">
+          <table className="w-full border-collapse border border-black text-[11pt] text-black">
             <thead>
               {hasHeader && (
-                <tr className="bg-slate-50">
+                <tr className="bg-slate-50 print:bg-transparent">
                   {tableRows[0].map((cell, idx) => (
-                    <th key={idx} className="border border-black p-1 text-center font-bold uppercase font-serif text-black">{cell.trim()}</th>
+                    <th key={idx} className="border border-black p-2 text-center font-bold uppercase font-serif text-black align-middle">{cell.trim()}</th>
                   ))}
                 </tr>
               )}
@@ -37,7 +37,7 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
               {tableRows.slice(hasHeader ? 1 : 0).map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className={`border border-black p-1 font-serif text-black ${cellIdx === 0 ? 'text-center w-8' : ''} ${cellIdx >= 3 && cellIdx <= 5 ? 'text-right' : ''}`}>
+                    <td key={cellIdx} className={`border border-black p-2 font-serif text-black align-top ${cellIdx === 0 ? 'text-center w-10' : ''} ${cellIdx >= 3 && cellIdx <= 5 ? 'text-right' : ''}`}>
                       {cell.trim()}
                     </td>
                   ))}
@@ -54,10 +54,11 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     
+    // 1. Handle Cut Lines
     if (trimmed.includes('✂') || trimmed.includes('-CUT-LINE')) {
       flushTable();
       renderedBlocks.push(
-        <div key={`cut-${index}`} className="flex items-center gap-4 my-8 select-none print:my-12">
+        <div key={`cut-${index}`} className="flex items-center gap-4 my-8 select-none print:my-12 break-inside-avoid">
           <Scissors size={16} className="text-black transform -rotate-90" />
           <div className="flex-1 border-b-2 border-dashed border-black"></div>
         </div>
@@ -65,34 +66,51 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
       return;
     }
 
-    if (trimmed.startsWith('PASAL')) {
+    // 2. Handle Pasal / Judul Tengah
+    if (trimmed.startsWith('PASAL') || (trimmed === trimmed.toUpperCase() && trimmed.length < 50 && trimmed.length > 3 && !trimmed.includes(':'))) {
       flushTable();
-      renderedBlocks.push(<div key={`pasal-${index}`} className="mt-6 mb-2 font-bold text-center text-black">{trimmed}</div>);
+      renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-3 font-bold text-center text-black font-serif uppercase tracking-wider break-after-avoid">{trimmed}</div>);
       return;
     }
 
+    // 3. Handle Key:Value pairs (e.g., Nama : Budi)
     const columns = line.split(':');
     if (columns.length > 3) {
-      tableRows.push(columns);
-    } else if (columns.length === 2 && trimmed.length > 0) {
+      tableRows.push(columns); // Detect as table row if many colons
+    } else if (columns.length === 2 && trimmed.length > 0 && !trimmed.endsWith(':')) {
       flushTable();
       const label = columns[0].trim();
       const value = columns[1].trim();
       renderedBlocks.push(
-        <div key={`info-${index}`} className="flex mb-1 pl-4 break-inside-avoid text-black">
-          <span className="w-[30%] font-serif">{label}</span>
-          <span className="w-[2%] font-serif">:</span>
-          <span className="flex-1 font-serif font-bold">{value}</span>
+        <div key={`info-${index}`} className="flex mb-1.5 pl-8 break-inside-avoid text-black font-serif">
+          <span className="w-[28%] shrink-0">{label}</span>
+          <span className="w-[2%] text-center">:</span>
+          <span className="flex-1 font-bold pl-1">{value}</span>
         </div>
       );
-    } else {
+    } 
+    // 4. Handle List Items (Numbered or Bulleted)
+    else if (/^(\d+\.|-)\s/.test(trimmed)) {
+       flushTable();
+       renderedBlocks.push(
+         <p key={`list-${index}`} className="mb-2 pl-8 text-justify font-serif text-black leading-relaxed">
+           {line}
+         </p>
+       );
+    }
+    // 5. Handle Normal Paragraphs
+    else {
       flushTable();
       if (trimmed === '') {
          renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
       } else {
+         // Cek apakah ini paragraf pembuka/penutup standar (biasanya tidak di indent)
+         const isStandardPhrase = trimmed.toLowerCase().startsWith('dengan hormat') || trimmed.toLowerCase().startsWith('demikian');
+         const indentClass = isStandardPhrase ? '' : 'indent-12'; // Indentasi sekitar 3rem (48px)
+
          renderedBlocks.push(
-           <p key={`p-${index}`} className={`mb-2 text-justify whitespace-pre-wrap break-inside-avoid font-serif text-black ${isTableTemplate && trimmed.toUpperCase() === trimmed && trimmed.length > 10 ? 'font-bold text-center text-[12pt] mb-4 underline' : ''}`}>
-             {line}
+           <p key={`p-${index}`} className={`mb-3 text-justify font-serif text-black leading-[1.6] ${indentClass} ${isTableTemplate && trimmed.toUpperCase() === trimmed && trimmed.length > 10 ? 'font-bold text-center text-[12pt] mb-4 underline !indent-0' : ''}`}>
+             {trimmed}
            </p>
          );
       }
@@ -224,8 +242,8 @@ const LetterCreator: React.FC = () => {
 
         {/* Preview Paper */}
         <div className="w-full lg:w-7/12 bg-slate-200/50 rounded-2xl border border-slate-200 overflow-y-auto p-4 md:p-8 flex justify-center print:p-0 print:m-0 print:bg-white print:block">
-           <div className="letter-paper bg-white w-[215mm] min-h-[330mm] shadow-2xl p-[15mm] mx-auto relative print:shadow-none print:w-full print:p-[10mm] flex flex-col text-black">
-              {/* Header / Kop */}
+           <div className="letter-paper bg-white w-[215mm] min-h-[330mm] shadow-2xl mx-auto relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black">
+              {/* Kop Surat */}
               <div className="border-b-[4px] border-double border-black pb-4 mb-6 pt-2 grid grid-cols-[80px_1fr_80px] items-center text-black">
                  <div className="flex justify-center">
                    {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[18mm] h-auto" alt="Logo Daerah"/>}
@@ -247,7 +265,7 @@ const LetterCreator: React.FC = () => {
                     <SmartContentRenderer text={formData.content} isTableTemplate={isTableTemplate} />
                  </div>
 
-                 {/* Tanda Tangan */}
+                 {/* Tanda Tangan Wrapper - break-inside-avoid agar tidak terpotong aneh */}
                  <div className={`mt-10 break-inside-avoid grid ${isTableTemplate ? 'grid-cols-3' : (isMOU ? 'grid-cols-2' : 'grid-cols-1')} gap-4 text-center text-[10pt] font-serif text-black`}>
                     {isTableTemplate && (
                       <div className="flex flex-col text-black">
@@ -293,13 +311,48 @@ const LetterCreator: React.FC = () => {
         </div>
       </div>
       <style>{`
+        /* PREVIEW MODE (Screen) */
+        .letter-paper {
+           padding: 15mm 20mm;
+        }
+
+        /* PRINT MODE */
         @media print {
-          @page { size: 215mm 330mm; margin: 10mm; }
+          @page { 
+            size: 215mm 330mm portrait; /* F4 Portrait */
+            margin: 20mm 20mm 20mm 25mm; /* Top, Right, Bottom, Left (Standard Dinas) */
+          }
+          body {
+            background: white !important;
+            margin: 0 !important;
+          }
           body * { visibility: hidden; }
-          .print\\:block, .print\\:block * { visibility: visible !important; }
-          .print\\:block { position: absolute !important; left: 0; top: 0; width: 100%; }
-          .letter-paper { border: none !important; box-shadow: none !important; margin: 0 !important; width: 100% !important; padding: 0 !important; }
+          
+          /* Hanya tampilkan kertas surat */
+          .letter-paper, .letter-paper * { visibility: visible !important; }
+          
+          .letter-paper { 
+            position: absolute !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important; /* Margin sudah dihandle oleh @page */
+            border: none !important; 
+            box-shadow: none !important; 
+            background: transparent !important;
+            height: auto !important; /* Allow growing for multi-page */
+            overflow: visible !important;
+          }
+          
+          /* Table styling untuk print */
+          table { width: 100% !important; border-collapse: collapse !important; }
+          th, td { border: 1px solid #000 !important; }
+          
+          /* Cegah elemen penting terpotong */
           .break-inside-avoid { break-inside: avoid !important; }
+          .break-after-avoid { break-after: avoid !important; }
+          tr { break-inside: avoid !important; }
         }
       `}</style>
     </div>

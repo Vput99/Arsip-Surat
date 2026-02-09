@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, AlertCircle } from 'lucide-react';
+import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, AlertCircle, ClipboardList } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, StaffMember } from '../services/storage';
 import { SchoolConfig } from '../types';
 import { format, getDaysInMonth, isSunday, isSaturday } from 'date-fns';
@@ -7,10 +7,11 @@ import { id } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
 type AttendanceCategory = 'reg' | 'pppk' | 'extra' | 'tukang';
+type ViewMode = 'menu' | 'editor' | 'recap';
 
 const AttendanceCreator: React.FC = () => {
   const [config, setConfig] = useState<SchoolConfig | null>(null);
-  const [view, setView] = useState<'menu' | 'editor'>('menu');
+  const [view, setView] = useState<ViewMode>('menu');
   const [activeCategory, setActiveCategory] = useState<AttendanceCategory>('reg');
   
   const [year, setYear] = useState(new Date().getFullYear());
@@ -20,16 +21,11 @@ const AttendanceCreator: React.FC = () => {
   
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   
-  // Tidak perlu lagi isEditingRef karena halaman ini read-only untuk data personil
-
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig(setConfig);
-    
-    // Subscribe selalu aktif karena tidak ada mode edit personil di sini
     const unsubscribeStaff = subscribeToStaff((data) => {
       setAllStaff(data);
     });
-    
     return () => {
       unsubscribeConfig();
       unsubscribeStaff();
@@ -101,19 +97,34 @@ const AttendanceCreator: React.FC = () => {
         workingDays++;
         const statusIn = attendance[`${staffId}-${day}-in`];
         const statusOut = attendance[`${staffId}-${day}-out`];
-        if (statusIn === 'S' || statusOut === 'S') s++;
-        else if (statusIn === 'I' || statusOut === 'I') i++;
-        else if (statusIn === 'A' || statusOut === 'A') a++;
-        else if (statusIn === 'C' || statusOut === 'C') c++;
-        else if (statusIn === 'DL' || statusOut === 'DL') dl++;
+        
+        // Count statuses. If one session is absent, count as absent for the day priority
+        const dailyStatus = [statusIn, statusOut];
+        
+        if (dailyStatus.includes('S')) s++;
+        else if (dailyStatus.includes('I')) i++;
+        else if (dailyStatus.includes('A')) a++;
+        else if (dailyStatus.includes('C')) c++;
+        else if (dailyStatus.includes('DL')) dl++;
       }
     });
-    return { s, i, a, c, dl, total: workingDays - (s + i + a + c + dl) };
+    
+    // Total Presence = Working Days - (S + I + A + C). 
+    // DL usually counts as 'Present' for work purposes but physically away. 
+    // Here we strictly calculate physical presence + DL as 'Hadir' or standard convention.
+    // Standard: Hadir = Working - (S + I + A + C)
+    const presence = workingDays - (s + i + a + c); 
+
+    return { s, i, a, c, dl, presence, workingDays };
   };
 
   const openEditor = (cat: AttendanceCategory) => {
     setActiveCategory(cat);
     setView('editor');
+  };
+
+  const openRecap = () => {
+    setView('recap');
   };
 
   if (!config) return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-indigo-600"/></div>;
@@ -132,7 +143,8 @@ const AttendanceCreator: React.FC = () => {
           <h2 className="text-3xl font-black text-slate-800 mb-2">Buat Absensi Sekolah</h2>
           <p className="text-slate-500 font-medium">Data personil tersimpan otomatis di database cloud.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {menus.map((m) => (
             <button key={m.id} onClick={() => openEditor(m.id)} className={`group relative bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-${m.color}-500 transition-all duration-300 text-left overflow-hidden`}>
               <div className={`absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-${m.color}-500/5 rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
@@ -147,6 +159,23 @@ const AttendanceCreator: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {/* Menu Rekapitulasi */}
+        <button onClick={openRecap} className="w-full group relative bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-xl hover:shadow-2xl transition-all duration-300 text-left overflow-hidden flex items-center justify-between">
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/5 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="relative z-10 flex items-center gap-6">
+               <div className="w-16 h-16 bg-white/10 text-white rounded-2xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform">
+                  <ClipboardList size={32} />
+               </div>
+               <div>
+                 <h3 className="text-xl font-black text-white mb-1">Rekapitulasi Kehadiran</h3>
+                 <p className="text-slate-400 text-sm">Cetak rekap total hari kerja, ijin, cuti, dan kehadiran per personil.</p>
+               </div>
+            </div>
+            <div className="relative z-10 bg-white text-slate-900 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest group-hover:translate-x-[-10px] transition-transform flex items-center gap-2">
+              Buka Rekap <ArrowRight size={14}/>
+            </div>
+        </button>
       </div>
     );
   }
@@ -202,7 +231,7 @@ const AttendanceCreator: React.FC = () => {
             </div>
 
             <button onClick={() => window.print()} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2">
-              <Printer size={18} /> Cetak Absensi
+              <Printer size={18} /> Cetak Dokumen
             </button>
           </div>
         </div>
@@ -210,43 +239,67 @@ const AttendanceCreator: React.FC = () => {
         <div className="xl:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-slate-100 text-slate-600 rounded-lg"><Users size={20} /></div>
-              <h3 className="font-bold text-slate-800">Daftar Personil ({currentStaffList.length})</h3>
+              <div className="p-2 bg-slate-100 text-slate-600 rounded-lg">{view === 'recap' ? <ClipboardList size={20}/> : <Users size={20} />}</div>
+              <h3 className="font-bold text-slate-800">
+                {view === 'recap' ? 'Filter Rekapitulasi' : `Daftar Personil (${currentStaffList.length})`}
+              </h3>
             </div>
             <Link to="/settings" className="px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">
               <Settings size={14} /> Kelola Personil
             </Link>
           </div>
-          
-          <div className="mb-4 p-3 bg-blue-50 text-blue-700 text-xs font-medium rounded-xl flex items-center gap-2 border border-blue-100">
-             <AlertCircle size={16} />
-             <span>Untuk menambah, mengedit, atau menghapus personil, silakan buka menu <b>Pengaturan</b>.</span>
-          </div>
 
-          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-            {currentStaffList.length === 0 ? (
-              <div className="p-10 text-center border-2 border-dashed border-slate-100 rounded-2xl text-slate-400 italic text-sm">
-                Belum ada data personil.
+          {view === 'recap' && (
+             <div className="flex gap-2 overflow-x-auto pb-2">
+                {[
+                  { id: 'reg', label: 'Guru/PNS' }, 
+                  { id: 'pppk', label: 'PPPK' }, 
+                  { id: 'extra', label: 'Ekstrakurikuler' }, 
+                  { id: 'tukang', label: 'Tukang' }
+                ].map(cat => (
+                  <button 
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id as AttendanceCategory)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat.id ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'}`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+             </div>
+          )}
+          
+          {view === 'editor' && (
+            <>
+              <div className="mb-4 p-3 bg-blue-50 text-blue-700 text-xs font-medium rounded-xl flex items-center gap-2 border border-blue-100">
+                <AlertCircle size={16} />
+                <span>Untuk menambah, mengedit, atau menghapus personil, silakan buka menu <b>Pengaturan</b>.</span>
               </div>
-            ) : (
-              currentStaffList.map((staff, idx) => (
-                <div key={staff.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="md:col-span-1 text-xs font-bold text-slate-400 text-center">#{idx + 1}</div>
-                  <div className="md:col-span-4">
-                    <div className="text-sm font-bold text-slate-700">{staff.name || 'Tanpa Nama'}</div>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                {currentStaffList.length === 0 ? (
+                  <div className="p-10 text-center border-2 border-dashed border-slate-100 rounded-2xl text-slate-400 italic text-sm">
+                    Belum ada data personil.
                   </div>
-                  <div className="md:col-span-3">
-                    <div className="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 inline-block">
-                       NIP: {staff.nip || '-'}
+                ) : (
+                  currentStaffList.map((staff, idx) => (
+                    <div key={staff.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="md:col-span-1 text-xs font-bold text-slate-400 text-center">#{idx + 1}</div>
+                      <div className="md:col-span-4">
+                        <div className="text-sm font-bold text-slate-700">{staff.name || 'Tanpa Nama'}</div>
+                      </div>
+                      <div className="md:col-span-3">
+                        <div className="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 inline-block">
+                          NIP: {staff.nip || '-'}
+                        </div>
+                      </div>
+                      <div className="md:col-span-4">
+                        <div className="text-xs font-medium text-slate-600">{staff.rank || '-'}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="md:col-span-4">
-                    <div className="text-xs font-medium text-slate-600">{staff.rank || '-'}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -270,79 +323,122 @@ const AttendanceCreator: React.FC = () => {
           </div>
 
           <div className="text-center mb-3 text-black">
-            <h2 className="text-[11pt] font-bold underline uppercase text-black">{getCategoryTitle(activeCategory)}</h2>
+            <h2 className="text-[11pt] font-bold underline uppercase text-black">
+               {view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}
+            </h2>
             <p className="text-[9pt] font-serif uppercase text-black">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
           </div>
 
-          <table className="w-full border-collapse border border-black text-[8pt] font-serif table-fixed text-black">
-            <colgroup>
-              <col className="w-8" /> {/* No */}
-              <col className="w-[180px]" /> {/* Nama/NIP */}
-              <col className="w-[100px]" /> {/* Jabatan */}
-              {dateRange.map(d => <col key={d} className="w-auto" />)} {/* Dates - Auto width */}
-              <col className="w-7" /> {/* S */}
-              <col className="w-7" /> {/* I */}
-              <col className="w-7" /> {/* A */}
-              <col className="w-7" /> {/* C */}
-              <col className="w-7" /> {/* DL */}
-              <col className="w-9" /> {/* Total */}
-            </colgroup>
-            <thead>
-              <tr className="bg-slate-50 print:bg-transparent">
-                <th rowSpan={2} className="border border-black p-0.5 text-black">NO</th>
-                <th rowSpan={2} className="border border-black p-0.5 text-black">NAMA / NIP</th>
-                <th rowSpan={2} className="border border-black p-0.5 text-black">JABATAN</th>
-                <th colSpan={daysInMonth} className="border border-black p-0.5 text-black">TANGGAL (Atas=Masuk, Bawah=Pulang)</th>
-                <th colSpan={6} className="border border-black p-0.5 text-black">REKAP</th>
-              </tr>
-              <tr className="bg-slate-50 print:bg-transparent">
-                {dateRange.map(d => (
-                  <th key={d} className={`border border-black p-0.5 text-[7pt] h-6 ${isDayOff(d) ? 'bg-rose-100 text-rose-600 print:bg-rose-200' : 'text-black'}`}>
-                    {d}
-                  </th>
-                ))}
-                <th className="border border-black text-black">S</th>
-                <th className="border border-black text-black">I</th>
-                <th className="border border-black text-black">A</th>
-                <th className="border border-black text-black">C</th>
-                <th className="border border-black text-black">DL</th>
-                <th className="border border-black text-black">JML</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentStaffList.map((staff, sIdx) => {
-                const recap = calculateRecap(staff.id);
-                return (
-                  <tr key={staff.id} className="h-10">
-                    <td className="border border-black text-center text-black">{sIdx + 1}</td>
-                    <td className="border border-black px-1 leading-tight overflow-hidden">
-                      <div className="font-bold truncate text-black">{staff.name || '...'}</div>
-                      <div className="text-[7pt] text-slate-500 print:text-black truncate">NIP. {staff.nip || '...'}</div>
-                    </td>
-                    <td className="border border-black text-center text-[7pt] leading-tight truncate px-0.5 text-black">{staff.rank || '-'}</td>
-                    {dateRange.map(d => (
-                      <td key={`cell-${d}`} className={`border border-black p-0 relative ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
-                         <div className="flex flex-col h-full min-h-[32px]">
-                            <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black/10 transition-colors ${isDayOff(d) ? 'cursor-not-allowed border-none' : 'cursor-pointer hover:bg-slate-50'}`}>
-                              {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
-                            </div>
-                            <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
-                              {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
-                            </div>
-                         </div>
+          {view === 'recap' ? (
+             // --- TAMPILAN REKAP ---
+             <table className="w-full border-collapse border border-black text-[9pt] font-serif text-black">
+               <thead>
+                 <tr className="bg-slate-50 print:bg-transparent">
+                   <th rowSpan={2} className="border border-black p-1 w-10">NO</th>
+                   <th rowSpan={2} className="border border-black p-1">NAMA / NIP</th>
+                   <th rowSpan={2} className="border border-black p-1">PANGKAT / GOL</th>
+                   <th rowSpan={2} className="border border-black p-1 w-20">JML HARI KERJA</th>
+                   <th colSpan={5} className="border border-black p-1">KETERANGAN</th>
+                   <th rowSpan={2} className="border border-black p-1 w-20">JML KEHADIRAN</th>
+                 </tr>
+                 <tr className="bg-slate-50 print:bg-transparent">
+                   <th className="border border-black p-1 w-10">S</th>
+                   <th className="border border-black p-1 w-10">I</th>
+                   <th className="border border-black p-1 w-10">C</th>
+                   <th className="border border-black p-1 w-10">DL</th>
+                   <th className="border border-black p-1 w-10">A</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {currentStaffList.map((staff, idx) => {
+                   const r = calculateRecap(staff.id);
+                   return (
+                     <tr key={staff.id} className="h-8">
+                       <td className="border border-black text-center">{idx + 1}</td>
+                       <td className="border border-black px-2 py-1">
+                         <div className="font-bold">{staff.name || '...'}</div>
+                         <div className="text-[8pt] text-slate-600 print:text-black">NIP. {staff.nip || '-'}</div>
+                       </td>
+                       <td className="border border-black text-center">{staff.rank || '-'}</td>
+                       <td className="border border-black text-center font-bold">{r.workingDays}</td>
+                       <td className="border border-black text-center">{r.s || '-'}</td>
+                       <td className="border border-black text-center">{r.i || '-'}</td>
+                       <td className="border border-black text-center">{r.c || '-'}</td>
+                       <td className="border border-black text-center">{r.dl || '-'}</td>
+                       <td className="border border-black text-center">{r.a || '-'}</td>
+                       <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent">{r.presence}</td>
+                     </tr>
+                   );
+                 })}
+               </tbody>
+             </table>
+          ) : (
+             // --- TAMPILAN ABSENSI HARIAN (EDITOR) ---
+             <table className="w-full border-collapse border border-black text-[8pt] font-serif table-fixed text-black">
+              <colgroup>
+                <col className="w-8" />
+                <col className="w-[180px]" />
+                <col className="w-[100px]" />
+                {dateRange.map(d => <col key={d} className="w-auto" />)}
+                <col className="w-7" /> <col className="w-7" /> <col className="w-7" /> <col className="w-7" /> <col className="w-7" /> <col className="w-9" />
+              </colgroup>
+              <thead>
+                <tr className="bg-slate-50 print:bg-transparent">
+                  <th rowSpan={2} className="border border-black p-0.5 text-black">NO</th>
+                  <th rowSpan={2} className="border border-black p-0.5 text-black">NAMA / NIP</th>
+                  <th rowSpan={2} className="border border-black p-0.5 text-black">JABATAN</th>
+                  <th colSpan={daysInMonth} className="border border-black p-0.5 text-black">TANGGAL (Atas=Masuk, Bawah=Pulang)</th>
+                  <th colSpan={6} className="border border-black p-0.5 text-black">REKAP</th>
+                </tr>
+                <tr className="bg-slate-50 print:bg-transparent">
+                  {dateRange.map(d => (
+                    <th key={d} className={`border border-black p-0.5 text-[7pt] h-6 ${isDayOff(d) ? 'bg-rose-100 text-rose-600 print:bg-rose-200' : 'text-black'}`}>
+                      {d}
+                    </th>
+                  ))}
+                  <th className="border border-black text-black">S</th>
+                  <th className="border border-black text-black">I</th>
+                  <th className="border border-black text-black">A</th>
+                  <th className="border border-black text-black">C</th>
+                  <th className="border border-black text-black">DL</th>
+                  <th className="border border-black text-black">JML</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentStaffList.map((staff, sIdx) => {
+                  const recap = calculateRecap(staff.id);
+                  return (
+                    <tr key={staff.id} className="h-10">
+                      <td className="border border-black text-center text-black">{sIdx + 1}</td>
+                      <td className="border border-black px-1 leading-tight overflow-hidden">
+                        <div className="font-bold truncate text-black">{staff.name || '...'}</div>
+                        <div className="text-[7pt] text-slate-500 print:text-black truncate">NIP. {staff.nip || '...'}</div>
                       </td>
-                    ))}
-                    <td className="border border-black text-center font-bold text-black">{recap.s || ''}</td>
-                    <td className="border border-black text-center font-bold text-black">{recap.i || ''}</td>
-                    <td className="border border-black text-center font-bold text-black">{recap.a || ''}</td>
-                    <td className="border border-black text-center font-bold text-black">{recap.c || ''}</td>
-                    <td className="border border-black text-center font-bold text-black">{recap.dl || ''}</td>
-                    <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent text-black">{recap.total}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      <td className="border border-black text-center text-[7pt] leading-tight truncate px-0.5 text-black">{staff.rank || '-'}</td>
+                      {dateRange.map(d => (
+                        <td key={`cell-${d}`} className={`border border-black p-0 relative ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
+                           <div className="flex flex-col h-full min-h-[32px]">
+                              <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black/10 transition-colors ${isDayOff(d) ? 'cursor-not-allowed border-none' : 'cursor-pointer hover:bg-slate-50'}`}>
+                                {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
+                              </div>
+                              <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
+                                {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
+                              </div>
+                           </div>
+                        </td>
+                      ))}
+                      <td className="border border-black text-center font-bold text-black">{recap.s || ''}</td>
+                      <td className="border border-black text-center font-bold text-black">{recap.i || ''}</td>
+                      <td className="border border-black text-center font-bold text-black">{recap.a || ''}</td>
+                      <td className="border border-black text-center font-bold text-black">{recap.c || ''}</td>
+                      <td className="border border-black text-center font-bold text-black">{recap.dl || ''}</td>
+                      <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent text-black">{recap.presence}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
 
           <div className="mt-4 grid grid-cols-3 gap-4 text-center font-serif text-[9pt] break-inside-avoid text-black">
             <div></div>

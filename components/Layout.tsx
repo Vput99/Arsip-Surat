@@ -87,11 +87,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {dbConnected ? 'Status: Online' : 'Status: Offline'}
                 </span>
               </div>
-              {dbConnected && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>}
+              {dbConnected && (
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute w-3 h-3 rounded-full bg-emerald-500 animate-ping opacity-40"></div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                </div>
+              )}
             </div>
-            <p className="text-[9px] text-slate-500 font-bold">
-              {dbConnected ? `Sinkron terakhir: ${format(lastSync, 'HH:mm:ss')}` : 'Cek koneksi internet & token'}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+               {isSyncing ? <RefreshCw size={10} className="text-indigo-400 animate-spin" /> : <Activity size={10} className={dbConnected ? "text-emerald-400" : "text-rose-400"} />}
+               <p className="text-[9px] text-slate-500 font-bold">
+                 {dbConnected ? `Sinkron: ${format(lastSync, 'HH:mm:ss')}` : 'Periksa Database'}
+               </p>
+            </div>
           </div>
         </div>
       </aside>
@@ -99,36 +107,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         
-        {/* BIG CONNECTION PILL (TOP RIGHT) */}
-        <div className="absolute top-8 right-10 z-20 flex items-center gap-4">
-           <div className={`flex items-center gap-4 px-6 py-3 rounded-2xl backdrop-blur-xl border shadow-2xl transition-all duration-1000 ${dbConnected ? 'bg-white/80 border-emerald-500/30 text-emerald-700 ring-4 ring-emerald-500/5' : 'bg-rose-50/90 border-rose-200 text-rose-700'}`}>
-              <div className="relative">
-                 {dbConnected ? (
-                   <div className="flex items-center justify-center">
-                     <div className={`absolute w-10 h-10 bg-emerald-400 rounded-full animate-ping opacity-20 ${isSyncing ? 'opacity-40' : 'opacity-10'}`}></div>
-                     {isSyncing ? <RefreshCw size={20} className="relative z-10 text-indigo-500 animate-spin" /> : <Activity size={20} className="relative z-10 text-emerald-500" />}
-                   </div>
-                 ) : (
-                   <WifiOff size={20} className="text-rose-400" />
-                 )}
-              </div>
-              <div className="flex flex-col">
-                 <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black uppercase tracking-[0.1em]">
-                      {dbConnected ? 'Database Terhubung' : 'Database Terputus'}
-                    </span>
-                    {dbConnected && <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>}
-                 </div>
-                 <span className={`text-[9px] font-bold mt-0.5 flex items-center gap-1 ${dbConnected ? 'text-emerald-600' : 'text-rose-500'}`}>
-                   {dbConnected ? <><RefreshCw size={10} className={isSyncing ? "animate-spin" : ""} /> SINKRONISASI REALTIME AKTIF</> : 'HARAP PERIKSA SETTING DATABASE'}
-                 </span>
-              </div>
-           </div>
-        </div>
-
+        {/* Background Gradient */}
         <div className="absolute top-0 left-0 w-full h-80 bg-gradient-to-b from-indigo-100/50 to-transparent -z-10"></div>
 
-        {/* Mobile Header */}
+        {/* Mobile Header (Visible only on small screens) */}
         <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30">
           <div className="flex flex-col">
             <div className="font-black text-slate-900 text-lg flex items-center">
@@ -146,6 +128,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </header>
+
+        {/* Desktop - Top Right Minimalist Sync Indicator (Optional, non-blocking) */}
+        {dbConnected && (
+          <div className="hidden lg:flex absolute top-6 right-10 items-center gap-2 px-3 py-1.5 rounded-full bg-white/50 backdrop-blur-sm border border-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-400 pointer-events-none select-none">
+            <RefreshCw size={10} className={isSyncing ? "animate-spin text-indigo-500" : ""} />
+            {isSyncing ? 'Sinkronisasi...' : 'Cloud Aktif'}
+          </div>
+        )}
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-10">
           <div className="max-w-7xl mx-auto">

@@ -1,12 +1,8 @@
 import { createClient } from "@libsql/client/web";
 
-// Menggunakan Token yang diberikan sebagai fallback jika environment variable kosong
-// Dalam Vite, process.env.VAR diganti dengan string literal oleh 'define' di vite.config.ts.
-// Jika tidak diganti (karena undefined), kita gunakan operator OR.
 const rawUrl = process.env.TURSO_DATABASE_URL || "libsql://arsip-surat-vput99.aws-ap-northeast-1.turso.io";
 const authToken = process.env.TURSO_AUTH_TOKEN || "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1M2JmYzBmYy01Yzc1LTQ0MTktYmIzNi0zM2RkNTMxYzFmZDQiLCJpYXQiOjE3NzA1MTU2MjcsInJpZCI6ImZjMzE2ZDVjLTlhYjAtNDY2ZC1hMGUyLTJjYmQ3MzZiYzIxMyJ9.5qtEGpdmXXQy4mpFWmUNmu_TVWTqs67UiCZrwJZwsl9YPG5zTUvmyFPjCmYpgqavrzAPEzi3gT6ZgV1NFX3tDQ";
 
-// Penting: Browser SDK memerlukan protokol https:// (bukan libsql://)
 const url = rawUrl && rawUrl.startsWith("libsql://") 
   ? rawUrl.replace("libsql://", "https://") 
   : rawUrl;
@@ -15,22 +11,17 @@ export const isTursoConfigured = () => {
   return !!url && url.length > 10;
 };
 
-// Inisialisasi Client
 export const turso = isTursoConfigured() 
   ? createClient({ url, authToken })
   : null;
 
 export const initTables = async () => {
-  if (!turso) {
-    console.error("Turso client GAGAL inisialisasi: URL tidak valid.");
-    return;
-  }
+  if (!turso) return;
 
   try {
-    // Tes koneksi sederhana
     await turso.execute("SELECT 1");
     
-    // Batch pembuatan tabel
+    // 1. Inisialisasi Tabel Dasar
     await turso.batch([
       `CREATE TABLE IF NOT EXISTS mails (
         id TEXT PRIMARY KEY,
@@ -56,19 +47,23 @@ export const initTables = async () => {
         headerLine1 TEXT,
         headerLine2 TEXT,
         logoUrl TEXT,
-        logoDaerahUrl TEXT,
-        principalName TEXT,
-        principalNip TEXT
+        logoDaerahUrl TEXT
       )`
     ], "write");
+
+    // 2. Patching Kolom Baru (Migration)
+    // SQLite tidak mendukung ADD COLUMN IF NOT EXISTS secara langsung, 
+    // maka kita coba satu per satu dalam try-catch
+    try {
+      await turso.execute("ALTER TABLE school_config ADD COLUMN principalName TEXT");
+    } catch (e) { /* Kolom mungkin sudah ada */ }
+
+    try {
+      await turso.execute("ALTER TABLE school_config ADD COLUMN principalNip TEXT");
+    } catch (e) { /* Kolom mungkin sudah ada */ }
     
-    console.log("Database Turso Berhasil Terhubung dan Inisialisasi.");
+    console.log("Database Turso: Inisialisasi & Migrasi Berhasil.");
   } catch (e: any) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    console.error("Koneksi Turso Gagal:", errorMsg);
-    
-    if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError")) {
-       console.log("Mode Offline aktif. Aplikasi akan menggunakan LocalStorage.");
-    }
+    console.error("Koneksi Turso Gagal:", e.message);
   }
 };

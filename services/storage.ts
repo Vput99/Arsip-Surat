@@ -2,12 +2,10 @@ import { turso, initTables, isTursoConfigured } from './turso';
 import { Mail, SchoolConfig } from '../types';
 import { MOCK_INITIAL_DATA } from '../constants';
 
-// Initial sync on module load
 if (isTursoConfigured()) {
   initTables().catch(console.error);
 }
 
-// Default Config (Fallback)
 const DEFAULT_CONFIG: SchoolConfig = {
   name: 'SD NEGERI TEMPUREJO 1',
   address: 'Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri',
@@ -20,7 +18,6 @@ const DEFAULT_CONFIG: SchoolConfig = {
   principalNip: '19860213 201409 2 002'
 };
 
-// --- CONNECTION STATE MANAGEMENT ---
 let isDatabaseConnected = false; 
 const connectionListeners: ((isConnected: boolean) => void)[] = [];
 
@@ -40,7 +37,6 @@ const setConnectionStatus = (status: boolean) => {
   }
 };
 
-// --- LOCAL STORAGE HELPERS (OFFLINE MODE) ---
 const getLocalMails = (): Mail[] => {
   try {
     const saved = localStorage.getItem('OFFLINE_MAILS');
@@ -59,24 +55,18 @@ const getLocalConfig = (): SchoolConfig => {
   }
 };
 
-// Listeners Aktif
 let mailListeners: ((mails: Mail[]) => void)[] = [];
 let configListeners: ((config: SchoolConfig) => void)[] = [];
-
-// --- TURSO FETCHERS ---
 
 const fetchAllMails = async () => {
   if (!turso) return;
   try {
     const rs = await turso.execute("SELECT * FROM mails ORDER BY createdAt DESC");
     const mails = rs.rows.map(row => ({ ...row } as unknown as Mail));
-    
-    // Sync ke LocalStorage
     localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
     mailListeners.forEach(l => l(mails));
     setConnectionStatus(true);
   } catch (e) {
-    console.warn("Turso Fetch Mails Failed:", e);
     setConnectionStatus(false);
   }
 };
@@ -86,21 +76,28 @@ const fetchConfig = async () => {
   try {
     const rs = await turso.execute("SELECT * FROM school_config WHERE id = 'main_settings'");
     if (rs.rows.length > 0) {
-      const config = rs.rows[0] as unknown as SchoolConfig;
-      localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
-      configListeners.forEach(l => l(config));
+      const config = rs.rows[0] as unknown as any;
+      const mappedConfig: SchoolConfig = {
+        name: config.name || DEFAULT_CONFIG.name,
+        address: config.address || DEFAULT_CONFIG.address,
+        email: config.email || DEFAULT_CONFIG.email,
+        headerLine1: config.headerLine1 || DEFAULT_CONFIG.headerLine1,
+        headerLine2: config.headerLine2 || DEFAULT_CONFIG.headerLine2,
+        logoUrl: config.logoUrl || DEFAULT_CONFIG.logoUrl,
+        logoDaerahUrl: config.logoDaerahUrl || DEFAULT_CONFIG.logoDaerahUrl,
+        principalName: config.principalName || DEFAULT_CONFIG.principalName,
+        principalNip: config.principalNip || DEFAULT_CONFIG.principalNip,
+      };
+      localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(mappedConfig));
+      configListeners.forEach(l => l(mappedConfig));
       setConnectionStatus(true);
     } else {
-      // Inisialisasi jika kosong
       await saveSchoolConfig(getLocalConfig());
     }
   } catch (e) {
-    console.warn("Turso Fetch Config Failed:", e);
     setConnectionStatus(false);
   }
 };
-
-// --- REALTIME SUBSCRIPTIONS ---
 
 export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   mailListeners.push(onData);
@@ -132,13 +129,10 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
   return () => { configListeners = configListeners.filter(l => l !== onData); };
 };
 
-// --- ACTIONS (SQL) ---
-
 export const saveMail = async (mail: Mail): Promise<void> => {
   const mailId = mail.id || Date.now().toString();
   const mailToSave = { ...mail, id: mailId };
 
-  // 1. Optimistic Update (UI Instan & Local Storage)
   const currentMails = getLocalMails();
   const existingIdx = currentMails.findIndex(m => m.id === mailId);
   let newMails;
@@ -149,19 +143,9 @@ export const saveMail = async (mail: Mail): Promise<void> => {
     newMails = [mailToSave, ...currentMails];
   }
 
-  try {
-    localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
-    mailListeners.forEach(l => l(newMails));
-  } catch (e: any) {
-    // Tangani error QuotaExceededError (Penyimpanan Penuh)
-    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      console.error("LocalStorage Full!");
-      throw new Error("Penyimpanan lokal penuh. Mohon hapus data lama atau lampiran besar.");
-    }
-    throw e;
-  }
+  localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
+  mailListeners.forEach(l => l(newMails));
 
-  // 2. Turso Save (Background)
   if (turso) {
     try {
       await turso.execute({
@@ -178,21 +162,17 @@ export const saveMail = async (mail: Mail): Promise<void> => {
       });
       setConnectionStatus(true);
     } catch (e) {
-      console.error("Turso Save Failed:", e);
       setConnectionStatus(false);
-      // Jangan throw error di sini, karena data sudah tersimpan di lokal (fallback offline)
     }
   }
 };
 
 export const deleteMail = async (id: string): Promise<void> => {
-  // 1. Local
   const currentMails = getLocalMails();
   const newMails = currentMails.filter(m => m.id !== id);
   localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
   mailListeners.forEach(l => l(newMails));
 
-  // 2. Turso
   if (turso) {
     try {
       await turso.execute({
@@ -201,18 +181,17 @@ export const deleteMail = async (id: string): Promise<void> => {
       });
       setConnectionStatus(true);
     } catch (e) {
-      console.error("Turso Delete Failed:", e);
       setConnectionStatus(false);
     }
   }
 };
 
 export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
-  // 1. Local
+  // 1. Local Update (Cepat)
   localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
   configListeners.forEach(l => l(config));
 
-  // 2. Turso
+  // 2. Turso Sync
   if (turso) {
     try {
       await turso.execute({
@@ -226,14 +205,17 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
         ]
       });
       setConnectionStatus(true);
-    } catch (e) {
-      console.error("Turso Config Save Failed:", e);
+    } catch (e: any) {
+      console.error("Database Save Error:", e.message);
       setConnectionStatus(false);
+      // Jika error karena kolom tidak ada, inisialisasi ulang tabel
+      if (e.message.includes("no such column") || e.message.includes("has no column")) {
+        await initTables();
+      }
+      throw new Error(`Gagal menyimpan ke database cloud: ${e.message}`);
     }
   }
 };
-
-// --- BACKUP & RESTORE ---
 
 export const exportDatabase = async (): Promise<string> => {
   const mails = getLocalMails();
@@ -258,7 +240,6 @@ export const importDatabase = async (jsonString: string): Promise<boolean> => {
     }
     return true;
   } catch (e) {
-    console.error("Import failed:", e);
     return false;
   }
 };

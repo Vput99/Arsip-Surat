@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Upload, School, Loader2, Info, Building2, UserCircle } from 'lucide-react';
-import { subscribeToConfig, saveSchoolConfig } from '../services/storage';
+import { Save, Upload, School, Loader2, Info, Building2, UserCircle, Database, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus } from '../services/storage';
 import { SchoolConfig } from '../types';
 
 const Settings: React.FC = () => {
   const [config, setConfig] = useState<SchoolConfig | null>(null);
+  const [dbConnected, setDbConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
-    const unsubscribe = subscribeToConfig((newConfig) => {
+    const unsubscribeConfig = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
     });
-    return () => unsubscribe();
+    const unsubscribeDb = subscribeToConnectionStatus((isConnected) => {
+      setDbConnected(isConnected);
+    });
+    return () => {
+      unsubscribeConfig();
+      unsubscribeDb();
+    };
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -41,193 +48,221 @@ const Settings: React.FC = () => {
     if (!config) return;
 
     setLoading(true);
+    setMessage({ text: '', type: '' });
+    
     try {
       await saveSchoolConfig(config);
-      setMessage({ text: 'Pengaturan tersimpan ke Database', type: 'success' });
-    } catch {
-      setMessage({ text: 'Gagal menyimpan. Periksa config database.', type: 'error' });
+      setMessage({ text: 'Pengaturan berhasil diperbarui di Cloud & Lokal.', type: 'success' });
+      // Clear message after 4 seconds
+      setTimeout(() => setMessage({ text: '', type: '' }), 4000);
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ 
+        text: `Gagal Sinkron Cloud: ${err.message || 'Cek Token/URL Database'}. Data tetap tersimpan secara Lokal.`, 
+        type: 'error' 
+      });
     } finally {
       setLoading(false);
-      setTimeout(() => setMessage({ text: '', type: '' }), 3000);
     }
   };
 
   if (!config) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="animate-spin text-indigo-600" />
+      <div className="flex flex-col justify-center items-center h-64 gap-4">
+        <Loader2 className="animate-spin text-indigo-600" size={32} />
+        <p className="text-slate-500 font-medium">Memuat konfigurasi...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 animate-fade-in">
+    <div className="max-w-4xl mx-auto py-8 animate-fade-in pb-20">
       <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-        {/* Header */}
+        {/* Header Section */}
         <div className="bg-slate-900 p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-600/20 to-violet-600/20"></div>
           <div className="relative z-10 flex flex-col items-center">
-            <h2 className="text-xl font-bold text-white">Identitas & Kop Surat</h2>
-            <p className="text-slate-400 text-sm">Sesuaikan informasi instansi untuk keperluan kop surat.</p>
+            <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Identitas & Kop Surat</h2>
+            <p className="text-slate-400 text-sm max-w-md">Informasi ini akan digunakan secara otomatis pada setiap surat yang Anda buat.</p>
+          </div>
+          
+          {/* Connection Status Badge */}
+          <div className="absolute top-6 right-6 z-10">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${dbConnected ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+              <Database size={12} />
+              {dbConnected ? 'Database: Online' : 'Database: Offline'}
+            </div>
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-8 space-y-8">
-           {message.text && (
-             <div className={`p-3 rounded-xl text-sm font-semibold text-center ${message.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-               {message.text}
-             </div>
-           )}
+        {/* Feedback Messages */}
+        {message.text && (
+          <div className={`mx-8 mt-6 p-4 rounded-2xl flex items-center gap-3 animate-fade-in ${message.type === 'success' ? 'bg-emerald-50 border border-emerald-100 text-emerald-700' : 'bg-rose-50 border border-rose-100 text-rose-700'}`}>
+            {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+            <span className="text-sm font-bold">{message.text}</span>
+          </div>
+        )}
 
-           {/* Logo Section */}
-           <div>
-             <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-               <Building2 size={18} className="text-indigo-600"/>
-               Logo Kop Surat
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} className="p-8 space-y-10">
+           
+           {/* 1. Logo Section */}
+           <section>
+             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+               <span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Building2 size={16}/></span>
+               Logo Header (Kop)
              </h3>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Logo Daerah */}
-                <div className="flex flex-col items-center gap-3 p-4 border border-slate-100 rounded-2xl bg-slate-50">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Logo Daerah (Kiri)</span>
-                  <div className="relative group cursor-pointer">
-                    <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center p-2 shadow-sm border border-slate-200 overflow-hidden">
+                <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Daerah (Sisi Kiri)</span>
+                  <div className="relative group">
+                    <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 shadow-sm border border-slate-200 overflow-hidden">
                       {config.logoDaerahUrl ? (
                         <img src={config.logoDaerahUrl} alt="Logo Daerah" className="w-full h-full object-contain" />
                       ) : (
-                        <Building2 className="text-slate-300 w-10 h-10" />
+                        <Building2 className="text-slate-200 w-12 h-12" />
                       )}
                     </div>
-                    <label className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                      <Upload size={20} />
+                    <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
+                      <Upload size={24} className="mb-1" />
+                      <span className="text-[10px] font-bold">Ganti Logo</span>
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoDaerahUrl')} />
                     </label>
                   </div>
-                  <span className="text-[10px] text-slate-400">Klik untuk ubah</span>
                 </div>
 
                 {/* Logo Sekolah */}
-                <div className="flex flex-col items-center gap-3 p-4 border border-slate-100 rounded-2xl bg-slate-50">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Logo Sekolah (Kanan)</span>
-                  <div className="relative group cursor-pointer">
-                    <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center p-2 shadow-sm border border-slate-200 overflow-hidden">
+                <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Sekolah (Sisi Kanan)</span>
+                  <div className="relative group">
+                    <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 shadow-sm border border-slate-200 overflow-hidden">
                       {config.logoUrl ? (
                         <img src={config.logoUrl} alt="Logo Sekolah" className="w-full h-full object-contain" />
                       ) : (
-                        <School className="text-slate-300 w-10 h-10" />
+                        <School className="text-slate-200 w-12 h-12" />
                       )}
                     </div>
-                    <label className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                      <Upload size={20} />
+                    <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
+                      <Upload size={24} className="mb-1" />
+                      <span className="text-[10px] font-bold">Ganti Logo</span>
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoUrl')} />
                     </label>
                   </div>
-                  <span className="text-[10px] text-slate-400">Klik untuk ubah</span>
                 </div>
              </div>
-           </div>
+           </section>
 
-           <div className="h-px bg-slate-100 w-full my-6"></div>
+           <div className="h-px bg-slate-100 w-full"></div>
 
-           {/* Principal Info Section */}
-           <div>
-             <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-               <UserCircle size={18} className="text-indigo-600"/>
-               Pejabat Penanda Tangan (Default)
+           {/* 2. Principal Info Section */}
+           <section>
+             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+               <span className="bg-amber-100 text-amber-600 p-1.5 rounded-lg"><UserCircle size={16}/></span>
+               Pejabat Penanda Tangan
              </h3>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Nama Lengkap (Gelar)</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Kepala Sekolah (Lengkap & Gelar)</label>
                   <input 
                     name="principalName" 
                     value={config.principalName} 
                     onChange={handleChange} 
                     placeholder="Contoh: Nita Ekaningkarti Adji, S.Pd"
-                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-800 transition-all text-sm"
+                    className="w-full px-5 py-4 bg-slate-50 border-slate-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-bold text-slate-800 transition-all text-sm shadow-sm"
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">NIP</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nomor Induk Pegawai (NIP)</label>
                   <input 
                     name="principalNip" 
                     value={config.principalNip} 
                     onChange={handleChange} 
                     placeholder="Contoh: 19860213 201409 2 002"
-                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-800 transition-all text-sm"
+                    className="w-full px-5 py-4 bg-slate-50 border-slate-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-bold text-slate-800 transition-all text-sm shadow-sm"
                   />
                 </div>
              </div>
+           </section>
+
+           <div className="h-px bg-slate-100 w-full"></div>
+
+           {/* 3. Text Header & Address */}
+           <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+             <div className="space-y-6">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Teks Kop Surat</h3>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Baris 1 (Pemerintah)</label>
+                    <input 
+                      name="headerLine1" 
+                      value={config.headerLine1} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-700 transition-all text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Baris 2 (Instansi Dinas)</label>
+                    <input 
+                      name="headerLine2" 
+                      value={config.headerLine2} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-700 transition-all text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Sekolah (Baris 3)</label>
+                    <input 
+                      name="name" 
+                      value={config.name} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-black text-indigo-700 transition-all text-base"
+                    />
+                  </div>
+                </div>
+             </div>
+
+             <div className="space-y-6">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Kontak & Alamat</h3>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Alamat Lengkap</label>
+                    <textarea 
+                      name="address" 
+                      rows={3}
+                      value={config.address} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-medium text-slate-700 transition-all text-sm resize-none"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Sekolah</label>
+                    <input 
+                      name="email" 
+                      value={config.email} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-medium text-slate-700 transition-all text-sm"
+                    />
+                  </div>
+                </div>
+             </div>
+           </section>
+
+           <div className="pt-4">
+             <button
+               type="submit"
+               disabled={loading}
+               className="w-full py-4.5 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-3 active:scale-[0.98] group"
+             >
+               {loading ? <Loader2 className="animate-spin" /> : <Save className="group-hover:scale-110 transition-transform"/>}
+               {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+             </button>
+             {!dbConnected && (
+               <p className="text-center mt-3 text-xs text-rose-500 font-bold animate-pulse">
+                 Database Offline: Perubahan hanya akan tersimpan di browser ini.
+               </p>
+             )}
            </div>
-
-           <div className="h-px bg-slate-100 w-full my-6"></div>
-
-           {/* Text Info */}
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="space-y-4">
-                <h3 className="text-sm font-bold text-slate-800 mb-2">Teks Header Kop Surat</h3>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Header Baris 1</label>
-                  <input 
-                    name="headerLine1" 
-                    value={config.headerLine1} 
-                    onChange={handleChange} 
-                    placeholder="Contoh: PEMERINTAH KOTA KEDIRI"
-                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-700 transition-all text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Header Baris 2</label>
-                  <input 
-                    name="headerLine2" 
-                    value={config.headerLine2} 
-                    onChange={handleChange} 
-                    placeholder="Contoh: DINAS PENDIDIKAN"
-                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-semibold text-slate-700 transition-all text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Nama Instansi / Sekolah (Baris 3)</label>
-                  <input 
-                    name="name" 
-                    value={config.name} 
-                    onChange={handleChange} 
-                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-bold text-slate-800 transition-all"
-                  />
-                </div>
-             </div>
-
-             <div className="space-y-4">
-                <h3 className="text-sm font-bold text-slate-800 mb-2">Kontak & Alamat</h3>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Alamat Lengkap</label>
-                  <textarea 
-                    name="address" 
-                    rows={3}
-                    value={config.address} 
-                    onChange={handleChange} 
-                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-medium text-slate-700 transition-all text-sm resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Email Resmi</label>
-                  <input 
-                    name="email" 
-                    value={config.email} 
-                    onChange={handleChange} 
-                    className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 border outline-none font-medium text-slate-700 transition-all text-sm"
-                  />
-                </div>
-             </div>
-           </div>
-
-           <button
-             type="submit"
-             disabled={loading}
-             className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-base hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 mt-4"
-           >
-             {loading ? <Loader2 className="animate-spin" /> : <Save />}
-             Simpan Pengaturan
-           </button>
         </form>
       </div>
     </div>

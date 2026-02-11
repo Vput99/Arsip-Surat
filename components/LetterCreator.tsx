@@ -71,7 +71,6 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       return;
     }
 
-    // Deteksi cerdas: Baris Dasar/Untuk jangan dijadikan tabel meski banyak titik dua
     const columns = line.split(':');
     const isActuallyDataTable = columns.length >= 3 && !['Dasar', 'Untuk', 'Kepada'].some(k => trimmed.startsWith(k));
     const isNumberedData = /^\d+\./.test(trimmed);
@@ -84,11 +83,9 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     flushTable();
 
-    // Render Judul Kapital Penuh
     if (trimmed === trimmed.toUpperCase() && trimmed.length < 50 && !trimmed.includes(':') && trimmed.length > 4) {
       renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-4 font-bold text-center text-black font-serif uppercase tracking-[0.1em]">{trimmed}</div>);
     } 
-    // Render Baris Berlabel (Dasar :, Untuk :)
     else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
       const firstColonIdx = line.indexOf(':');
       const label = line.substring(0, firstColonIdx).trim();
@@ -102,7 +99,6 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
         </div>
       );
     } 
-    // Render Poin 1. 2. dst
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
@@ -131,6 +127,8 @@ const LetterCreator: React.FC = () => {
   const [showStaffPicker, setShowStaffPicker] = useState(false);
   const [staffSearch, setStaffSearch] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
+  
+  // Ref untuk mengunci inisialisasi agar tidak terjadi overwrite berkala
   const isInitialized = useRef({ config: false, templates: false });
   const [useQRCode, setUseQRCode] = useState(true);
 
@@ -147,8 +145,10 @@ const LetterCreator: React.FC = () => {
   });
 
   useEffect(() => {
+    // 1. Subscribe ke Config (Logo & Nama Kepsek)
     const unsubscribeConfig = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
+      // Hanya set data Kepsek jika belum pernah diinisialisasi
       if (!isInitialized.current.config) {
         setFormData(prev => ({ 
           ...prev, 
@@ -161,9 +161,14 @@ const LetterCreator: React.FC = () => {
 
     const unsubscribeStaff = subscribeToStaff(setStaff);
 
+    // 2. Subscribe ke Templates
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       setTemplates(data);
       
+      // JANGAN timpa data jika user sudah mulai mengetik atau sudah diinisialisasi
+      if (isInitialized.current.templates) return;
+
+      // Cek apakah ada data dari 'location.state' (misal hasil scan AI)
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
@@ -175,8 +180,11 @@ const LetterCreator: React.FC = () => {
             content: (location.state.content || targetTemplate.content).replace(/\*\*/g, '').trim(),
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
+          isInitialized.current.templates = true; // Kunci!
         }
-      } else if (data.length > 0 && !isInitialized.current.templates) {
+      } 
+      // Jika tidak ada data kiriman, gunakan template pertama sebagai default
+      else if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
         setFormData(prev => ({ 
@@ -184,7 +192,7 @@ const LetterCreator: React.FC = () => {
           subject: firstTemplate.subject, 
           content: firstTemplate.content 
         }));
-        isInitialized.current.templates = true;
+        isInitialized.current.templates = true; // Kunci!
       }
     });
 
@@ -206,7 +214,7 @@ const LetterCreator: React.FC = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSelectStaff = (member: StaffMember) => {
@@ -255,8 +263,6 @@ const LetterCreator: React.FC = () => {
 
   if (!config || templates.length === 0) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
 
-  const isMOU = selectedTemplate?.category === 'Kerjasama';
-  const isCenteredLayout = selectedTemplate?.layout === 'centered';
   const contentParts = formData.content.split('[PAGE_BREAK]');
   const qrValue = `DOKUMEN SAH SDN ${config.name.toUpperCase()}\nNomor: ${formData.refNumber}\nPejabat: ${formData.signerName}\nTanggal: ${formData.date}`;
 

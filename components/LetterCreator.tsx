@@ -96,7 +96,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       
       renderedBlocks.push(
         <div key={`info-${index}`} className="flex mb-2 break-inside-avoid text-[11pt] font-serif text-black leading-relaxed">
-          <span className="w-[90px] shrink-0 font-bold">{label}</span>
+          <span className="w-[85px] shrink-0 font-bold">{label}</span>
           <span className="w-[20px] text-center shrink-0">:</span>
           <span className="flex-1 text-justify">{value}</span>
         </div>
@@ -106,7 +106,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
-        <div key={`list-${index}`} className="flex mb-2 pl-[110px] font-serif text-[11pt] text-black leading-relaxed">
+        <div key={`list-${index}`} className="flex mb-2 pl-[105px] font-serif text-[11pt] text-black leading-relaxed">
           <span className="w-8 shrink-0">{match ? match[1] : ''}</span>
           <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
         </div>
@@ -246,8 +246,8 @@ const LetterCreator: React.FC = () => {
       await saveMail(newMail);
       alert('Surat berhasil disimpan ke arsip Surat Keluar.');
       navigate('/outbox');
-    } catch (e) {
-      alert('Gagal menyimpan ke arsip.');
+    } catch (e: any) {
+      alert('Gagal menyimpan ke arsip: ' + e.message);
     } finally {
       setSaveLoading(false);
     }

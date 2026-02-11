@@ -202,13 +202,16 @@ const fetchAllMails = async () => {
   try {
     const rs = await turso.execute("SELECT * FROM mails ORDER BY createdAt DESC");
     const mails = rs.rows.map(row => ({ ...row } as unknown as Mail));
-    localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
+    // Perbarui local cache
+    try {
+      localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
+    } catch (e) {
+      console.warn("Local storage cache failed (likely quota). Using in-memory state.");
+    }
     mailListeners.forEach(l => l(mails));
     setConnectionStatus(true);
-    console.log("Cloud Sync: Mails fetched from Turso successfully.");
   } catch (e) {
     setConnectionStatus(false);
-    console.warn("Cloud Sync: Failed to fetch mails from Turso.");
   }
 };
 
@@ -273,7 +276,7 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   const mailId = mail.id || Date.now().toString();
   const mailToSave = { ...mail, id: mailId };
   
-  // Update Local State First
+  // 1. Update UI & Local Cache (Try/Catch because of Quota)
   const currentMails = getLocalMails();
   const existingIdx = currentMails.findIndex(m => m.id === mailId);
   let newMails;
@@ -283,13 +286,23 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   } else {
     newMails = [mailToSave, ...currentMails];
   }
-  localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
+  
+  try {
+    localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
+  } catch (e) {
+    console.error("LocalStorage Quota Exceeded. Removing attachment from local cache to save metadata.");
+    // Fallback: simpan metadata saja di local, aslinya di Cloud
+    const metadataOnlyMails = newMails.map(m => m.id === mailId ? { ...m, fileUrl: '[FILE_IN_CLOUD]' } : m);
+    try {
+      localStorage.setItem('OFFLINE_MAILS', JSON.stringify(metadataOnlyMails));
+    } catch(e2) {}
+  }
+  
   mailListeners.forEach(l => l(newMails));
 
-  // Push to Turso
+  // 2. Push to Cloud (Turso)
   if (turso) {
     try {
-      console.log(`Cloud Sync: Saving mail ${mailId} to Turso...`);
       await turso.execute({
         sql: `INSERT OR REPLACE INTO mails (
           id, type, referenceNumber, date, receivedDate, createdAt, 
@@ -303,14 +316,21 @@ export const saveMail = async (mail: Mail): Promise<void> => {
         ]
       });
       setConnectionStatus(true);
-      console.log("Cloud Sync: Mail saved to Turso successfully.");
     } catch (e: any) {
       setConnectionStatus(false);
-      console.error("Cloud Sync Error: Failed to save to Turso.", e.message);
-      // Data remains in localStorage, will sync on next fetch/refresh if connection restored
+      console.error("Turso Save Error:", e.message);
+      // Jika database cloud gagal, dan local storage tadi juga gagal (quota), baru lempar error
+      // Jika local storage berhasil, kita biarkan saja (nanti sync otomatis)
+      if (mailToSave.fileUrl && mailToSave.fileUrl.length > 500000) {
+        throw new Error("Gagal menyimpan. File lampiran terlalu besar untuk dikirim atau disimpan secara lokal.");
+      }
+      throw e;
     }
   } else {
-    console.warn("Cloud Sync: Turso not configured, saving only to local storage.");
+    // Jika tidak ada Turso dan local gagal, throw error
+    if (mailToSave.fileUrl && mailToSave.fileUrl.length > 500000) {
+       throw new Error("Penyimpanan cloud tidak aktif dan file terlalu besar untuk penyimpanan lokal.");
+    }
   }
 };
 
@@ -350,7 +370,6 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
       setConnectionStatus(true);
     } catch (e: any) {
       setConnectionStatus(false);
-      console.warn("Sinkronisasi config ke cloud gagal, data tersimpan secara lokal.");
     }
   }
 };

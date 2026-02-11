@@ -81,17 +81,22 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     3. JANGAN gunakan tanda bintang (**) atau markdown.
     4. MULAI LANGSUNG dari kata "Dasar :".
     5. Format Dasar (Wajib Satu Baris): "Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Tentang ${invitationMail.subject}."
-    6. Tulis "MEMERINTAHKAN :" di baris baru setelah Dasar.
-    7. Tulis "Kepada :" di baris baru, diikuti list personil dengan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], [JABATAN_PETUGAS].
-    8. Format Untuk: "Untuk : 1. Menghadiri ${invitationMail.subject} yang diselenggarakan oleh ${invitationMail.sender} pada tanggal ... (ambil dari isi naskah)."
-    9. Tambahkan poin Untuk kedua: "2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah."`;
+    6. Tambahkan poin Dasar kedua: "2. Program Kerja dan Anggaran Sekolah Tahun Pelajaran 2024/2025."
+    7. Tulis "MEMERINTAHKAN :" di baris baru setelah Dasar.
+    8. Tulis "Kepada :" di baris baru, diikuti list personil dengan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], [JABATAN_PETUGAS].
+    9. Format Untuk: "Untuk : 1. Menghadiri ${invitationMail.subject} yang diselenggarakan oleh ${invitationMail.sender} pada tanggal ... (ambil dari isi naskah)."
+    10. Tambahkan poin Untuk kedua: "2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah."
+    11. Gunakan spasi setelah tanda titik dua ( : ).`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt
     });
 
-    return (response.text || "").replace(/\*\*/g, '').trim();
+    // Menghilangkan redundansi jika AI masih keras kepala
+    let text = response.text || "";
+    text = text.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '');
+    return text.replace(/\*\*/g, '').trim();
   } catch (error) {
     console.error("Gemini SPT Error:", error);
     return "Gagal menyusun naskah SPT otomatis.";

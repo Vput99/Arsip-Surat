@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Printer, Loader2, FileText, Layout, UserPlus, Info } from 'lucide-react';
 import { subscribeToConfig, subscribeToTemplates, LetterTemplate } from '../services/storage';
 import { SchoolConfig } from '../types';
@@ -84,6 +84,8 @@ const LetterCreator: React.FC = () => {
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<LetterTemplate | null>(null);
+  const isInitialized = useRef({ config: false, templates: false });
+
   const [formData, setFormData] = useState({
     refNumber: `422/..../419.42.03.135/${new Date().getFullYear()}`,
     date: new Date().toISOString().split('T')[0],
@@ -99,23 +101,48 @@ const LetterCreator: React.FC = () => {
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
-      setFormData(prev => ({ ...prev, signerName: prev.signerName || newConfig.principalName, signerNip: prev.signerNip || newConfig.principalNip }));
-    });
-    const unsubscribeTemplates = subscribeToTemplates((data) => {
-      setTemplates(data);
-      if (data.length > 0 && !selectedTemplate) {
-        setSelectedTemplate(data[0]);
-        setFormData(prev => ({ ...prev, subject: data[0].subject, content: data[0].content }));
+      // Hanya isi otomatis jika form masih kosong/belum diinisialisasi
+      if (!isInitialized.current.config) {
+        setFormData(prev => ({ 
+          ...prev, 
+          signerName: newConfig.principalName, 
+          signerNip: newConfig.principalNip 
+        }));
+        isInitialized.current.config = true;
       }
     });
-    return () => { unsubscribeConfig(); unsubscribeTemplates(); };
+
+    const unsubscribeTemplates = subscribeToTemplates((data) => {
+      setTemplates(data);
+      // Hanya isi otomatis saat pertama kali data template datang
+      if (data.length > 0 && !isInitialized.current.templates) {
+        const firstTemplate = data[0];
+        setSelectedTemplate(firstTemplate);
+        setFormData(prev => ({ 
+          ...prev, 
+          subject: firstTemplate.subject, 
+          content: firstTemplate.content 
+        }));
+        isInitialized.current.templates = true;
+      }
+    });
+
+    return () => { 
+      unsubscribeConfig(); 
+      unsubscribeTemplates(); 
+    };
   }, []);
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const template = templates.find(t => t.id === e.target.value);
     if (template) {
       setSelectedTemplate(template);
-      setFormData(prev => ({ ...prev, subject: template.subject, content: template.content, signatureTitle: template.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah' }));
+      setFormData(prev => ({ 
+        ...prev, 
+        subject: template.subject, 
+        content: template.content, 
+        signatureTitle: template.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah' 
+      }));
     }
   };
 
@@ -161,7 +188,7 @@ const LetterCreator: React.FC = () => {
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white w-[215mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
                 {pIdx === 0 && (
-                  <div className="border-b-[4px] border-double border-black pb-3 mb-2 pt-1 grid grid-cols-[80px_1fr_80px] items-center text-black">
+                  <div className="border-b-[4px] border-double border-black pb-3 mb-2 grid grid-cols-[80px_1fr_80px] items-center text-black">
                      <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[20mm] h-auto" />}</div>
                      <div className="text-center w-full px-4"><h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine1}</h3><h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine2}</h3><h1 className="text-[17pt] font-extrabold uppercase my-1 leading-none">{config.name}</h1><p className="text-[9pt] italic">{config.address}</p><p className="text-[9pt]">NPSN: {config.npsn} | Email: {config.email}</p></div>
                      <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-[20mm] h-auto" />}</div>
@@ -192,7 +219,7 @@ const LetterCreator: React.FC = () => {
            ))}
         </div>
       </div>
-      <style>{`.letter-paper { padding: 10mm 20mm 20mm 30mm; min-height: 297mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: relative !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 10mm 20mm 20mm 30mm !important; display: block !important; page-break-after: always !important; } .page-breaker { display: none !important; } table { border: 1.5px solid black !important; } th, td { border: 1px solid #000 !important; } * { color: black !important; } }`}</style>
+      <style>{`.letter-paper { padding: 8mm 20mm 20mm 30mm; min-height: 297mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: relative !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 8mm 20mm 20mm 30mm !important; display: block !important; page-break-after: always !important; } .page-breaker { display: none !important; } table { border: 1.5px solid black !important; } th, td { border: 1px solid #000 !important; } * { color: black !important; } }`}</style>
     </div>
   );
 };

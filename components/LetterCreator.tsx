@@ -9,12 +9,13 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
   const lines = text.split('\n');
   const renderedBlocks: React.ReactNode[] = [];
   let tableRows: string[][] = [];
+  let isInTableMode = false;
 
   const flushTable = () => {
     if (tableRows.length > 0) {
       const firstRow = tableRows[0];
       const hasHeader = firstRow.some(cell => 
-        ['nama', 'jabatan', 'no', 'kelas', 'rekening', 'id', 'virtual'].some(k => cell.toLowerCase().includes(k))
+        ['nama', 'jabatan', 'no', 'kelas', 'rekening', 'id', 'virtual', 'peserta'].some(k => cell.toLowerCase().includes(k))
       );
       
       renderedBlocks.push(
@@ -44,15 +45,28 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
         </div>
       );
       tableRows = [];
+      isInTableMode = false;
     }
   };
 
   lines.forEach((line, index) => {
     const trimmed = line.trim();
+    if (trimmed === '') {
+      flushTable();
+      renderedBlocks.push(<div className="h-3" key={`br-${index}`}></div>);
+      return;
+    }
+
     const columns = line.split(':');
     
-    // TABEL: Baris dianggap bagian tabel jika memiliki minimal 2 titik dua (3 kolom)
-    const isTableRow = columns.length >= 3;
+    // Logika Deteksi: Jika baris punya banyak titik dua, itu pasti tabel.
+    // Jika baris diawali angka (1.) dan kita baru saja mulai tabel, itu juga bagian dari tabel.
+    const hasManyColumns = columns.length >= 3;
+    const isNumberedData = /^\d+\./.test(trimmed);
+    const isContinuedData = line.startsWith(':');
+
+    // Tentukan apakah baris ini harus masuk ke tabel
+    const shouldBeInTable = hasManyColumns || (isInTableMode && (isNumberedData || isContinuedData));
 
     if (trimmed === '[PAGE_BREAK]') {
       flushTable();
@@ -60,18 +74,31 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       return;
     }
 
-    if (isTableRow) {
-      tableRows.push(columns);
+    if (shouldBeInTable) {
+      isInTableMode = true; // Kunci mode tabel
+      let finalRow = columns;
+      
+      // Jika input hanya "1. Nama Anak" tanpa ":", bantu pecah secara otomatis
+      if (columns.length < 3 && isNumberedData) {
+        const match = trimmed.match(/^(\d+\.)\s*(.*)/);
+        if (match) {
+          // Buat array dummy agar masuk ke kolom yang benar (Kolom 1: No, Kolom 2: Nama)
+          finalRow = [match[1], match[2], '', '', ''];
+        }
+      }
+      
+      tableRows.push(finalRow);
       return;
     }
 
-    // Jika bukan baris tabel, cetak tabel yang sudah terkumpul dulu
+    // Jika sampai sini berarti bukan baris tabel, bersihkan buffer tabel jika ada
     flushTable();
 
+    // Render elemen non-tabel
     if (trimmed.startsWith('PASAL') || trimmed === 'MEMUTUSKAN' || (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && trimmed.length > 3 && !trimmed.includes(':'))) {
       renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-3 font-bold text-center text-black font-serif uppercase tracking-wider underline underline-offset-4">{trimmed}</div>);
     } 
-    else if (columns.length === 2 && trimmed.length > 0 && !trimmed.endsWith(':')) {
+    else if (columns.length === 2 && !trimmed.endsWith(':')) {
       const isKonsideran = ['menimbang', 'mengingat', 'memperhatikan', 'menetapkan'].includes(columns[0].trim().toLowerCase());
       renderedBlocks.push(<div key={`info-${index}`} className={`flex mb-1.5 break-inside-avoid text-black font-serif ${isKonsideran ? 'mt-4' : 'pl-8'}`}><span className={`${isKonsideran ? 'w-[110px] font-bold italic' : 'w-[28%]'} shrink-0 align-top`}>{columns[0].trim()}</span><span className="w-[15px] text-center shrink-0">:</span><span className="flex-1 pl-1 text-justify">{columns[1].trim()}</span></div>);
     } 
@@ -80,12 +107,9 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
        if (match) renderedBlocks.push(<div key={`list-${index}`} className="flex mb-2 pl-8 font-serif text-black leading-relaxed"><span className="w-8 shrink-0">{match[1]}</span><span className="flex-1 text-justify">{match[2]}</span></div>);
     }
     else {
-      if (trimmed === '') renderedBlocks.push(<div className="h-3" key={`br-${index}`}></div>);
-      else {
-         const lower = trimmed.toLowerCase();
-         const isStandardPhrase = lower.startsWith('dengan hormat') || lower.startsWith('demikian') || lower.startsWith('untuk') || lower.startsWith('dasar');
-         renderedBlocks.push(<p key={`p-${index}`} className={`mb-3 text-justify font-serif text-black leading-[1.6] ${isStandardPhrase ? '' : 'indent-10'}`}>{trimmed}</p>);
-      }
+      const lower = trimmed.toLowerCase();
+      const isStandardPhrase = lower.startsWith('dengan hormat') || lower.startsWith('demikian') || lower.startsWith('untuk') || lower.startsWith('dasar');
+      renderedBlocks.push(<p key={`p-${index}`} className={`mb-3 text-justify font-serif text-black leading-[1.6] ${isStandardPhrase ? '' : 'indent-10'}`}>{trimmed}</p>);
     }
   });
   
@@ -205,14 +229,14 @@ const LetterCreator: React.FC = () => {
                 <div className="flex-1 flex flex-col pt-4">
                    {pIdx === 0 && (
                      isCenteredLayout ? (
-                       <div className="text-center mb-6"><h2 className="text-[13pt] font-bold uppercase underline tracking-wide leading-tight">{formData.subject}</h2><p className="text-[11pt] mt-1 font-bold">Nomor: {formData.refNumber}</p></div>
+                       <div className="text-center mb-4"><h2 className="text-[13pt] font-bold uppercase underline tracking-wide leading-tight">{formData.subject}</h2><p className="text-[11pt] mt-1 font-bold">Nomor: {formData.refNumber}</p></div>
                      ) : (
-                       <div className="mb-6 text-black"><div className="flex justify-end mb-6"><p className="text-[11pt]">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p></div><div className="space-y-0.5 flex flex-col"><div className="flex"><span className="w-24">Nomor</span><span>: {formData.refNumber}</span></div><div className="flex"><span className="w-24">Lampiran</span><span>: -</span></div><div className="flex"><span className="w-24">Perihal</span><span className="font-bold underline">: {formData.subject}</span></div></div><div className="mt-8"><p>Kepada Yth.</p><p className="font-bold">{formData.recipient || '................................'}</p><p>di Tempat</p></div></div>
+                       <div className="mb-4 text-black"><div className="flex justify-end mb-4"><p className="text-[11pt]">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p></div><div className="space-y-0.5 flex flex-col"><div className="flex"><span className="w-24">Nomor</span><span>: {formData.refNumber}</span></div><div className="flex"><span className="w-24">Lampiran</span><span>: -</span></div><div className="flex"><span className="w-24">Perihal</span><span className="font-bold underline">: {formData.subject}</span></div></div><div className="mt-6"><p>Kepada Yth.</p><p className="font-bold">{formData.recipient || '................................'}</p><p>di Tempat</p></div></div>
                      )
                    )}
                    <div className="flex-1"><SmartContentRenderer text={part} /></div>
                    {pIdx === contentParts.length - 1 && (
-                     <div className={`mt-10 break-inside-avoid grid ${isMOU ? 'grid-cols-2' : 'grid-cols-1'} gap-6 text-center text-[11pt] font-serif`}>
+                     <div className={`mt-8 break-inside-avoid grid ${isMOU ? 'grid-cols-2' : 'grid-cols-1'} gap-6 text-center text-[11pt] font-serif`}>
                         {isMOU && <div className="flex flex-col"><p className="mb-1">&nbsp;</p><p className="font-bold uppercase tracking-wider mb-2">PIHAK KEDUA,</p><div className="h-24"></div><p className="font-bold underline uppercase">{formData.signerNamePihak2}</p></div>}
                         <div className={`${!isMOU ? 'ml-auto w-[300px]' : ''} flex flex-col`}>
                            {isCenteredLayout && pIdx === 0 && <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}

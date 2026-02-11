@@ -70,7 +70,6 @@ export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => vo
       const rs = await turso.execute("SELECT * FROM letter_templates ORDER BY createdAt ASC");
       let templates = rs.rows.map(row => ({ ...row } as unknown as LetterTemplate));
       
-      // Seed initial data if table is empty
       if (templates.length === 0) {
         for (const t of LETTER_TEMPLATES) {
           const newT = { ...t, createdAt: new Date().toISOString() };
@@ -87,7 +86,7 @@ export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => vo
   };
 
   fetchTemplates();
-  const interval = setInterval(fetchTemplates, 20000);
+  const interval = setInterval(fetchTemplates, isDatabaseConnected ? 20000 : 60000);
   return () => {
     clearInterval(interval);
     templateListeners = templateListeners.filter(l => l !== onData);
@@ -140,7 +139,7 @@ export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
   };
 
   fetchStaff();
-  const interval = setInterval(fetchStaff, 10000);
+  const interval = setInterval(fetchStaff, isDatabaseConnected ? 10000 : 60000);
   return () => {
     clearInterval(interval);
     staffListeners = staffListeners.filter(l => l !== onData);
@@ -245,7 +244,7 @@ export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   onData(getLocalMails());
   if (isTursoConfigured()) {
     fetchAllMails();
-    const interval = setInterval(fetchAllMails, 5000);
+    const interval = setInterval(fetchAllMails, isDatabaseConnected ? 5000 : 30000);
     return () => {
       clearInterval(interval);
       mailListeners = mailListeners.filter(l => l !== onData);
@@ -259,7 +258,7 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
   onData(getLocalConfig());
   if (isTursoConfigured()) {
     fetchConfig();
-    const interval = setInterval(fetchConfig, 30000);
+    const interval = setInterval(fetchConfig, 60000);
     return () => {
       clearInterval(interval);
       configListeners = configListeners.filter(l => l !== onData);
@@ -339,7 +338,8 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
       setConnectionStatus(true);
     } catch (e: any) {
       setConnectionStatus(false);
-      throw new Error(`Gagal menyimpan ke database cloud: ${e.message}`);
+      // Jangan lempar error agar UI tidak terganggu, cukup biarkan offline.
+      console.warn("Sinkronisasi config ke cloud gagal, data tersimpan secara lokal.");
     }
   }
 };

@@ -19,9 +19,13 @@ export const initTables = async () => {
   if (!turso) return;
 
   try {
-    await turso.execute("SELECT 1");
+    // Gunakan timeout singkat untuk tes koneksi agar tidak hang
+    const testPromise = turso.execute("SELECT 1");
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
     
-    // 1. Inisialisasi Tabel Dasar
+    await Promise.race([testPromise, timeoutPromise]);
+    
+    // Inisialisasi Tabel
     await turso.batch([
       `CREATE TABLE IF NOT EXISTS mails (
         id TEXT PRIMARY KEY,
@@ -72,25 +76,9 @@ export const initTables = async () => {
       )`
     ], "write");
 
-    // 2. Patching Kolom Baru (Migration)
-    try {
-      await turso.execute("ALTER TABLE school_config ADD COLUMN principalName TEXT");
-    } catch (e) { /* Kolom mungkin sudah ada */ }
-
-    try {
-      await turso.execute("ALTER TABLE school_config ADD COLUMN principalNip TEXT");
-    } catch (e) { /* Kolom mungkin sudah ada */ }
-
-    try {
-      await turso.execute("ALTER TABLE school_config ADD COLUMN npsn TEXT");
-    } catch (e) { /* Kolom mungkin sudah ada */ }
-
-    try {
-      await turso.execute("ALTER TABLE staff ADD COLUMN orderIndex INTEGER DEFAULT 9999");
-    } catch (e) { /* Kolom mungkin sudah ada */ }
-    
-    console.log("Database Turso: Inisialisasi & Migrasi Berhasil.");
+    console.log("Database Turso: Sinkronisasi Aktif.");
   } catch (e: any) {
-    console.error("Koneksi Turso Gagal:", e.message);
+    // Jangan lempar error ke UI, cukup log dan biarkan storage.ts menangani fallback
+    console.warn("Database Cloud tidak terjangkau (Mode Offline Aktif):", e.message);
   }
 };

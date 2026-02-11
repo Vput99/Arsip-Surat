@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, Info, MousePointer2, ClipboardList } from 'lucide-react';
+import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, Info, MousePointer2, ClipboardList, CheckSquare } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, StaffMember } from '../services/storage';
 import { SchoolConfig } from '../types';
 import { format, getDaysInMonth, isSunday, isSaturday } from 'date-fns';
@@ -47,6 +47,20 @@ const AttendanceCreator: React.FC = () => {
     } else {
       setHolidays([...holidays, day].sort((a, b) => a - b));
     }
+  };
+
+  const markAllPresent = () => {
+    if (!confirm('Tandai semua personil hadir (P) untuk bulan ini? (Hari libur akan dilewati)')) return;
+    const newAttendance = { ...attendance };
+    currentStaffList.forEach(staff => {
+      dateRange.forEach(day => {
+        if (!isDayOff(day)) {
+          newAttendance[`${staff.id}-${day}-in`] = 'P';
+          newAttendance[`${staff.id}-${day}-out`] = 'P';
+        }
+      });
+    });
+    setAttendance(newAttendance);
   };
 
   const getCategoryTitle = (cat: AttendanceCategory) => {
@@ -122,7 +136,7 @@ const AttendanceCreator: React.FC = () => {
       <div className="max-w-6xl mx-auto py-16 px-6 animate-fade-in">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Presensi Kehadiran</h2>
-          <p className="text-slate-500 font-medium text-lg">Format Landscape F4 otomatis untuk pelaporan resmi.</p>
+          <p className="text-slate-500 font-medium text-lg">Format Landscape F4 otomatis untuk pelaporan resmi sekolah.</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -147,7 +161,7 @@ const AttendanceCreator: React.FC = () => {
                </div>
                <div>
                  <h3 className="text-2xl font-black mb-1">Rekapitulasi Kehadiran</h3>
-                 <p className="text-slate-400 font-medium">Lihat total kehadiran, sakit, ijin, dan alfa dalam satu lembar.</p>
+                 <p className="text-slate-400 font-medium">Lihat total kehadiran, sakit, ijin, dan alfa dalam satu lembar otomatis.</p>
                </div>
             </div>
             <div className="bg-white text-slate-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2">
@@ -172,6 +186,9 @@ const AttendanceCreator: React.FC = () => {
             </div>
          </div>
          <div className="flex gap-2">
+            <button onClick={markAllPresent} className="px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-emerald-100 transition-all shadow-sm">
+              <CheckSquare size={16} /> Hadirkan Semua
+            </button>
             <Link to="/settings" className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
               <Settings size={16} /> Data Personil
             </Link>
@@ -255,9 +272,8 @@ const AttendanceCreator: React.FC = () => {
           </div>
         </div>
 
-        {/* Preview Area - Container Fixed Landscape */}
+        {/* Preview Area */}
         <div className="xl:col-span-3 space-y-4 flex flex-col min-h-0 overflow-visible">
-           {/* Tab Categories Switcher */}
            <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1 shadow-sm shrink-0">
               {(['reg', 'pppk', 'extra', 'tukang'] as const).map(cat => (
                 <button 
@@ -270,36 +286,31 @@ const AttendanceCreator: React.FC = () => {
               ))}
            </div>
 
-           {/* PAPER CONTAINER - Locked at 330mm wide in UI for true Landscape feel */}
            <div className="flex-1 overflow-x-auto overflow-y-auto p-8 bg-slate-200/50 rounded-[2.5rem] border border-slate-300 group shadow-inner print:p-0 print:bg-white print:block print:rounded-none print:border-none print:shadow-none print:overflow-visible">
-             {/* Realistic Paper Container - Explicit 330mm width */}
              <div className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col text-black font-serif">
                
                <div className="paper-padding flex flex-col items-center">
-                 {/* KOP SURAT STANDAR DINAS */}
-                 <div className="kop-surat border-b-[3pt] border-double border-black pb-3 mb-6 pt-2 grid grid-cols-[110px_1fr_110px] items-center text-black w-full">
+                 <div className="kop-surat border-b-[3.5pt] border-double border-black pb-3 mb-6 pt-2 grid grid-cols-[110px_1fr_110px] items-center text-black w-full">
                     <div className="flex justify-center">
-                      {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[18mm] h-auto" alt="Logo Daerah"/>}
+                      {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[20mm] h-auto" alt="Logo Daerah"/>}
                     </div>
                     <div className="text-center w-full px-6">
                        <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide">{config.headerLine1}</h3>
                        <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide">{config.headerLine2}</h3>
-                       <h1 className="text-[18pt] font-black uppercase my-1 leading-none tracking-tight">{config.name}</h1>
+                       <h1 className="text-[19pt] font-black uppercase my-1 leading-none tracking-tight">{config.name}</h1>
                        <p className="text-[10pt] leading-tight italic font-medium">{config.address}</p>
                        <p className="text-[9pt] leading-tight font-bold italic">NPSN: {config.npsn} | Email: {config.email}</p>
                     </div>
                     <div className="flex justify-center">
-                      {config.logoUrl && <img src={config.logoUrl} className="w-[18mm] h-auto" alt="Logo Sekolah"/>}
+                      {config.logoUrl && <img src={config.logoUrl} className="w-[20mm] h-auto" alt="Logo Sekolah"/>}
                     </div>
                  </div>
 
-                 {/* JUDUL LAPORAN */}
                  <div className="judul-laporan text-center mb-6 text-black w-full">
-                   <h2 className="text-[14pt] font-bold underline uppercase text-black mb-1">{view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}</h2>
+                   <h2 className="text-[14pt] font-bold underline underline-offset-4 decoration-2 uppercase text-black mb-1">{view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}</h2>
                    <p className="text-[11pt] font-serif uppercase text-black font-bold tracking-[0.2em]">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
                  </div>
 
-                 {/* TABEL DATA */}
                  <div className="w-full">
                    {view === 'recap' ? (
                       <table className="recap-table w-full border-collapse text-[10pt] font-serif text-black border-black">
@@ -344,27 +355,27 @@ const AttendanceCreator: React.FC = () => {
                         </tbody>
                       </table>
                    ) : (
-                      <table className="attendance-table w-full border-collapse text-[8.5pt] font-serif table-fixed text-black border-black">
+                      <table className="attendance-table w-full border-collapse text-[8.5pt] font-serif table-fixed text-black border-black border-[1.5pt]">
                        <thead>
                          <tr className="bg-slate-50/50 print:bg-transparent">
-                           <th rowSpan={2} className="border-[1.2pt] border-black p-1 text-black font-bold text-center w-8">NO</th>
-                           <th rowSpan={2} className="border-[1.2pt] border-black p-1 text-black font-bold text-center w-[240px]">NAMA LENGKAP / NIP</th>
-                           <th rowSpan={2} className="border-[1.2pt] border-black p-1 text-black font-bold text-center w-[100px]">JABATAN</th>
-                           <th colSpan={daysInMonth} className="border-[1.2pt] border-black p-1 text-black font-bold text-center uppercase tracking-widest text-[8.5pt]">TANGGAL ABSENSI (A: Masuk, B: Pulang)</th>
-                           <th colSpan={6} className="border-[1.2pt] border-black p-1 text-black font-bold text-center uppercase tracking-wider text-[7.5pt]">REKAP</th>
+                           <th rowSpan={2} className="border border-black p-1 text-black font-bold text-center w-8">NO</th>
+                           <th rowSpan={2} className="border border-black p-1 text-black font-bold text-center w-[250px]">NAMA LENGKAP / NIP</th>
+                           <th rowSpan={2} className="border border-black p-1 text-black font-bold text-center w-[110px]">JABATAN</th>
+                           <th colSpan={daysInMonth} className="border border-black p-1 text-black font-bold text-center uppercase tracking-widest text-[8.5pt]">TANGGAL ABSENSI (A: Masuk, B: Pulang)</th>
+                           <th colSpan={6} className="border border-black p-1 text-black font-bold text-center uppercase tracking-wider text-[7.5pt]">REKAP</th>
                          </tr>
                          <tr className="bg-slate-50/50 print:bg-transparent">
                            {dateRange.map(d => (
-                             <th key={d} className={`border-[1.2pt] border-black p-0.5 text-[7pt] font-black h-8 text-center min-w-[22px] ${isDayOff(d) ? 'bg-red-50 text-red-600 print:bg-red-50' : 'text-black'}`}>
+                             <th key={d} className={`border border-black p-0.5 text-[7pt] font-black h-8 text-center min-w-[22px] transition-colors ${isDayOff(d) ? 'bg-red-600 text-white print:bg-red-600' : 'text-black'}`}>
                                {d}
                              </th>
                            ))}
-                           <th className="border-[1.2pt] border-black text-black font-bold text-center w-8">S</th>
-                           <th className="border-[1.2pt] border-black text-black font-bold text-center w-8">I</th>
-                           <th className="border-[1.2pt] border-black text-black font-bold text-center w-8">A</th>
-                           <th className="border-[1.2pt] border-black text-black font-bold text-center w-8">C</th>
-                           <th className="border-[1.2pt] border-black text-black font-bold text-center w-8">DL</th>
-                           <th className="border-[1.2pt] border-black text-black font-bold text-center w-10">JML</th>
+                           <th className="border border-black text-black font-bold text-center w-8">S</th>
+                           <th className="border border-black text-black font-bold text-center w-8">I</th>
+                           <th className="border border-black text-black font-bold text-center w-8">A</th>
+                           <th className="border border-black text-black font-bold text-center w-8">C</th>
+                           <th className="border border-black text-black font-bold text-center w-8">DL</th>
+                           <th className="border border-black text-black font-bold text-center w-10">JML</th>
                          </tr>
                        </thead>
                        <tbody>
@@ -379,12 +390,12 @@ const AttendanceCreator: React.FC = () => {
                                </td>
                                <td className="border border-black text-center text-[8pt] leading-tight px-1 text-black align-middle whitespace-normal font-medium">{staff.rank || '-'}</td>
                                {dateRange.map(d => (
-                                 <td key={`cell-${d}`} className={`border border-black p-0 group/cell transition-colors ${isDayOff(d) ? 'bg-red-50/30 print:bg-red-50/30' : 'hover:bg-slate-50'}`}>
+                                 <td key={`cell-${d}`} className={`border border-black p-0 group/cell transition-colors relative ${isDayOff(d) ? 'bg-red-500 print:bg-red-500' : 'hover:bg-slate-50'}`}>
                                     <div className="flex flex-col h-full w-full">
-                                       <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black/10 min-h-[18px] transition-all ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-white active:bg-blue-50'}`}>
+                                       <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black/10 min-h-[22px] transition-all ${isDayOff(d) ? 'cursor-not-allowed opacity-0' : 'cursor-pointer hover:bg-white active:bg-blue-50'}`}>
                                          {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
                                        </div>
-                                       <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center min-h-[18px] transition-all ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-white active:bg-blue-50'}`}>
+                                       <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center min-h-[22px] transition-all ${isDayOff(d) ? 'cursor-not-allowed opacity-0' : 'cursor-pointer hover:bg-white active:bg-blue-50'}`}>
                                          {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
                                        </div>
                                     </div>
@@ -404,19 +415,17 @@ const AttendanceCreator: React.FC = () => {
                    )}
                  </div>
 
-                 {/* TANDA TANGAN KEPALA SEKOLAH - RAPAT KANAN */}
                  <div className="mt-12 flex justify-end font-serif text-[11pt] break-inside-avoid text-black w-full pr-[15mm]">
                    <div className="flex flex-col text-center w-[350px]">
                      <p className="mb-1">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
                      <p className="font-bold leading-tight">Kepala Sekolah Dasar Negeri {config.name.replace('SD NEGERI ', '')},</p>
                      <div className="h-28"></div>
-                     <p className="font-bold underline text-[12pt] uppercase tracking-wider">{config.principalName}</p>
+                     <p className="font-bold underline underline-offset-4 decoration-2 text-[12pt] uppercase tracking-wider">{config.principalName}</p>
                      <p className="font-bold">NIP. {config.principalNip}</p>
                    </div>
                  </div>
                </div>
                
-               {/* Watermark Label untuk Screen Only */}
                <div className="absolute top-4 right-6 text-[9px] font-black text-slate-200 tracking-[0.5em] uppercase pointer-events-none print:hidden">Pratinjau F4 Landscape 330x215mm</div>
              </div>
            </div>
@@ -424,14 +433,12 @@ const AttendanceCreator: React.FC = () => {
       </div>
 
       <style>{`
-        /* KUNCI LEBAR PRATINJAU DI LAYAR (LANDSCAPE) */
         .attendance-paper-landscape {
            width: 330mm;
            min-width: 330mm;
            min-height: 215mm;
            background: white;
            margin: 0 auto;
-           box-sizing: border-box;
            display: flex;
            flex-direction: column;
            border: 1px solid #e2e8f0;
@@ -440,7 +447,6 @@ const AttendanceCreator: React.FC = () => {
         .paper-padding {
            width: 100%;
            padding: 10mm 15mm; 
-           box-sizing: border-box;
         }
 
         @media print {
@@ -449,21 +455,11 @@ const AttendanceCreator: React.FC = () => {
             margin: 0; 
           }
           
-          html, body, #root {
-            height: auto !important;
-            overflow: visible !important;
-            position: static !important;
-          }
-          
           body { 
-            background: white !important; 
-            margin: 0 !important;
-            padding: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
 
-          /* Hilangkan elemen UI */
           body * { visibility: hidden; }
           .attendance-paper-landscape, .attendance-paper-landscape * { visibility: visible !important; }
           
@@ -472,44 +468,15 @@ const AttendanceCreator: React.FC = () => {
             left: 0 !important; 
             top: 0 !important; 
             width: 330mm !important; 
-            min-height: 215mm !important; 
             margin: 0 !important;
-            padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            background: white !important;
           }
 
-          .paper-padding {
-             width: 100% !important;
-             padding: 10mm 15mm !important; 
-          }
-
-          table { 
-             width: 100% !important; 
-             border-collapse: collapse !important; 
-             border: 2pt solid black !important; 
-          }
-          
-          th, td { 
-             border: 1pt solid black !important; 
-             background: white !important;
-          }
-
-          /* Pastikan warna teks penting tetap berwarna */
-          .text-red-600 { color: #dc2626 !important; }
-          .text-blue-700 { color: #1d4ed8 !important; }
-          
-          /* Warnai latar belakang sel hari libur saat print */
-          .bg-red-50 { 
-            background-color: #fef2f2 !important; 
-            -webkit-print-color-adjust: exact !important;
-          }
-          
-          /* Elemen teks standar tetap hitam */
-          .kop-surat *, .judul-laporan *, .tanda-tangan-section * { 
-            color: black !important; 
-          }
+          .bg-red-600 { background-color: #dc2626 !important; }
+          .bg-red-500 { background-color: #ef4444 !important; }
+          table { border: 1.5pt solid black !important; }
+          th, td { border: 1pt solid black !important; }
         }
       `}</style>
     </div>

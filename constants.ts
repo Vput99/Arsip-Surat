@@ -74,6 +74,25 @@ NO : NAMA PESERTA DIDIK TERTERA DI SK : KELAS : NOMOR REKENING : PIP ID/VIRTUAL 
 Demikian surat keterangan ini dibuat untuk digunakan sebagai salah satu persyaratan untuk melakukan aktivasi rekening SimPel PIP di bank penyalur.`
   },
   {
+    id: 't_panggilan_ortu',
+    name: 'Surat Panggilan Orang Tua',
+    subject: 'UNDANGAN PANGGILAN ORANG TUA / WALI MURID',
+    category: 'Undangan',
+    layout: 'standard',
+    content: `Dengan hormat,
+
+Sehubungan dengan adanya hal penting yang perlu dikoordinasikan terkait perkembangan pendidikan putra/putri Bapak/Ibu, maka kami mengharap kehadiran Bapak/Ibu Wali Murid pada:
+
+Hari/Tanggal : ...................................................
+Waktu : ...................................................
+Tempat : Ruang Kepala Sekolah / Guru
+Keperluan : Koordinasi Pembinaan Peserta Didik
+
+Mengingat pentingnya acara tersebut, kami mengharap kehadiran Bapak/Ibu tepat pada waktunya.
+
+Demikian undangan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.`
+  },
+  {
     id: 't_sk_panitia',
     name: 'SK Kepala Sekolah (Keputusan)',
     subject: 'KEPUTUSAN KEPALA SD NEGERI [NAMA_SEKOLAH]',

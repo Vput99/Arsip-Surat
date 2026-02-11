@@ -5,7 +5,7 @@ import { SchoolConfig } from '../types';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
-const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTableTemplate?: boolean }) => {
+const SmartContentRenderer = ({ text }: { text: string }) => {
   const lines = text.split('\n');
   const renderedBlocks: React.ReactNode[] = [];
   let tableRows: string[][] = [];
@@ -13,15 +13,18 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
   const flushTable = () => {
     if (tableRows.length > 0) {
       const firstRow = tableRows[0];
-      const hasHeader = firstRow.some(cell => cell.toLowerCase().includes('nama') || cell.toLowerCase().includes('jabatan') || cell.toLowerCase().includes('no'));
+      const hasHeader = firstRow.some(cell => 
+        ['nama', 'jabatan', 'no', 'kelas', 'rekening', 'id', 'virtual'].some(k => cell.toLowerCase().includes(k))
+      );
+      
       renderedBlocks.push(
-        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-6 break-inside-avoid px-2">
-          <table className="w-full border-collapse border border-black text-[11pt] text-black">
+        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-6 break-inside-avoid px-0 w-full overflow-x-auto">
+          <table className="w-full border-collapse border-[1.5pt] border-black text-[10.5pt] text-black font-serif">
             <thead>
               {hasHeader && (
                 <tr className="bg-slate-50 print:bg-transparent">
                   {tableRows[0].map((cell, idx) => (
-                    <th key={idx} className="border border-black p-2 text-center font-bold uppercase font-serif align-middle">{cell.trim()}</th>
+                    <th key={idx} className="border border-black p-2 text-center font-bold uppercase font-serif align-middle bg-slate-50/50 print:bg-transparent">{cell.trim()}</th>
                   ))}
                 </tr>
               )}
@@ -30,7 +33,9 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
               {tableRows.slice(hasHeader ? 1 : 0).map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className={`border border-black px-2 py-1.5 font-serif align-top ${cellIdx === 0 ? 'text-center w-12' : ''}`}>{cell.trim()}</td>
+                    <td key={cellIdx} className={`border border-black px-2 py-1.5 font-serif align-top ${cellIdx === 0 ? 'text-center w-10' : ''} ${cellIdx === 2 && row.length > 4 ? 'text-center w-16' : ''}`}>
+                      {cell.trim() || ' '}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -44,38 +49,46 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
 
   lines.forEach((line, index) => {
     const trimmed = line.trim();
+    const columns = line.split(':');
+    
+    // TABEL: Baris dianggap bagian tabel jika memiliki minimal 2 titik dua (3 kolom)
+    const isTableRow = columns.length >= 3;
+
     if (trimmed === '[PAGE_BREAK]') {
       flushTable();
-      renderedBlocks.push(<div key={`pb-${index}`} className="page-breaker print:break-after-page h-0 my-10 relative border-t border-dashed border-slate-300 print:border-none"><span className="absolute right-0 -top-3 bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 print:hidden">HALAMAN BARU</span></div>);
+      renderedBlocks.push(<div key={`pb-${index}`} className="page-breaker print:break-after-page h-0 my-1 relative border-t border-dashed border-slate-300 print:border-none print:my-0"></div>);
       return;
     }
+
+    if (isTableRow) {
+      tableRows.push(columns);
+      return;
+    }
+
+    // Jika bukan baris tabel, cetak tabel yang sudah terkumpul dulu
+    flushTable();
+
     if (trimmed.startsWith('PASAL') || trimmed === 'MEMUTUSKAN' || (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && trimmed.length > 3 && !trimmed.includes(':'))) {
-      flushTable();
       renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-3 font-bold text-center text-black font-serif uppercase tracking-wider underline underline-offset-4">{trimmed}</div>);
-      return;
-    }
-    const columns = line.split(':');
-    if (columns.length > 3) { tableRows.push(columns); }
+    } 
     else if (columns.length === 2 && trimmed.length > 0 && !trimmed.endsWith(':')) {
-      flushTable();
       const isKonsideran = ['menimbang', 'mengingat', 'memperhatikan', 'menetapkan'].includes(columns[0].trim().toLowerCase());
       renderedBlocks.push(<div key={`info-${index}`} className={`flex mb-1.5 break-inside-avoid text-black font-serif ${isKonsideran ? 'mt-4' : 'pl-8'}`}><span className={`${isKonsideran ? 'w-[110px] font-bold italic' : 'w-[28%]'} shrink-0 align-top`}>{columns[0].trim()}</span><span className="w-[15px] text-center shrink-0">:</span><span className="flex-1 pl-1 text-justify">{columns[1].trim()}</span></div>);
     } 
     else if (/^(\d+\.|[a-zA-Z]\.|-)\s/.test(trimmed)) {
-       flushTable();
        const match = trimmed.match(/^(\d+\.|[a-zA-Z]\.|-)\s+(.*)/);
        if (match) renderedBlocks.push(<div key={`list-${index}`} className="flex mb-2 pl-8 font-serif text-black leading-relaxed"><span className="w-8 shrink-0">{match[1]}</span><span className="flex-1 text-justify">{match[2]}</span></div>);
     }
     else {
-      flushTable();
-      if (trimmed === '') renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
+      if (trimmed === '') renderedBlocks.push(<div className="h-3" key={`br-${index}`}></div>);
       else {
          const lower = trimmed.toLowerCase();
          const isStandardPhrase = lower.startsWith('dengan hormat') || lower.startsWith('demikian') || lower.startsWith('untuk') || lower.startsWith('dasar');
-         renderedBlocks.push(<p key={`p-${index}`} className={`mb-3 text-justify font-serif text-black leading-[1.6] ${isStandardPhrase ? '' : 'indent-10'} ${isTableTemplate && trimmed.toUpperCase() === trimmed && trimmed.length > 10 ? 'font-bold text-center underline !indent-0' : ''}`}>{trimmed}</p>);
+         renderedBlocks.push(<p key={`p-${index}`} className={`mb-3 text-justify font-serif text-black leading-[1.6] ${isStandardPhrase ? '' : 'indent-10'}`}>{trimmed}</p>);
       }
     }
   });
+  
   flushTable();
   return <div className="font-serif text-black leading-relaxed text-[11pt]">{renderedBlocks}</div>;
 };
@@ -101,7 +114,6 @@ const LetterCreator: React.FC = () => {
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
-      // Hanya isi otomatis jika form masih kosong/belum diinisialisasi
       if (!isInitialized.current.config) {
         setFormData(prev => ({ 
           ...prev, 
@@ -114,7 +126,6 @@ const LetterCreator: React.FC = () => {
 
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       setTemplates(data);
-      // Hanya isi otomatis saat pertama kali data template datang
       if (data.length > 0 && !isInitialized.current.templates) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
@@ -127,10 +138,7 @@ const LetterCreator: React.FC = () => {
       }
     });
 
-    return () => { 
-      unsubscribeConfig(); 
-      unsubscribeTemplates(); 
-    };
+    return () => { unsubscribeConfig(); unsubscribeTemplates(); };
   }, []);
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -197,14 +205,14 @@ const LetterCreator: React.FC = () => {
                 <div className="flex-1 flex flex-col pt-4">
                    {pIdx === 0 && (
                      isCenteredLayout ? (
-                       <div className="text-center mb-8"><h2 className="text-[13pt] font-bold uppercase underline tracking-wide leading-tight">{formData.subject}</h2><p className="text-[11pt] mt-1 font-bold">Nomor: {formData.refNumber}</p></div>
+                       <div className="text-center mb-6"><h2 className="text-[13pt] font-bold uppercase underline tracking-wide leading-tight">{formData.subject}</h2><p className="text-[11pt] mt-1 font-bold">Nomor: {formData.refNumber}</p></div>
                      ) : (
-                       <div className="mb-8 text-black"><div className="flex justify-end mb-6"><p className="text-[11pt]">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p></div><div className="space-y-0.5 flex flex-col"><div className="flex"><span className="w-24">Nomor</span><span>: {formData.refNumber}</span></div><div className="flex"><span className="w-24">Lampiran</span><span>: -</span></div><div className="flex"><span className="w-24">Perihal</span><span className="font-bold underline">: {formData.subject}</span></div></div><div className="mt-8"><p>Kepada Yth.</p><p className="font-bold">{formData.recipient || '................................'}</p><p>di Tempat</p></div></div>
+                       <div className="mb-6 text-black"><div className="flex justify-end mb-6"><p className="text-[11pt]">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p></div><div className="space-y-0.5 flex flex-col"><div className="flex"><span className="w-24">Nomor</span><span>: {formData.refNumber}</span></div><div className="flex"><span className="w-24">Lampiran</span><span>: -</span></div><div className="flex"><span className="w-24">Perihal</span><span className="font-bold underline">: {formData.subject}</span></div></div><div className="mt-8"><p>Kepada Yth.</p><p className="font-bold">{formData.recipient || '................................'}</p><p>di Tempat</p></div></div>
                      )
                    )}
                    <div className="flex-1"><SmartContentRenderer text={part} /></div>
                    {pIdx === contentParts.length - 1 && (
-                     <div className={`mt-12 break-inside-avoid grid ${isMOU ? 'grid-cols-2' : 'grid-cols-1'} gap-6 text-center text-[11pt] font-serif`}>
+                     <div className={`mt-10 break-inside-avoid grid ${isMOU ? 'grid-cols-2' : 'grid-cols-1'} gap-6 text-center text-[11pt] font-serif`}>
                         {isMOU && <div className="flex flex-col"><p className="mb-1">&nbsp;</p><p className="font-bold uppercase tracking-wider mb-2">PIHAK KEDUA,</p><div className="h-24"></div><p className="font-bold underline uppercase">{formData.signerNamePihak2}</p></div>}
                         <div className={`${!isMOU ? 'ml-auto w-[300px]' : ''} flex flex-col`}>
                            {isCenteredLayout && pIdx === 0 && <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
@@ -219,7 +227,7 @@ const LetterCreator: React.FC = () => {
            ))}
         </div>
       </div>
-      <style>{`.letter-paper { padding: 8mm 20mm 20mm 30mm; min-height: 297mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: relative !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 8mm 20mm 20mm 30mm !important; display: block !important; page-break-after: always !important; } .page-breaker { display: none !important; } table { border: 1.5px solid black !important; } th, td { border: 1px solid #000 !important; } * { color: black !important; } }`}</style>
+      <style>{`.letter-paper { padding: 5mm 20mm 20mm 30mm; min-height: 297mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: relative !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 5mm 20mm 20mm 30mm !important; display: block !important; page-break-after: always !important; } .page-breaker { display: none !important; } table { border: 1.5pt solid black !important; } th, td { border: 1pt solid #000 !important; } * { color: black !important; } }`}</style>
     </div>
   );
 };

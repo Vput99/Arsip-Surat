@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check, FileDown } from 'lucide-react';
+import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check, FileDown, RotateCcw } from 'lucide-react';
 import { subscribeToConfig, subscribeToTemplates, LetterTemplate, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
 import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { format } from 'date-fns';
@@ -10,6 +11,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 const SmartContentRenderer = ({ text }: { text: string }) => {
+  if (!text) return null;
   const cleanText = (t: string) => {
     return t.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '')
             .replace(/\*\*/g, '')
@@ -131,9 +133,10 @@ const LetterCreator: React.FC = () => {
   const [saveLoading, setSaveLoading] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   
-  const isInitialized = useRef({ config: false, templates: false });
-  const [useQRCode, setUseQRCode] = useState(true);
+  // Refs to prevent periodic re-initialization (THE FIX)
+  const isInitialized = useRef(false);
   const letterContainerRef = useRef<HTMLDivElement>(null);
+  const [useQRCode, setUseQRCode] = useState(true);
 
   const [formData, setFormData] = useState({
     refNumber: `422/..../419.42.03.135/${new Date().getFullYear()}`,
@@ -143,28 +146,34 @@ const LetterCreator: React.FC = () => {
     signerName: '',
     signerNip: '',
     signerNamePihak2: '( ........................................... )',
-    subject: 'SURAT PERINTAH TUGAS',
+    subject: '',
     content: ''
   });
 
   useEffect(() => {
+    // 1. Subscription Staff
+    const unsubscribeStaff = subscribeToStaff(setStaff);
+
+    // 2. Subscription Config & Templates with Guard
     const unsubscribeConfig = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
-      if (!isInitialized.current.config) {
+      // Only set signer from config once
+      if (!isInitialized.current) {
         setFormData(prev => ({ 
           ...prev, 
           signerName: newConfig.principalName, 
           signerNip: newConfig.principalNip 
         }));
-        isInitialized.current.config = true;
       }
     });
 
-    const unsubscribeStaff = subscribeToStaff(setStaff);
-
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       setTemplates(data);
-      if (isInitialized.current.templates) return;
+      
+      // JANGAN reset formData jika aplikasi sudah terinisialisasi
+      if (isInitialized.current) return;
+
+      // Logic Prioritas Inisialisasi: State > Default Template
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
@@ -176,9 +185,10 @@ const LetterCreator: React.FC = () => {
             content: (location.state.content || targetTemplate.content).replace(/\*\*/g, '').trim(),
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
-          isInitialized.current.templates = true;
+          isInitialized.current = true;
         }
-      } else if (data.length > 0) {
+      } 
+      else if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
         setFormData(prev => ({ 
@@ -186,7 +196,7 @@ const LetterCreator: React.FC = () => {
           subject: firstTemplate.subject, 
           content: firstTemplate.content 
         }));
-        isInitialized.current.templates = true;
+        isInitialized.current = true;
       }
     });
 
@@ -207,7 +217,15 @@ const LetterCreator: React.FC = () => {
     }
   };
 
+  const handleResetSubject = () => {
+    if (selectedTemplate) {
+      const isSPT = selectedTemplate.id === 't_spt' || selectedTemplate.name.includes('SPT');
+      setFormData(prev => ({ ...prev, subject: isSPT ? 'SURAT PERINTAH TUGAS' : selectedTemplate.subject }));
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // Memastikan input tidak memicu reset template
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -215,30 +233,27 @@ const LetterCreator: React.FC = () => {
     if (!letterContainerRef.current) return null;
     setPdfGenerating(true);
     try {
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: [215, 330] // F4 size
-      });
-
+      // Setup PDF dengan ukuran F4 (215 x 330 mm)
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [215, 330] });
       const pages = letterContainerRef.current.querySelectorAll('.letter-paper');
+      
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
         const canvas = await html2canvas(page, {
-          scale: 2, // Kualitas tinggi
+          scale: 2, 
           useCORS: true,
           logging: false,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          windowWidth: 1200 // Memastikan render lebar cukup
         });
         
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         if (i > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, 0, 215, 330);
       }
-
       return pdf.output('datauristring');
     } catch (err) {
-      console.error("PDF Generation Error:", err);
+      console.error("PDF Fail:", err);
       return null;
     } finally {
       setPdfGenerating(false);
@@ -246,14 +261,12 @@ const LetterCreator: React.FC = () => {
   };
 
   const handleSaveToOutbox = async () => {
-    if (!confirm('Simpan naskah ini ke database Surat Keluar beserta file PDF-nya?')) return;
+    if (!confirm('Simpan naskah dan generate PDF ke arsip Surat Keluar?')) return;
     setSaveLoading(true);
     
     try {
-      // 1. Generate PDF terlebih dahulu
       const pdfDataUri = await generatePDFBlob();
       
-      // 2. Buat objek surat
       const newMail: Mail = {
         id: Date.now().toString(),
         type: MailType.OUTGOING,
@@ -267,16 +280,15 @@ const LetterCreator: React.FC = () => {
         category: selectedTemplate?.category || 'Lainnya',
         urgency: UrgencyLevel.LOW,
         status: MailStatus.ARCHIVED,
-        fileUrl: pdfDataUri || undefined, // Simpan PDF di sini
-        aiSummary: `Dokumen PDF digital dibuat dari template: ${selectedTemplate?.name}`
+        fileUrl: pdfDataUri || undefined, // FILE PDF DISIMPAN DI SINI
+        aiSummary: `Dokumen digital (PDF) dibuat dari template: ${selectedTemplate?.name}`
       };
 
-      // 3. Simpan ke database
       await saveMail(newMail);
-      alert('Surat dan PDF berhasil diarsipkan ke Surat Keluar.');
+      alert('Surat dan file PDF berhasil diarsipkan.');
       navigate('/outbox');
     } catch (e: any) {
-      alert('Gagal menyimpan ke arsip: ' + e.message);
+      alert('Gagal menyimpan: ' + e.message);
     } finally {
       setSaveLoading(false);
     }
@@ -309,7 +321,7 @@ const LetterCreator: React.FC = () => {
           <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-200"><FileText size={20} /></div>
           <div>
             <h2 className="text-xl font-black text-slate-800">Editor Surat Digital</h2>
-            <p className="text-slate-500 text-xs font-medium">Buat naskah dinas resmi dan arsipkan otomatis.</p>
+            <p className="text-slate-500 text-xs font-medium">Data aman dari sinkronisasi otomatis.</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -318,20 +330,21 @@ const LetterCreator: React.FC = () => {
             disabled={saveLoading || pdfGenerating} 
             className={`px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/30 font-bold text-sm flex items-center gap-2 ${(saveLoading || pdfGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {saveLoading ? <Loader2 size={18} className="animate-spin" /> : (pdfGenerating ? <FileDown size={18} className="animate-bounce" /> : <Save size={18} />)} 
-            {pdfGenerating ? 'Membuat PDF...' : 'Simpan Arsip'}
+            {saveLoading ? <Loader2 size={18} className="animate-spin" /> : (pdfGenerating ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />)} 
+            {pdfGenerating ? 'Proses PDF...' : 'Simpan ke Arsip'}
           </button>
           <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm flex items-center gap-2">
-            <Printer size={18} /> Cetak / PDF
+            <Printer size={18} /> Cetak Langsung
           </button>
         </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
-        <div className="w-full lg:w-[420px] flex flex-col gap-4 overflow-y-auto pr-2 print:hidden shrink-0">
+        {/* Editor Sidebar */}
+        <div className="w-full lg:w-[400px] flex flex-col gap-4 overflow-y-auto pr-2 print:hidden shrink-0">
           <div className="bg-white p-5 rounded-3xl border border-slate-200 space-y-5 shadow-sm">
              <div>
-               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Templat Surat</label>
+               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Templat & Judul (Terkunci)</label>
                <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700 transition-all" onChange={handleTemplateChange} value={selectedTemplate?.id}>
                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                </select>
@@ -339,8 +352,13 @@ const LetterCreator: React.FC = () => {
              
              <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Perihal</label>
-                  <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold uppercase" />
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Perihal Surat</label>
+                    <button onClick={handleResetSubject} className="text-[9px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors">
+                      <RotateCcw size={10} /> Reset Ke Template
+                    </button>
+                  </div>
+                  <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black uppercase text-indigo-900 outline-none" placeholder="Isi perihal..." />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                    <div className="space-y-1">
@@ -356,7 +374,7 @@ const LetterCreator: React.FC = () => {
 
              <div className="pt-4 border-t border-slate-100 space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanda Tangan</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Penandatangan</label>
                   <button onClick={() => setUseQRCode(!useQRCode)} className={`flex items-center gap-2 px-2 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${useQRCode ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                     <QrCode size={14} /> {useQRCode ? 'QR Aktif' : 'QR Mati'}
                   </button>
@@ -371,17 +389,17 @@ const LetterCreator: React.FC = () => {
           <div className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 flex flex-col min-h-[350px] shadow-sm relative">
              <div className="flex justify-between items-center mb-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Isi Naskah</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-all"><Users size={12} /> Pilih Petugas</button>
-                </div>
+                <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-all"><Users size={12} /> Personil</button>
              </div>
              <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] leading-relaxed resize-none focus:ring-2 focus:ring-indigo-500 transition-all" />
           </div>
         </div>
 
+        {/* Paper Preview Area */}
         <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
            {contentParts.map((part, pIdx) => (
-             <div key={pIdx} className="letter-paper bg-white w-[215mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
+             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
+                {/* Kop Surat (Only Page 1) */}
                 {pIdx === 0 && (
                   <div className="border-b-[4.5pt] border-double border-black pb-3 mb-2 grid grid-cols-[90px_1fr_90px] items-center text-black">
                      <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[22mm] h-auto" />}</div>
@@ -397,6 +415,7 @@ const LetterCreator: React.FC = () => {
                 )}
                 
                 <div className="flex-1 flex flex-col pt-5">
+                   {/* Title Area (Only Page 1) */}
                    {pIdx === 0 && (
                      <div className="text-center mb-8">
                        <h2 className="text-[13pt] font-bold uppercase underline underline-offset-4 decoration-2 tracking-wide leading-tight">{formData.subject}</h2>
@@ -404,8 +423,11 @@ const LetterCreator: React.FC = () => {
                      </div>
                    )}
                    
-                   <div className="flex-1"><SmartContentRenderer text={part} /></div>
+                   <div className="flex-1">
+                     <SmartContentRenderer text={part} />
+                   </div>
 
+                   {/* Signature Area (Only Last Page) */}
                    {pIdx === contentParts.length - 1 && (
                      <div className="mt-10 break-inside-avoid ml-auto w-[320px] flex flex-col items-center text-center">
                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
@@ -446,7 +468,7 @@ const LetterCreator: React.FC = () => {
          </div>
       )}
       
-      <style>{`.letter-paper { padding: 5mm 20mm 20mm 30mm; min-height: 297mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 5mm 20mm 20mm 30mm !important; display: block !important; } }`}</style>
+      <style>{`.letter-paper { width: 215mm; min-height: 297mm; padding: 5mm 20mm 20mm 30mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 5mm 20mm 20mm 30mm !important; display: flex !important; flex-direction: column !important; } }`}</style>
     </div>
   );
 };

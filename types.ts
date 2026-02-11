@@ -47,6 +47,9 @@ export interface AIAnalysisResult {
   category: string;
   urgency: UrgencyLevel;
   sentiment: string;
+  referenceNumber?: string;
+  sender?: string;
+  subject?: string;
 }
 
 export interface SchoolConfig {

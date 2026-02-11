@@ -1,36 +1,58 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, UrgencyLevel } from "../types";
 
-// The Google GenAI SDK always uses process.env.API_KEY
-// We initialize it right before making a call to ensure it uses the most up-to-date key.
-
-export const analyzeLetter = async (text: string): Promise<AIAnalysisResult | null> => {
-  // Always use { apiKey: process.env.API_KEY }
+export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
+    const parts: any[] = [
+      {
+        text: `Bertindaklah sebagai staf administrasi sekolah yang ahli. Ekstrak data dari dokumen surat berikut ini.
+        Data yang harus diekstrak:
+        1. referenceNumber: Cari nomor surat (contoh: 421.2/123/2024).
+        2. sender: Nama lembaga, dinas, atau instansi pengirim surat.
+        3. subject: Perihal atau judul surat.
+        4. summary: Ringkasan singkat isi surat (maksimal 2 kalimat).
+        5. category: Tentukan kategori (Undangan, Dinas, Pemberitahuan, Permohonan, Keputusan, atau Tugas).
+        6. urgency: Tingkat kepentingan (Biasa, Penting, atau Segera).
+        7. sentiment: Nada surat.
+
+        Input Teks: "${text}"`
+      }
+    ];
+
+    if (imageData && imageData.startsWith('data:image')) {
+      const base64Data = imageData.split(',')[1];
+      const mimeType = imageData.split(';')[0].split(':')[1];
+      parts.push({
+        inlineData: {
+          data: base64Data,
+          mimeType: mimeType
+        }
+      });
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Analisis teks surat berikut ini. Berikan ringkasan singkat (maksimal 2 kalimat), kategori surat (Misalnya: Undangan, Dinas, Pemberitahuan, dll), tingkat urgensi (Biasa, Penting, Segera), dan sentimen umum.
-      
-      Teks Surat:
-      "${text}"`,
+      contents: { parts },
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            summary: { type: Type.STRING, description: "Ringkasan isi surat maksimal 2 kalimat" },
-            category: { type: Type.STRING, description: "Kategori surat yang relevan" },
+            summary: { type: Type.STRING },
+            category: { type: Type.STRING },
             urgency: { type: Type.STRING, enum: [UrgencyLevel.LOW, UrgencyLevel.MEDIUM, UrgencyLevel.HIGH] },
-            sentiment: { type: Type.STRING, description: "Nada atau sentimen surat" }
+            sentiment: { type: Type.STRING },
+            referenceNumber: { type: Type.STRING, description: "Nomor resmi surat" },
+            sender: { type: Type.STRING, description: "Instansi pengirim" },
+            subject: { type: Type.STRING, description: "Perihal surat" }
           },
-          required: ["summary", "category", "urgency", "sentiment"]
+          required: ["summary", "category", "urgency", "sentiment", "referenceNumber", "sender", "subject"]
         }
       }
     });
 
-    // response.text is a property, not a method
     const result = JSON.parse(response.text || "{}");
     return result as AIAnalysisResult;
 
@@ -41,7 +63,6 @@ export const analyzeLetter = async (text: string): Promise<AIAnalysisResult | nu
 };
 
 export const suggestReply = async (incomingMailText: string): Promise<string> => {
-  // Always use { apiKey: process.env.API_KEY }
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
@@ -52,7 +73,6 @@ export const suggestReply = async (incomingMailText: string): Promise<string> =>
       Surat Masuk:
       "${incomingMailText}"`
     });
-    // response.text is a property, not a method
     return response.text || "Tidak ada respons dari AI.";
   } catch (error) {
     console.error("Gemini Reply Error:", error);

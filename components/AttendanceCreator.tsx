@@ -77,10 +77,10 @@ const AttendanceCreator: React.FC = () => {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case 'P': return <span className="text-blue-700 font-bold text-[11pt] print:text-black leading-none">✓</span>;
+      case 'P': return <span className="text-blue-700 font-bold text-[11pt] print:text-blue-800 leading-none">✓</span>;
       case 'S': return <span className="text-amber-600 font-bold text-[9pt] leading-none">S</span>;
       case 'I': return <span className="text-cyan-600 font-bold text-[9pt] leading-none">I</span>;
-      case 'A': return <span className="text-red-600 font-bold text-[9pt] leading-none">A</span>;
+      case 'A': return <span className="text-red-600 font-bold text-[10pt] print:text-red-600 leading-none">A</span>;
       case 'C': return <span className="text-emerald-600 font-bold text-[9pt] leading-none">C</span>;
       case 'DL': return <span className="text-purple-600 font-bold text-[9pt] leading-none">DL</span>;
       default: return null;
@@ -256,7 +256,7 @@ const AttendanceCreator: React.FC = () => {
         </div>
 
         {/* Preview Area - Container Fixed Landscape */}
-        <div className="xl:col-span-3 space-y-4 overflow-hidden flex flex-col">
+        <div className="xl:col-span-3 space-y-4 flex flex-col min-h-0 overflow-visible">
            {/* Tab Categories Switcher */}
            <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1 shadow-sm shrink-0">
               {(['reg', 'pppk', 'extra', 'tukang'] as const).map(cat => (
@@ -273,7 +273,7 @@ const AttendanceCreator: React.FC = () => {
            {/* PAPER CONTAINER - Locked at 330mm wide in UI for true Landscape feel */}
            <div className="flex-1 overflow-x-auto overflow-y-auto p-8 bg-slate-200/50 rounded-[2.5rem] border border-slate-300 group shadow-inner print:p-0 print:bg-white print:block print:rounded-none print:border-none print:shadow-none print:overflow-visible">
              {/* Realistic Paper Container - Explicit 330mm width */}
-             <div className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none print:min-h-0 flex flex-col text-black font-serif">
+             <div className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col text-black font-serif">
                
                <div className="paper-padding flex flex-col items-center">
                  {/* KOP SURAT STANDAR DINAS */}
@@ -355,7 +355,7 @@ const AttendanceCreator: React.FC = () => {
                          </tr>
                          <tr className="bg-slate-50/50 print:bg-transparent">
                            {dateRange.map(d => (
-                             <th key={d} className={`border-[1.2pt] border-black p-0.5 text-[7pt] font-black h-8 text-center min-w-[22px] ${isDayOff(d) ? 'bg-red-50 text-red-700 print:bg-transparent' : 'text-black'}`}>
+                             <th key={d} className={`border-[1.2pt] border-black p-0.5 text-[7pt] font-black h-8 text-center min-w-[22px] ${isDayOff(d) ? 'bg-red-50 text-red-600 print:bg-red-50' : 'text-black'}`}>
                                {d}
                              </th>
                            ))}
@@ -379,7 +379,7 @@ const AttendanceCreator: React.FC = () => {
                                </td>
                                <td className="border border-black text-center text-[8pt] leading-tight px-1 text-black align-middle whitespace-normal font-medium">{staff.rank || '-'}</td>
                                {dateRange.map(d => (
-                                 <td key={`cell-${d}`} className={`border border-black p-0 group/cell transition-colors ${isDayOff(d) ? 'bg-red-50/30 print:bg-transparent' : 'hover:bg-slate-50'}`}>
+                                 <td key={`cell-${d}`} className={`border border-black p-0 group/cell transition-colors ${isDayOff(d) ? 'bg-red-50/30 print:bg-red-50/30' : 'hover:bg-slate-50'}`}>
                                     <div className="flex flex-col h-full w-full">
                                        <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black/10 min-h-[18px] transition-all ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-white active:bg-blue-50'}`}>
                                          {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
@@ -427,12 +427,14 @@ const AttendanceCreator: React.FC = () => {
         /* KUNCI LEBAR PRATINJAU DI LAYAR (LANDSCAPE) */
         .attendance-paper-landscape {
            width: 330mm;
+           min-width: 330mm;
            min-height: 215mm;
            background: white;
            margin: 0 auto;
            box-sizing: border-box;
            display: flex;
            flex-direction: column;
+           border: 1px solid #e2e8f0;
         }
 
         .paper-padding {
@@ -457,9 +459,11 @@ const AttendanceCreator: React.FC = () => {
             background: white !important; 
             margin: 0 !important;
             padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
-          /* Hilangkan semua elemen UI kecuali kertas laporan */
+          /* Hilangkan elemen UI */
           body * { visibility: hidden; }
           .attendance-paper-landscape, .attendance-paper-landscape * { visibility: visible !important; }
           
@@ -474,39 +478,37 @@ const AttendanceCreator: React.FC = () => {
             border: none !important;
             box-shadow: none !important;
             background: white !important;
-            -webkit-print-color-adjust: exact !important;
           }
 
           .paper-padding {
              width: 100% !important;
              padding: 10mm 15mm !important; 
-             background: white !important;
           }
 
           table { 
              width: 100% !important; 
              border-collapse: collapse !important; 
-             border: 1.5pt solid black !important; 
-             background: white !important;
+             border: 2pt solid black !important; 
           }
           
           th, td { 
              border: 1pt solid black !important; 
-             color: black !important;
              background: white !important;
-             -webkit-print-color-adjust: exact !important;
           }
 
-          /* Pastikan warna teks benar-benar hitam saat print */
-          .text-blue-700, .text-amber-600, .text-cyan-600, .text-red-600, .text-emerald-600, .text-purple-600 {
-             color: black !important;
+          /* Pastikan warna teks penting tetap berwarna */
+          .text-red-600 { color: #dc2626 !important; }
+          .text-blue-700 { color: #1d4ed8 !important; }
+          
+          /* Warnai latar belakang sel hari libur saat print */
+          .bg-red-50 { 
+            background-color: #fef2f2 !important; 
+            -webkit-print-color-adjust: exact !important;
           }
           
-          * { 
-             color: black !important; 
-             background-color: transparent !important;
-             box-shadow: none !important;
-             -webkit-print-color-adjust: exact !important;
+          /* Elemen teks standar tetap hitam */
+          .kop-surat *, .judul-laporan *, .tanda-tangan-section * { 
+            color: black !important; 
           }
         }
       `}</style>

@@ -348,7 +348,7 @@ const AttendanceCreator: React.FC = () => {
                        <thead>
                          <tr className="bg-slate-50/50 print:bg-transparent">
                            <th rowSpan={2} className="border-[1.2pt] border-black p-1 text-black font-bold text-center w-8">NO</th>
-                           <th rowSpan={2} className="border-[1.2pt] border-black p-1 text-black font-bold text-center w-[180px]">NAMA LENGKAP / NIP</th>
+                           <th rowSpan={2} className="border-[1.2pt] border-black p-1 text-black font-bold text-center w-[240px]">NAMA LENGKAP / NIP</th>
                            <th rowSpan={2} className="border-[1.2pt] border-black p-1 text-black font-bold text-center w-[100px]">JABATAN</th>
                            <th colSpan={daysInMonth} className="border-[1.2pt] border-black p-1 text-black font-bold text-center uppercase tracking-widest text-[8.5pt]">TANGGAL ABSENSI (A: Masuk, B: Pulang)</th>
                            <th colSpan={6} className="border-[1.2pt] border-black p-1 text-black font-bold text-center uppercase tracking-wider text-[7.5pt]">REKAP</th>
@@ -374,7 +374,7 @@ const AttendanceCreator: React.FC = () => {
                              <tr key={staff.id} style={{height: '44px'}}>
                                <td className="border border-black text-center text-black align-middle font-medium">{sIdx + 1}</td>
                                <td className="border border-black px-2 py-1 leading-tight align-middle">
-                                 <div className="font-bold text-black text-[10pt] leading-tight mb-0.5">{staff.name || '...'}</div>
+                                 <div className="font-bold text-black text-[10pt] leading-tight mb-0.5 whitespace-normal">{staff.name || '...'}</div>
                                  <div className="text-[8pt] text-slate-500 print:text-black italic font-medium">NIP. {staff.nip || '...'}</div>
                                </td>
                                <td className="border border-black text-center text-[8pt] leading-tight px-1 text-black align-middle whitespace-normal font-medium">{staff.rank || '-'}</td>

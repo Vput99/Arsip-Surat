@@ -147,7 +147,7 @@ const LetterCreator: React.FC = () => {
              </div>
              <div className="pt-2 border-t border-slate-100 space-y-3">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Tanda Tangan</label>
-                <div className="grid grid-cols-2 gap-3"><input name="signerName" value={formData.signerName} onChange={handleInputChange} placeholder="Nama Pejabat" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold" /><input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" /></div>
+                <div className="grid grid-cols-2 gap-3"><input name="signerName" value={formData.signerName} onChange={handleInputChange} placeholder="Nama Pejabat" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" /><input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" /></div>
                 {isMOU && <input name="signerNamePihak2" value={formData.signerNamePihak2} onChange={handleInputChange} placeholder="Nama Pihak Kedua" className="w-full px-3 py-2.5 bg-indigo-50 border border-indigo-100 rounded-lg text-sm font-bold" />}
              </div>
           </div>
@@ -161,7 +161,7 @@ const LetterCreator: React.FC = () => {
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white w-[215mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
                 {pIdx === 0 && (
-                  <div className="border-b-[4px] border-double border-black pb-3 mb-2 pt-2 grid grid-cols-[80px_1fr_80px] items-center text-black">
+                  <div className="border-b-[4px] border-double border-black pb-3 mb-2 pt-1 grid grid-cols-[80px_1fr_80px] items-center text-black">
                      <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[20mm] h-auto" />}</div>
                      <div className="text-center w-full px-4"><h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine1}</h3><h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine2}</h3><h1 className="text-[17pt] font-extrabold uppercase my-1 leading-none">{config.name}</h1><p className="text-[9pt] italic">{config.address}</p><p className="text-[9pt]">NPSN: {config.npsn} | Email: {config.email}</p></div>
                      <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-[20mm] h-auto" />}</div>
@@ -179,7 +179,7 @@ const LetterCreator: React.FC = () => {
                    {pIdx === contentParts.length - 1 && (
                      <div className={`mt-12 break-inside-avoid grid ${isMOU ? 'grid-cols-2' : 'grid-cols-1'} gap-6 text-center text-[11pt] font-serif`}>
                         {isMOU && <div className="flex flex-col"><p className="mb-1">&nbsp;</p><p className="font-bold uppercase tracking-wider mb-2">PIHAK KEDUA,</p><div className="h-24"></div><p className="font-bold underline uppercase">{formData.signerNamePihak2}</p></div>}
-                        <div className={`${!isMOU ? 'ml-auto w-[250px]' : ''} flex flex-col`}>
+                        <div className={`${!isMOU ? 'ml-auto w-[300px]' : ''} flex flex-col`}>
                            {isCenteredLayout && pIdx === 0 && <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
                            {isMOU && <p className="font-bold uppercase tracking-wider mb-2">PIHAK PERTAMA,</p>}
                            <p className="font-bold">{formData.signatureTitle}</p><div className="h-20"></div><p className="font-bold underline uppercase tracking-wide">{formData.signerName}</p><p>{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
@@ -192,7 +192,7 @@ const LetterCreator: React.FC = () => {
            ))}
         </div>
       </div>
-      <style>{`.letter-paper { padding: 20mm 20mm 20mm 30mm; min-height: 297mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: relative !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 20mm 20mm 20mm 30mm !important; display: block !important; page-break-after: always !important; } .page-breaker { display: none !important; } table { border: 1.5px solid black !important; } th, td { border: 1px solid #000 !important; } * { color: black !important; } }`}</style>
+      <style>{`.letter-paper { padding: 10mm 20mm 20mm 30mm; min-height: 297mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: relative !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 10mm 20mm 20mm 30mm !important; display: block !important; page-break-after: always !important; } .page-breaker { display: none !important; } table { border: 1.5px solid black !important; } th, td { border: 1px solid #000 !important; } * { color: black !important; } }`}</style>
     </div>
   );
 };

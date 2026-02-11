@@ -21,6 +21,7 @@ const DEFAULT_CONFIG: SchoolConfig = {
   name: 'SD NEGERI TEMPUREJO 1',
   address: 'Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri',
   email: 'admin@sdntempurejo1.sch.id',
+  npsn: '20534567',
   headerLine1: 'PEMERINTAH KOTA KEDIRI',
   headerLine2: 'DINAS PENDIDIKAN',
   logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg',
@@ -152,6 +153,7 @@ const fetchConfig = async () => {
         name: config.name || DEFAULT_CONFIG.name,
         address: config.address || DEFAULT_CONFIG.address,
         email: config.email || DEFAULT_CONFIG.email,
+        npsn: config.npsn || DEFAULT_CONFIG.npsn,
         headerLine1: config.headerLine1 || DEFAULT_CONFIG.headerLine1,
         headerLine2: config.headerLine2 || DEFAULT_CONFIG.headerLine2,
         logoUrl: config.logoUrl || DEFAULT_CONFIG.logoUrl,
@@ -265,10 +267,10 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
     try {
       await turso.execute({
         sql: `INSERT OR REPLACE INTO school_config (
-          id, name, address, email, headerLine1, headerLine2, logoUrl, logoDaerahUrl, principalName, principalNip
-        ) VALUES ('main_settings', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, name, address, email, npsn, headerLine1, headerLine2, logoUrl, logoDaerahUrl, principalName, principalNip
+        ) VALUES ('main_settings', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
-          config.name, config.address, config.email, config.headerLine1, 
+          config.name, config.address, config.email, config.npsn, config.headerLine1, 
           config.headerLine2, config.logoUrl, config.logoDaerahUrl,
           config.principalName, config.principalNip
         ]

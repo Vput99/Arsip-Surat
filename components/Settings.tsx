@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, School, Loader2, Info, Building2, UserCircle, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, Filter, UserCheck, Briefcase, ListOrdered } from 'lucide-react';
+import { Save, Upload, School, Loader2, Info, Building2, UserCircle, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, Filter, UserCheck, Briefcase, ListOrdered, Mail } from 'lucide-react';
 import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember } from '../services/storage';
 import { SchoolConfig } from '../types';
 
@@ -240,6 +240,16 @@ const Settings: React.FC = () => {
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Sekolah</label>
                       <input name="name" value={config.name} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 text-sm" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">NPSN</label>
+                        <input name="npsn" value={config.npsn} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 text-sm" placeholder="20xxxxxx" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Sekolah</label>
+                        <input name="email" value={config.email} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 text-sm" placeholder="sekolah@mail.com" />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kop Baris 1</label>

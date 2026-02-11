@@ -280,7 +280,7 @@ const LetterCreator: React.FC = () => {
                     <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide text-black">{config.headerLine2}</h3>
                     <h1 className="text-[17pt] font-extrabold uppercase my-1 leading-none tracking-wider text-black">{config.name}</h1>
                     <p className="text-[9pt] leading-tight italic text-black">{config.address}</p>
-                    <p className="text-[9pt] leading-tight text-black">Email: {config.email}</p>
+                    <p className="text-[9pt] leading-tight text-black">NPSN: {config.npsn} | Email: {config.email}</p>
                  </div>
                  <div className="flex justify-center">
                    {config.logoUrl && <img src={config.logoUrl} className="w-[20mm] h-auto" alt="Logo Sekolah"/>}

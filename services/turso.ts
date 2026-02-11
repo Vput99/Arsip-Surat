@@ -44,6 +44,7 @@ export const initTables = async () => {
         name TEXT,
         address TEXT,
         email TEXT,
+        npsn TEXT,
         headerLine1 TEXT,
         headerLine2 TEXT,
         logoUrl TEXT,
@@ -67,6 +68,10 @@ export const initTables = async () => {
 
     try {
       await turso.execute("ALTER TABLE school_config ADD COLUMN principalNip TEXT");
+    } catch (e) { /* Kolom mungkin sudah ada */ }
+
+    try {
+      await turso.execute("ALTER TABLE school_config ADD COLUMN npsn TEXT");
     } catch (e) { /* Kolom mungkin sudah ada */ }
 
     // Migrasi kolom orderIndex untuk tabel staff

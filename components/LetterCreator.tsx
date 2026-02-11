@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check } from 'lucide-react';
+import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check, FileDown } from 'lucide-react';
 import { subscribeToConfig, subscribeToTemplates, LetterTemplate, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
 import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const SmartContentRenderer = ({ text }: { text: string }) => {
   const cleanText = (t: string) => {
@@ -127,10 +129,11 @@ const LetterCreator: React.FC = () => {
   const [showStaffPicker, setShowStaffPicker] = useState(false);
   const [staffSearch, setStaffSearch] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
   
-  // Ref untuk mengunci inisialisasi agar tidak terjadi overwrite berkala
   const isInitialized = useRef({ config: false, templates: false });
   const [useQRCode, setUseQRCode] = useState(true);
+  const letterContainerRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     refNumber: `422/..../419.42.03.135/${new Date().getFullYear()}`,
@@ -145,10 +148,8 @@ const LetterCreator: React.FC = () => {
   });
 
   useEffect(() => {
-    // 1. Subscribe ke Config (Logo & Nama Kepsek)
     const unsubscribeConfig = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
-      // Hanya set data Kepsek jika belum pernah diinisialisasi
       if (!isInitialized.current.config) {
         setFormData(prev => ({ 
           ...prev, 
@@ -161,14 +162,9 @@ const LetterCreator: React.FC = () => {
 
     const unsubscribeStaff = subscribeToStaff(setStaff);
 
-    // 2. Subscribe ke Templates
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       setTemplates(data);
-      
-      // JANGAN timpa data jika user sudah mulai mengetik atau sudah diinisialisasi
       if (isInitialized.current.templates) return;
-
-      // Cek apakah ada data dari 'location.state' (misal hasil scan AI)
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
@@ -180,11 +176,9 @@ const LetterCreator: React.FC = () => {
             content: (location.state.content || targetTemplate.content).replace(/\*\*/g, '').trim(),
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
-          isInitialized.current.templates = true; // Kunci!
+          isInitialized.current.templates = true;
         }
-      } 
-      // Jika tidak ada data kiriman, gunakan template pertama sebagai default
-      else if (data.length > 0) {
+      } else if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
         setFormData(prev => ({ 
@@ -192,7 +186,7 @@ const LetterCreator: React.FC = () => {
           subject: firstTemplate.subject, 
           content: firstTemplate.content 
         }));
-        isInitialized.current.templates = true; // Kunci!
+        isInitialized.current.templates = true;
       }
     });
 
@@ -217,25 +211,49 @@ const LetterCreator: React.FC = () => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSelectStaff = (member: StaffMember) => {
-    setFormData(prev => {
-      let newContent = prev.content;
-      if (newContent.includes('[NAMA_PETUGAS]')) {
-        newContent = newContent.replace('[NAMA_PETUGAS]', member.name);
-        newContent = newContent.replace('[NIP_PETUGAS]', member.nip ? `NIP. ${member.nip}` : '-');
-        newContent = newContent.replace('[JABATAN_PETUGAS]', member.rank || '-');
-      } else {
-        newContent += `\nNama : ${member.name}\nNIP : ${member.nip || '-'}\nJabatan : ${member.rank || '-'}\n`;
+  const generatePDFBlob = async (): Promise<string | null> => {
+    if (!letterContainerRef.current) return null;
+    setPdfGenerating(true);
+    try {
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: [215, 330] // F4 size
+      });
+
+      const pages = letterContainerRef.current.querySelectorAll('.letter-paper');
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i] as HTMLElement;
+        const canvas = await html2canvas(page, {
+          scale: 2, // Kualitas tinggi
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, 0, 215, 330);
       }
-      return { ...prev, content: newContent };
-    });
-    setShowStaffPicker(false);
+
+      return pdf.output('datauristring');
+    } catch (err) {
+      console.error("PDF Generation Error:", err);
+      return null;
+    } finally {
+      setPdfGenerating(false);
+    }
   };
 
   const handleSaveToOutbox = async () => {
-    if (!confirm('Simpan naskah ini ke database Surat Keluar?')) return;
+    if (!confirm('Simpan naskah ini ke database Surat Keluar beserta file PDF-nya?')) return;
     setSaveLoading(true);
+    
     try {
+      // 1. Generate PDF terlebih dahulu
+      const pdfDataUri = await generatePDFBlob();
+      
+      // 2. Buat objek surat
       const newMail: Mail = {
         id: Date.now().toString(),
         type: MailType.OUTGOING,
@@ -249,16 +267,34 @@ const LetterCreator: React.FC = () => {
         category: selectedTemplate?.category || 'Lainnya',
         urgency: UrgencyLevel.LOW,
         status: MailStatus.ARCHIVED,
-        aiSummary: `Dokumen digital dibuat dari template: ${selectedTemplate?.name}`
+        fileUrl: pdfDataUri || undefined, // Simpan PDF di sini
+        aiSummary: `Dokumen PDF digital dibuat dari template: ${selectedTemplate?.name}`
       };
+
+      // 3. Simpan ke database
       await saveMail(newMail);
-      alert('Surat berhasil disimpan ke arsip Surat Keluar.');
+      alert('Surat dan PDF berhasil diarsipkan ke Surat Keluar.');
       navigate('/outbox');
     } catch (e: any) {
       alert('Gagal menyimpan ke arsip: ' + e.message);
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const handleSelectStaff = (member: StaffMember) => {
+    setFormData(prev => {
+      let newContent = prev.content;
+      if (newContent.includes('[NAMA_PETUGAS]')) {
+        newContent = newContent.replace('[NAMA_PETUGAS]', member.name);
+        newContent = newContent.replace('[NIP_PETUGAS]', member.nip ? `NIP. ${member.nip}` : '-');
+        newContent = newContent.replace('[JABATAN_PETUGAS]', member.rank || '-');
+      } else {
+        newContent += `\nNama : ${member.name}\nNIP : ${member.nip || '-'}\nJabatan : ${member.rank || '-'}\n`;
+      }
+      return { ...prev, content: newContent };
+    });
+    setShowStaffPicker(false);
   };
 
   if (!config || templates.length === 0) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
@@ -277,8 +313,13 @@ const LetterCreator: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleSaveToOutbox} disabled={saveLoading} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/30 font-bold text-sm flex items-center gap-2">
-            {saveLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Simpan Arsip
+          <button 
+            onClick={handleSaveToOutbox} 
+            disabled={saveLoading || pdfGenerating} 
+            className={`px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/30 font-bold text-sm flex items-center gap-2 ${(saveLoading || pdfGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {saveLoading ? <Loader2 size={18} className="animate-spin" /> : (pdfGenerating ? <FileDown size={18} className="animate-bounce" /> : <Save size={18} />)} 
+            {pdfGenerating ? 'Membuat PDF...' : 'Simpan Arsip'}
           </button>
           <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm flex items-center gap-2">
             <Printer size={18} /> Cetak / PDF
@@ -338,7 +379,7 @@ const LetterCreator: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
+        <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white w-[215mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
                 {pIdx === 0 && (

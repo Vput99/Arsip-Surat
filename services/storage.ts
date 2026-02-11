@@ -290,9 +290,9 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   try {
     localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
   } catch (e) {
-    console.error("LocalStorage Quota Exceeded. Removing attachment from local cache to save metadata.");
-    // Fallback: simpan metadata saja di local, aslinya di Cloud
-    const metadataOnlyMails = newMails.map(m => m.id === mailId ? { ...m, fileUrl: '[FILE_IN_CLOUD]' } : m);
+    console.error("LocalStorage Quota Exceeded. Metadata will be saved, but attachment might be available only in Cloud.");
+    // Fallback: simpan metadata saja di local untuk menghemat ruang
+    const metadataOnlyMails = newMails.map(m => m.id === mailId ? { ...m, fileUrl: '[PDF_FILE_IN_CLOUD]' } : m);
     try {
       localStorage.setItem('OFFLINE_MAILS', JSON.stringify(metadataOnlyMails));
     } catch(e2) {}
@@ -303,6 +303,11 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   // 2. Push to Cloud (Turso)
   if (turso) {
     try {
+      // Batas ukuran record Turso (HTTP) biasanya berkisar 1MB-5MB. PDF F4 kita biasanya 300-800KB.
+      if (mailToSave.fileUrl && mailToSave.fileUrl.length > 3000000) {
+         throw new Error("File PDF terlalu besar (>3MB). Silakan kurangi isi naskah atau lampiran gambar.");
+      }
+
       await turso.execute({
         sql: `INSERT OR REPLACE INTO mails (
           id, type, referenceNumber, date, receivedDate, createdAt, 
@@ -319,17 +324,7 @@ export const saveMail = async (mail: Mail): Promise<void> => {
     } catch (e: any) {
       setConnectionStatus(false);
       console.error("Turso Save Error:", e.message);
-      // Jika database cloud gagal, dan local storage tadi juga gagal (quota), baru lempar error
-      // Jika local storage berhasil, kita biarkan saja (nanti sync otomatis)
-      if (mailToSave.fileUrl && mailToSave.fileUrl.length > 500000) {
-        throw new Error("Gagal menyimpan. File lampiran terlalu besar untuk dikirim atau disimpan secara lokal.");
-      }
       throw e;
-    }
-  } else {
-    // Jika tidak ada Turso dan local gagal, throw error
-    if (mailToSave.fileUrl && mailToSave.fileUrl.length > 500000) {
-       throw new Error("Penyimpanan cloud tidak aktif dan file terlalu besar untuk penyimpanan lokal.");
     }
   }
 };

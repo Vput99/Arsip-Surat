@@ -10,6 +10,7 @@ export const CATEGORIES = [
   "Keputusan",
   "Tugas",
   "Kerjasama",
+  "Mutasi",
   "Lainnya"
 ];
 
@@ -21,18 +22,17 @@ export const LETTER_TEMPLATES = [
     category: 'Tugas',
     layout: 'centered',
     content: `Dasar : 1. Program Kerja Sekolah Tahun Pelajaran 2024/2025.
-2. Kalender Pendidikan Tahun Pelajaran 2024/2025.
+Dasar : 2. Kalender Pendidikan Tahun Pelajaran 2024/2025.
 
 MEMERINTAHKAN :
 
 Kepada :
-Nama : ...........................................................
-NIP : ...........................................................
-Pangkat/Gol : ...........................................................
-Jabatan : ...........................................................
+Nama : [NAMA_PETUGAS]
+NIP : [NIP_PETUGAS]
+Jabatan : [JABATAN_PETUGAS]
 
-Untuk : 1. Menghadiri Workshop Peningkatan Mutu Guru pada tanggal 20-22 Mei 2025.
-2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah.
+Untuk : 1. Menghadiri kegiatan koordinasi peningkatan mutu pendidikan pada tanggal ... di ...
+Untuk : 2. Melaporkan hasil pelaksanaan tugas secara tertulis kepada Kepala Sekolah.
 
 Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.
 
@@ -45,8 +45,8 @@ TANGGAL : [TANGGAL_SURAT]
 DAFTAR PERSONIL PELAKSANA TUGAS :
 
 No : Nama : NIP : Jabatan : Keterangan
-1. : ....................... : ....................... : Guru Kelas : Peserta
-2. : ....................... : ....................... : Guru Mapel : Peserta
+1. : [NAMA_PETUGAS] : [NIP_PETUGAS] : [JABATAN_PETUGAS] : Peserta
+2. : ....................... : ....................... : Guru Kelas : Peserta
 3. : ....................... : ....................... : Staff TU : Pendamping
 
 Ditetapkan di : Kediri
@@ -60,18 +60,19 @@ Pada Tanggal : [TANGGAL_SURAT]`
     layout: 'centered',
     content: `Yang bertanda tangan di bawah ini :
 
-Nama : ...........................................................
-NIP : ...........................................................
+Nama : [NAMA_KEPSEK]
+NIP : [NIP_KEPSEK]
 Jabatan : Kepala Sekolah
 Satuan Pendidikan : SDN [NAMA_SEKOLAH]
 
-dengan ini menerangkan bahwa nama-nama tersebut di bawah ini, adalah benar Peserta Didik SDN [NAMA_SEKOLAH] dan yang bersangkutan sebagai Penerima PIP Tahun 2026:
+Dengan ini menerangkan bahwa nama-nama tersebut di bawah ini adalah benar Peserta Didik SDN [NAMA_SEKOLAH] dan yang bersangkutan sebagai Penerima Dana PIP Tahun Anggaran 2024/2025:
 
-NO : NAMA PESERTA DIDIK TERTERA DI SK : KELAS : NOMOR REKENING : PIP ID/VIRTUAL ACCOUNT
+NO : NAMA PESERTA DIDIK (SESUAI SK) : KELAS : NOMOR REKENING : PIP ID / VIRTUAL ACCOUNT
 1. : ................................................... : ....... : ........................................... : ...........................................
 2. : ................................................... : ....... : ........................................... : ...........................................
+3. : ................................................... : ....... : ........................................... : ...........................................
 
-Demikian surat keterangan ini dibuat untuk digunakan sebagai salah satu persyaratan untuk melakukan aktivasi rekening SimPel PIP di bank penyalur.`
+Demikian surat keterangan ini dibuat untuk digunakan sebagai salah satu persyaratan melakukan aktivasi rekening SimPel PIP pada Bank Penyalur (BRI/BNI).`
   },
   {
     id: 't_panggilan_ortu',
@@ -81,14 +82,14 @@ Demikian surat keterangan ini dibuat untuk digunakan sebagai salah satu persyara
     layout: 'standard',
     content: `Dengan hormat,
 
-Sehubungan dengan adanya hal penting yang perlu dikoordinasikan terkait perkembangan pendidikan putra/putri Bapak/Ibu, maka kami mengharap kehadiran Bapak/Ibu Wali Murid pada:
+Sehubungan dengan adanya hal penting terkait perkembangan pendidikan putra/putri Bapak/Ibu, kami mengharap kehadiran Bapak/Ibu Wali Murid pada:
 
-Hari/Tanggal : ...................................................
+Hari / Tanggal : ...................................................
 Waktu : ...................................................
-Tempat : Ruang Kepala Sekolah / Guru
-Keperluan : Koordinasi Pembinaan Peserta Didik
+Tempat : Ruang Kepala Sekolah / Ruang Guru
+Keperluan : Koordinasi Pembinaan dan Evaluasi Belajar Peserta Didik
 
-Mengingat pentingnya acara tersebut, kami mengharap kehadiran Bapak/Ibu tepat pada waktunya.
+Mengingat pentingnya acara tersebut, kami mengharap kehadiran Bapak/Ibu tepat pada waktunya dan tidak diwakilkan.
 
 Demikian undangan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.`
   },
@@ -102,16 +103,16 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapk
 PEMBENTUKAN PANITIA UJIAN SATUAN PENDIDIKAN (USP)
 TAHUN PELAJARAN 2024/2025
 
-Menimbang : a. bahwa dalam rangka memperlancar pelaksanaan Ujian Satuan Pendidikan (USP), perlu dibentuk panitia pelaksana.
-b. bahwa nama-nama yang tercantum dalam lampiran keputusan ini dianggap mampu melaksanakan tugas.
+Menimbang : a. Bahwa dalam rangka memperlancar pelaksanaan Ujian Satuan Pendidikan (USP), perlu dibentuk panitia pelaksana.
+Menimbang : b. Bahwa nama-nama yang tercantum dalam lampiran keputusan ini dianggap mampu melaksanakan tugas.
 
 Mengingat : 1. Undang-Undang Nomor 20 Tahun 2003 tentang Sistem Pendidikan Nasional.
-2. Peraturan Pemerintah Nomor 19 Tahun 2005 tentang Standar Nasional Pendidikan.
+Mengingat : 2. Peraturan Pemerintah Nomor 19 Tahun 2005 tentang Standar Nasional Pendidikan.
 
 MEMUTUSKAN
 
 Menetapkan :
-PERTAMA : Membentuk Panitia Ujian Satuan Pendidikan sebagaimana tercantum dalam lampiran.
+PERTAMA : Membentuk Panitia Ujian Satuan Pendidikan sebagaimana tercantum dalam lampiran keputusan ini.
 KEDUA : Segala biaya yang timbul dibebankan pada anggaran BOS Sekolah.
 KETIGA : Keputusan ini berlaku sejak tanggal ditetapkan.
 
@@ -126,11 +127,34 @@ TAHUN PELAJARAN 2024/2025
 
 No : Nama : Jabatan Kedinasan : Jabatan Panitia
 1. : [NAMA_KEPSEK] : Kepala Sekolah : Penanggung Jawab
-2. : ....................... : Guru : Ketua Panitia
-3. : ....................... : Guru : Sekretaris
+2. : ....................... : Guru Kelas : Ketua Panitia
+3. : ....................... : Guru Mapel : Sekretaris
+4. : ....................... : Bendahara Sekolah : Bendahara
 
 Ditetapkan di : Kediri
 Pada Tanggal : [TANGGAL_SURAT]`
+  },
+  {
+    id: 't_mutasi_keluar',
+    name: 'Surat Keterangan Pindah (Mutasi)',
+    subject: 'SURAT KETERANGAN PINDAH SEKOLAH',
+    category: 'Mutasi',
+    layout: 'centered',
+    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH] menerangkan bahwa :
+
+Nama Siswa : ...................................................
+Tempat / Tgl Lahir : ...................................................
+Nomor Induk / NISN : ...................................................
+Jenis Kelamin : ...................................................
+Siswa Kelas : ...................................................
+
+Telah mengajukan pindah sekolah atas permintaan orang tua ke :
+
+Nama Sekolah Tujuan : ...................................................
+Alamat Sekolah Tujuan : ...................................................
+Alasan Pindah : ...................................................
+
+Bersama ini kami lampirkan buku laporan pendidikan (Raport) siswa yang bersangkutan. Demikian surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.`
   }
 ];
 

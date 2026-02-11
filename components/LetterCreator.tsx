@@ -9,7 +9,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const SmartContentRenderer = ({ text }: { text: string }) => {
   const cleanText = (t: string) => {
-    return t.replace(/\*\*/g, '').trim();
+    // Menghapus kalimat intro AI dan markdown bintang
+    return t.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '')
+            .replace(/\*\*/g, '')
+            .trim();
   };
 
   const lines = cleanText(text).split('\n');
@@ -69,11 +72,12 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       return;
     }
 
+    // Deteksi cerdas: Jika ada minimal 3 bagian dipisah titik dua DAN bukan naskah dinas (Dasar/Untuk)
     const columns = line.split(':');
-    const hasColon = columns.length >= 2;
+    const isActuallyDataTable = columns.length >= 3 && !['Dasar', 'Untuk', 'Kepada'].some(k => trimmed.startsWith(k));
     const isNumberedData = /^\d+\./.test(trimmed);
 
-    if (columns.length >= 3 || (isInTableMode && isNumberedData)) {
+    if (isActuallyDataTable || (isInTableMode && isNumberedData)) {
       isInTableMode = true;
       tableRows.push(columns);
       return;
@@ -81,27 +85,29 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     flushTable();
 
-    // Render Judul atau MEMERINTAHKAN :
-    if (trimmed === trimmed.toUpperCase() && trimmed.length < 50 && !trimmed.includes(':')) {
-      renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-3 font-bold text-center text-black font-serif uppercase tracking-widest">{trimmed}</div>);
+    // Render Judul Kapital Penuh (MEMERINTAHKAN, KEPUTUSAN, dll)
+    if (trimmed === trimmed.toUpperCase() && trimmed.length < 50 && !trimmed.includes(':') && trimmed.length > 4) {
+      renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-4 font-bold text-center text-black font-serif uppercase tracking-[0.1em]">{trimmed}</div>);
     } 
-    // Render Field Label : Value (Dasar, Untuk, Nama, dll)
-    else if (hasColon && !trimmed.startsWith('http')) {
-      const label = columns[0].trim();
-      const value = columns.slice(1).join(':').trim();
+    // Render Baris Berlabel (Dasar :, Untuk :, Nama :, dll)
+    else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
+      const firstColonIdx = line.indexOf(':');
+      const label = line.substring(0, firstColonIdx).trim();
+      const value = line.substring(firstColonIdx + 1).trim();
+      
       renderedBlocks.push(
-        <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid text-[11pt] font-serif text-black leading-relaxed">
-          <span className="w-[110px] shrink-0 font-bold">{label}</span>
+        <div key={`info-${index}`} className="flex mb-2 break-inside-avoid text-[11pt] font-serif text-black leading-relaxed">
+          <span className="w-[100px] shrink-0 font-bold">{label}</span>
           <span className="w-[20px] text-center shrink-0">:</span>
           <span className="flex-1 text-justify">{value}</span>
         </div>
       );
     } 
-    // Render Poin Berurutan (1. ... 2. ...)
+    // Render Baris Bernomor dengan Indentasi Gantung (Misal: 1. Menghadiri...)
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
-        <div key={`list-${index}`} className="flex mb-1.5 pl-[130px] font-serif text-[11pt] text-black leading-relaxed">
+        <div key={`list-${index}`} className="flex mb-2 pl-[120px] font-serif text-[11pt] text-black leading-relaxed">
           <span className="w-8 shrink-0">{match ? match[1] : ''}</span>
           <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
         </div>
@@ -164,12 +170,11 @@ const LetterCreator: React.FC = () => {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
           setSelectedTemplate(targetTemplate);
-          // Paksa judul jadi SURAT PERINTAH TUGAS jika template SPT
           const isSPT = targetTemplate.id === 't_spt' || targetTemplate.name.includes('SPT');
           setFormData(prev => ({
             ...prev,
             subject: isSPT ? 'SURAT PERINTAH TUGAS' : (location.state.subject || targetTemplate.subject),
-            content: (location.state.content || targetTemplate.content).replace(/\*\*/g, ''),
+            content: (location.state.content || targetTemplate.content).replace(/\*\*/g, '').trim(),
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
         }

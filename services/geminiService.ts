@@ -68,29 +68,30 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    const prompt = `Buatkan isi naskah Surat Perintah Tugas (SPT) sekolah.
+    const prompt = `Buatkan isi naskah Surat Perintah Tugas (SPT) sekolah yang sangat formal.
     DATA SURAT REFERENSI:
     Nomor Surat: ${invitationMail.referenceNumber}
     Pengirim: ${invitationMail.sender}
     Perihal: ${invitationMail.subject}
     Isi: ${invitationMail.description}
     
-    ATURAN OUTPUT (WAJIB):
+    ATURAN OUTPUT (WAJIB TAATI):
     1. JANGAN sertakan Judul "SURAT PERINTAH TUGAS" atau "Nomor: ...".
-    2. JANGAN gunakan tanda bintang (**) atau simbol markdown apapun.
-    3. Mulai langsung dari kata "Dasar :".
-    4. Bagian Dasar harus menyebutkan: Surat dari ${invitationMail.sender} Nomor ${invitationMail.referenceNumber} perihal ${invitationMail.subject}.
-    5. Tambahkan poin Dasar kedua: Program Kerja dan Anggaran Sekolah Tahun 2024/2025.
-    6. Gunakan format "MEMERINTAHKAN :" diikuti "Kepada :", lalu "Nama : [NAMA_PETUGAS]", "NIP : [NIP_PETUGAS]", "Jabatan : [JABATAN_PETUGAS]".
-    7. Bagian "Untuk :" harus merinci kegiatan berdasarkan isi surat referensi.
-    8. Gunakan placeholder [NAMA_PETUGAS] agar bisa diganti otomatis nanti.`;
+    2. JANGAN sertakan kalimat pembuka seperti "Berikut adalah...".
+    3. JANGAN gunakan tanda bintang (**) atau markdown.
+    4. MULAI LANGSUNG dari kata "Dasar :".
+    5. Format Dasar: "Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Tentang ${invitationMail.subject}."
+    6. Tambahkan poin Dasar kedua: "2. Program Kerja dan Anggaran Sekolah Tahun Pelajaran 2024/2025."
+    7. Tulis "MEMERINTAHKAN :" di baris baru.
+    8. Tulis "Kepada :" diikuti list personil dengan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], [JABATAN_PETUGAS].
+    9. Format Untuk: "Untuk : 1. Menghadiri ${invitationMail.subject} yang diselenggarakan oleh ${invitationMail.sender} pada tanggal ... (sesuaikan dari isi)."
+    10. Tambahkan poin Untuk kedua: "2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah."`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt
     });
 
-    // Menghapus baris kosong berlebih dan tanda bintang jika masih ada
     return (response.text || "").replace(/\*\*/g, '').trim();
   } catch (error) {
     console.error("Gemini SPT Error:", error);

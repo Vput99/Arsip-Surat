@@ -15,13 +15,130 @@ export const CATEGORIES = [
 
 export const LETTER_TEMPLATES = [
   {
+    id: 't_spt',
+    name: 'Surat Perintah Tugas (SPT)',
+    subject: 'SURAT PERINTAH TUGAS',
+    category: 'Tugas',
+    layout: 'centered',
+    content: `Dasar : 1. Program Kerja Sekolah Tahun Pelajaran 2024/2025.
+2. Kalender Pendidikan Tahun Pelajaran 2024/2025.
+
+MEMERINTAHKAN :
+
+Kepada :
+Nama : ...........................................................
+NIP : ...........................................................
+Pangkat/Gol : ...........................................................
+Jabatan : ...........................................................
+
+Untuk : 1. Menghadiri Workshop Peningkatan Mutu Guru pada tanggal 20-22 Mei 2025.
+2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah.
+
+Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.
+
+[PAGE_BREAK]
+
+LAMPIRAN : SURAT PERINTAH TUGAS
+NOMOR : [NOMOR_SURAT]
+TANGGAL : [TANGGAL_SURAT]
+
+DAFTAR PERSONIL PELAKSANA TUGAS :
+
+No : Nama : NIP : Jabatan : Keterangan
+1. : ....................... : ....................... : Guru Kelas : Peserta
+2. : ....................... : ....................... : Guru Mapel : Peserta
+3. : ....................... : ....................... : Staff TU : Pendamping
+
+Ditetapkan di : Kediri
+Pada Tanggal : [TANGGAL_SURAT]`
+  },
+  {
+    id: 't_sk_panitia',
+    name: 'SK Kepala Sekolah (Keputusan)',
+    subject: 'KEPUTUSAN KEPALA SD NEGERI [NAMA_SEKOLAH]',
+    category: 'Keputusan',
+    layout: 'centered',
+    content: `TENTANG
+PEMBENTUKAN PANITIA UJIAN SATUAN PENDIDIKAN (USP)
+TAHUN PELAJARAN 2024/2025
+
+Menimbang : a. bahwa dalam rangka memperlancar pelaksanaan Ujian Satuan Pendidikan (USP), perlu dibentuk panitia pelaksana.
+b. bahwa nama-nama yang tercantum dalam lampiran keputusan ini dianggap mampu melaksanakan tugas.
+
+Mengingat : 1. Undang-Undang Nomor 20 Tahun 2003 tentang Sistem Pendidikan Nasional.
+2. Peraturan Pemerintah Nomor 19 Tahun 2005 tentang Standar Nasional Pendidikan.
+
+MEMUTUSKAN
+
+Menetapkan :
+PERTAMA : Membentuk Panitia Ujian Satuan Pendidikan sebagaimana tercantum dalam lampiran.
+KEDUA : Segala biaya yang timbul dibebankan pada anggaran BOS Sekolah.
+KETIGA : Keputusan ini berlaku sejak tanggal ditetapkan.
+
+[PAGE_BREAK]
+
+LAMPIRAN : KEPUTUSAN KEPALA SEKOLAH
+NOMOR : [NOMOR_SURAT]
+TANGGAL : [TANGGAL_SURAT]
+
+SUSUNAN PANITIA UJIAN SATUAN PENDIDIKAN (USP)
+TAHUN PELAJARAN 2024/2025
+
+No : Nama : Jabatan Kedinasan : Jabatan Panitia
+1. : [NAMA_KEPSEK] : Kepala Sekolah : Penanggung Jawab
+2. : ....................... : Guru : Ketua Panitia
+3. : ....................... : Guru : Sekretaris
+4. : ....................... : Staff TU : Bendahara
+
+Ditetapkan di : Kediri
+Pada Tanggal : [TANGGAL_SURAT]`
+  },
+  {
+    id: 't_mou_ekskul',
+    name: 'MOU Pengajar Ekstrakurikuler',
+    subject: 'PERJANJIAN KERJA SAMA JASA PENGAJAR EKSTRAKURIKULER',
+    category: 'Kerjasama',
+    layout: 'centered',
+    content: `Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ............, bertempat di SDN [NAMA_SEKOLAH], kami yang bertanda tangan di bawah ini:
+
+I. Nama : [NAMA_KEPSEK]
+   Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
+   Alamat : [ALAMAT_SEKOLAH]
+   Selanjutnya disebut sebagai PIHAK PERTAMA.
+
+II. Nama : ...........................................................
+   Alamat : ...........................................................
+   Keahlian : Pelatih Bidang ...........................................
+   Selanjutnya disebut sebagai PIHAK KEDUA.
+
+Kedua belah pihak sepakat untuk melakukan Perjanjian Kerja Sama Jasa Pengajar Ekstrakurikuler dengan ketentuan sebagai berikut:
+
+PASAL 1 - LINGKUP PEKERJAAN
+PIHAK PERTAMA memberikan tugas kepada PIHAK KEDUA untuk menjadi pelatih ekstrakurikuler ........................... pada tahun pelajaran 2024/2025.
+
+PASAL 2 - JADWAL KEGIATAN
+Kegiatan dilaksanakan setiap hari ........................... pukul ........................... WIB bertempat di lingkungan sekolah atau lokasi lain yang disepakati.
+
+[PAGE_BREAK]
+
+PASAL 3 - HAK DAN KEWAJIBAN
+1. PIHAK KEDUA wajib menyusun program kerja ekstrakurikuler dan melaporkan progres latihan secara berkala kepada koordinator kesiswaan.
+2. PIHAK PERTAMA berhak mengevaluasi kinerja dan kedisiplinan PIHAK KEDUA.
+3. PIHAK KEDUA berhak mendapatkan honorarium sesuai dengan ketentuan anggaran sekolah yang berlaku.
+
+PASAL 4 - HONORARIUM DAN PEMBAYARAN
+Besaran upah jasa pengajar disepakati sebesar Rp ........................... per pertemuan yang akan dibayarkan setiap akhir bulan berdasarkan daftar hadir yang sah.
+
+PASAL 5 - PENUTUP
+Demikian perjanjian ini dibuat dalam rangkap 2 (dua) untuk dipergunakan sebagaimana mestinya.`
+  },
+  {
     id: 't_honor_ekskul',
     name: 'Daftar Honor Ekstrakurikuler',
     subject: 'DAFTAR PENERIMAAN HONORARIUM PELATIH EKSTRAKURIKULER',
     category: 'Kerjasama',
     layout: 'centered',
-    content: `DAFTAR PENERIMAAN HONORARIUM PELATIH EKSTRAKURIKULER
-Bulan : ...........................................................
+    content: `Bulan : ...........................................................
 Tahun Pelajaran : ...........................................................
 
 No : Nama Pelatih : Ekstrakurikuler : Jml Pertemuan : Honor/Sesi : Total : Tanda Tangan
@@ -36,222 +153,98 @@ JUMLAH TOTAL : Rp ............................
 Pembayaran dilakukan berdasarkan absensi kehadiran pelatih yang telah diverifikasi.`
   },
   {
-    id: 't_rolstan_pekerja',
-    name: 'Rolstan / Daftar Hadir & Upah Tukang',
-    subject: 'DAFTAR HADIR DAN PENERIMAAN UPAH TENAGA KERJA (ROLSTAN)',
-    category: 'Kerjasama',
-    layout: 'centered',
-    content: `DAFTAR HADIR DAN PENERIMAAN UPAH TENAGA KERJA
-Pekerjaan : ...........................................................
-Lokasi : SDN [NAMA_SEKOLAH]
-Minggu ke / Bulan : ...........................................................
+    id: 't_undangan_wali',
+    name: 'Surat Undangan Wali Murid',
+    subject: 'Undangan Rapat Pleno Komite Sekolah',
+    category: 'Undangan',
+    layout: 'standard',
+    content: `Dengan hormat,
 
-No : Nama Pekerja : Jabatan : Upah/Hari : Hari : Total : Tanda Tangan
-1. : ....................... : Tukang : Rp ........... : ..... : Rp ........... : 1. ........
-2. : ....................... : Tukang : Rp ........... : ..... : Rp ........... : 2. ........
-3. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 3. ........
-4. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 4. ........
-5. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 5. ........
-6. : ....................... : Pekerja : Rp ........... : ..... : Rp ........... : 6. ........
+Sehubungan dengan akan dilaksanakannya evaluasi program sekolah semester genap, kami mengharapkan kehadiran Bapak/Ibu Wali Murid pada:
 
-JUMLAH TOTAL : Rp ............................
+Hari/Tanggal : .........................................
+Waktu : 08.00 WIB s.d Selesai
+Tempat : Aula Serbaguna SDN [NAMA_SEKOLAH]
+Acara : Rapat Pleno Komite dan Sosialisasi Program Sekolah.
 
-Catatan: Upah dibayarkan sesuai dengan hari kehadiran nyata di lokasi pekerjaan.`
+Mengingat pentingnya acara ini, dimohon kehadiran Bapak/Ibu tepat waktu tanpa mewakilkan.
+
+Demikian undangan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.`
   },
   {
     id: 't_mou_tukang_harian',
-    name: 'MOU Jasa Tukang (Harian/Non-Borongan)',
+    name: 'MOU Jasa Tukang (Upah Harian)',
     subject: 'SURAT PERJANJIAN KERJA JASA PERBAIKAN (UPAH HARIAN)',
     category: 'Kerjasama',
     layout: 'centered',
-    content: `SURAT PERJANJIAN KERJA HARIAN
-Nomor : [NOMOR_SURAT]
+    content: `Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ............, kami yang bertanda tangan di bawah ini:
 
-Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ............, kami yang bertanda tangan di bawah ini:
-
-1. Nama : [NAMA_KEPSEK]
+I. Nama : [NAMA_KEPSEK]
    Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
    Alamat : [ALAMAT_SEKOLAH]
    Selanjutnya disebut sebagai PIHAK PERTAMA.
 
-2. Nama : ...........................................................
-   Pekerjaan : Tukang / Kepala Tukang*
+II. Nama : ...........................................................
    NIK : ...........................................................
    Alamat : ...........................................................
-   Keahlian : ...........................................................
    Selanjutnya disebut sebagai PIHAK KEDUA.
 
-Kedua belah pihak sepakat untuk mengadakan perjanjian kerja jasa perbaikan sarana prasarana sekolah dengan sistem UPAH HARIAN, dengan ketentuan sebagai berikut:
+Kedua belah pihak sepakat untuk mengadakan perjanjian kerja jasa perbaikan sarana sekolah dengan sistem UPAH HARIAN:
 
 PASAL 1 - LINGKUP PEKERJAAN
-PIHAK PERTAMA menunjuk PIHAK KEDUA untuk melaksanakan pekerjaan perbaikan berupa:
-1. ...........................................................
-2. ...........................................................
+PIHAK PERTAMA menunjuk PIHAK KEDUA untuk melaksanakan pekerjaan perbaikan sarana prasarana sekolah berupa perbaikan atap dan pengecatan ruang kelas.
 
-PASAL 2 - JANGKA WAKTU DAN JAM KERJA
-1. Pekerjaan diperkirakan berlangsung selama ........... hari kerja, terhitung mulai tanggal ...................
-2. Jam kerja disepakati mulai pukul 08.00 WIB s.d 16.00 WIB.
+PASAL 2 - UPAH DAN PEMBAYARAN
+Besaran upah harian yang disepakati adalah Rp ............................ per hari kerja yang dibayarkan setiap akhir pekan.
 
-PASAL 3 - UPAH DAN SISTEM PEMBAYARAN
-1. Besaran upah harian yang disepakati adalah:
-   - Kepala Tukang : Rp ............................ / hari
-   - Tukang : Rp ............................ / hari
-   - Ladang / Pembantu : Rp ............................ / hari
-2. Pembayaran upah dilakukan setiap ( Hari Sabtu / Akhir Pekerjaan* ).
-
-PASAL 4 - PENUTUP
-Demikian perjanjian ini dibuat dengan sebenar-benarnya untuk dipatuhi oleh kedua belah pihak.`
-  },
-  {
-    id: 't_mou_perbaikan',
-    name: 'MOU Perbaikan Bangunan (Sistem Borongan)',
-    subject: 'SURAT PERJANJIAN KERJA SAMA PERBAIKAN SARANA PRASARANA (BORONGAN)',
-    category: 'Kerjasama',
-    layout: 'centered',
-    content: `SURAT PERJANJIAN KERJA SAMA
-Nomor : [NOMOR_SURAT]
-
-Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ............, kami yang bertanda tangan di bawah ini:
-
-1. Nama : [NAMA_KEPSEK]
-   Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
-   Alamat : [ALAMAT_SEKOLAH]
-   Selanjutnya disebut sebagai PIHAK PERTAMA.
-
-2. Nama : ...........................................................
-   Pekerjaan : ...........................................................
-   Alamat : ...........................................................
-   No. HP : ...........................................................
-   Selanjutnya disebut sebagai PIHAK KEDUA.
-
-Kedua belah pihak sepakat untuk mengadakan perjanjian kerja sama perbaikan ringan sarana prasarana sekolah dengan sistem BORONGAN sebagai berikut:
-
-PASAL 1 - LINGKUP PEKERJAAN
-PIHAK PERTAMA memberikan pekerjaan kepada PIHAK KEDUA, dan PIHAK KEDUA menerima pekerjaan tersebut berupa:
-1. ...........................................................
-2. ...........................................................
-
-PASAL 2 - JANGKA WAKTU
-Pekerjaan tersebut harus diselesaikan dalam jangka waktu ........... ( ........................ ) hari kalender.
-
-PASAL 3 - BIAYA DAN SISTEM PEMBAYARAN
-1. Total biaya perbaikan yang disepakati adalah sebesar Rp ............................
-2. Pembayaran dilakukan dengan sistem:
-   - Uang Muka (DP) : Rp ............................ ( ......... % )
-   - Pelunasan : Setelah pekerjaan selesai 100%.
-
-PASAL 4 - PENUTUP
-Demikian perjanjian ini dibuat dengan penuh kesadaran tanpa ada paksaan dari pihak manapun.`
-  },
-  {
-    id: 't_mou_ekskul',
-    name: 'MOU / Perjanjian Kerja Pengajar Ekskul',
-    subject: 'PERJANJIAN KERJA SAMA TENAGA PENGAJAR EKSTRAKURIKULER',
-    category: 'Kerjasama',
-    layout: 'centered',
-    content: `SURAT PERJANJIAN KERJA SAMA
-Nomor : [NOMOR_SURAT]
-
-Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ............, bertempat di [NAMA_SEKOLAH], kami yang bertanda tangan di bawah ini:
-
-1. Nama : [NAMA_KEPSEK]
-   Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
-   Alamat : [ALAMAT_SEKOLAH]
-   Dalam hal ini bertindak untuk dan atas nama SDN [NAMA_SEKOLAH], selanjutnya disebut PIHAK PERTAMA.
-
-2. Nama : ...........................................................
-   Alamat : ...........................................................
-   Keahlian : ...........................................................
-   Selanjutnya disebut PIHAK KEDUA.
-
-Kedua belah pihak telah sepakat untuk mengadakan Perjanjian Kerja Sama sebagai Tenaga Pengajar Ekstrakurikuler ............................ dengan ketentuan sebagai berikut:
-
-PASAL 1 - TUGAS DAN LINGKUP PEKERJAAN
-1. PIHAK PERTAMA memberikan tugas kepada PIHAK KEDUA untuk melaksanakan bimbingan ekstrakurikuler.
-2. PIHAK KEDUA wajib menyusun Program Kerja tahunan.
-
-PASAL 2 - JANGKA WAKTU
-Perjanjian ini berlaku selama 1 (satu) tahun pelajaran.
-
-PASAL 3 - HONORARIUM (GAJI)
-PIHAK KEDUA berhak menerima honorarium sebesar Rp ............................ per pertemuan.
-
-PASAL 4 - PENUTUP
-Demikian surat perjanjian ini dibuat dalam rangkap 2 (dua) untuk dipergunakan sebagaimana mestinya.`
+PASAL 3 - PENUTUP
+Demikian perjanjian ini dibuat dengan sebenar-benarnya.`
   },
   {
     id: 't_sppd',
-    name: 'Surat Perintah Perjalanan Dinas (SPPD) Resmi',
-    subject: 'SURAT PERINTAH PERJANJAN DINAS (SPPD)',
+    name: 'Surat Perintah Perjalanan Dinas (SPPD)',
+    subject: 'SURAT PERINTAH PERJALANAN DINAS (SPPD)',
     category: 'Tugas',
     layout: 'centered',
     content: `Lembar Ke : ...................................
 Kode No : ...................................
-Nomor : [NOMOR_SURAT]
 
-1. Pejabat Berwenang yang memberi perintah : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
-2. Nama Pegawai yang diperintah : ...........................................................
-3. a. Pangkat dan Golongan : ...........................................................
-   b. Jabatan / Instansi : ...........................................................
-4. Maksud Perjalanan Dinas : ...........................................................
-5. Alat angkut yang dipergunakan : ...........................................................
-6. a. Tempat Berangkat : [NAMA_SEKOLAH]
+1. Pejabat Berwenang : Kepala Sekolah SDN [NAMA_SEKOLAH]
+2. Nama Pegawai : ...........................................................
+3. a. Pangkat/Gol : ...........................................................
+   b. Jabatan : ...........................................................
+4. Maksud Perjalanan : ...........................................................
+5. Alat Angkut : Kendaraan Pribadi / Umum
+6. a. Tempat Berangkat : SDN [NAMA_SEKOLAH]
    b. Tempat Tujuan : ...........................................................
-7. a. Lamanya Perjalanan Dinas : ........... ( ........................ ) Hari
+7. a. Lamanya Dinas : ........... ( ........................ ) Hari
    b. Tanggal Berangkat : ...........................................................
-   c. Tanggal Harus Kembali : ...........................................................
+   c. Tanggal Kembali : ...........................................................
 8. Pembebanan Anggaran : 
-   a. Instansi : Dinas Pendidikan Kota Kediri
-   b. Mata Anggaran : ...........................................................`
-  },
-  {
-    id: 't_spt',
-    name: 'Surat Perintah Tugas (SPT)',
-    subject: 'SURAT PERINTAH TUGAS',
-    category: 'Tugas',
-    layout: 'centered',
-    content: `Dasar : ............................................................................................
+   a. Instansi : Dinas Pendidikan
+   b. Mata Anggaran : Dana BOS / Komite
 
-MENUGASKAN :
+[PAGE_BREAK]
 
-Kepada :
-Nama : ...........................................................
-NIP : ...........................................................
-Jabatan : ...........................................................
+SPPD HALAMAN 2 - LAPORAN PELAKSANAAN
 
-Untuk : ............................................................................................
+I. Tiba di : .........................................
+   Pada Tanggal : .........................................
+   Kepala / Pejabat setempat :
 
-Tempat : ...........................................................
-Waktu : ...........................................................
+   ( ........................................... )
 
-Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.`
-  },
-  {
-    id: 't_mutasi_masuk',
-    name: 'Surat Keterangan Menerima Siswa Pindahan',
-    subject: 'SURAT KETERANGAN MENERIMA SISWA PINDAHAN',
-    category: 'Dinas',
-    layout: 'centered',
-    content: `Yang bertanda tangan di bawah ini :
+II. Berangkat dari : .........................................
+    Tiba di : SDN [NAMA_SEKOLAH]
+    Pada Tanggal : .........................................
 
-Nama : ........................................................................
-NIP : ........................................................................
-Jabatan : Kepala Sekolah
+    Pejabat Pelaksana Tugas :
 
-Menerangkan Bahwa :
-
-Nama : ........................................................................
-Tempat/Tgl Lahir : ........................................................................
-Kelas : ........................................................................
-Nama Sekolah Asal : ........................................................................
-
-Bahwa yang bersangkutan DITERIMA sebagai siswa di Sekolah Dasar Negeri ......................................
-
-Demikian Surat Keterangan ini, agar dapat dipergunakan mestinya.`
+    ( ........................................... )`
   },
   {
     id: 't_mutasi_keluar',
-    name: 'Surat Keterangan Pindah Sekolah (Mutasi Keluar)',
+    name: 'Surat Keterangan Pindah (Mutasi)',
     subject: 'SURAT KETERANGAN PINDAH SEKOLAH',
     category: 'Dinas',
     layout: 'centered',
@@ -262,88 +255,22 @@ Tempat/Tgl Lahir : ...........................................................
 NISN : ...........................................................
 Murid Tingkat / Kelas : ...........................................................
 
-Sesuai Surat permohonan pindah sekolah oleh orang tua / wali murid :
-
-Nama : ...........................................................
-Pekerjaan : ...........................................................
-
-Telah mengajukan pindah ke salah satu Sekolah ...........................................................
+Sesuai Surat permohonan pindah sekolah oleh orang tua / wali murid tanggal ......................., siswa tersebut telah mengajukan pindah ke sekolah tujuan ...........................................................
 
 Demikian Surat Keterangan Pindah Sekolah ini dibuat untuk dapat dipergunakan sebagaimana mestinya.
 
-✂-CUT-LINE
+[PAGE_BREAK]
 
-NSS : [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+BUKTI PENERIMAAN (UNTUK ARSIP SEKOLAH)
 
-Nama Sekolah : ...........................................................
-Alamat : ...........................................................
 Nama Siswa : ...........................................................
 Diterima di kelas : ...........................................................
-Diterima tanggal : ...........................................................`
-  },
-  {
-    id: 't_laporan',
-    name: 'Laporan Perjalanan Dinas',
-    subject: 'LAPORAN PERINTAH DINAS',
-    category: 'Dinas',
-    layout: 'centered',
-    signatureTitle: 'Pelaksana Perjalanan Dinas',
-    content: `I. DASAR
-............................................................................................
+Diterima tanggal : ...........................................................
+Nama Sekolah : ...........................................................
 
-II. MAKSUD & TUJUAN
-............................................................................................
+TANDA TANGAN PENERIMA :
 
-III. WAKTU PELAKSANAAN
-Hari : ........................
-Tanggal : ........................
-
-IV. PELAKSANA PERJALANAN DINAS
-............................................................................................
-
-V. DAERAH TUJUAN/INSTANSI
-............................................................................................
-
-VI. PETUNJUK/ARAHAN
-............................................................................................
-
-VII. MASALAH/TEMUAN
-............................................................................................`
-  },
-  {
-    id: 't1',
-    name: 'Surat Undangan Wali Murid',
-    subject: 'Undangan Pengambilan Rapor',
-    category: 'Undangan',
-    layout: 'standard',
-    content: `Dengan hormat,
-
-Sehubungan dengan berakhirnya kegiatan pembelajaran, kami mengundang Bapak/Ibu Wali Murid untuk hadir pada:
-
-Hari/Tanggal : [HARI], [TANGGAL]
-Pukul : 08.00 WIB - Selesai
-Tempat : Ruang Kelas [KELAS]
-Acara : Pengambilan Rapor
-
-Mengingat pentingnya acara ini, kami mengharapkan kehadiran Bapak/Ibu tepat pada waktunya.
-
-Demikian undangan ini kami sampaikan.`
-  },
-  {
-    id: 't3',
-    name: 'Surat Keterangan Siswa',
-    subject: 'Surat Keterangan Aktif Sekolah',
-    category: 'Dinas',
-    layout: 'standard',
-    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH], menerangkan bahwa:
-
-Nama : [NAMA_SISWA]
-NISN : [NISN]
-Kelas : [KELAS]
-
-Adalah benar-benar siswa aktif di sekolah kami pada Tahun Ajaran 2023/2024. Surat keterangan ini dibuat untuk keperluan [KEPERLUAN].
-
-Demikian surat keterangan ini dibuat agar dapat dipergunakan sebagaimana mestinya.`
+( ........................................... )`
   }
 ];
 

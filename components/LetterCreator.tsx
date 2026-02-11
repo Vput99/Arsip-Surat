@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2, QrCode, Key, AlertTriangle } from 'lucide-react';
+import { Save, Printer, ChevronDown, CheckCircle2, Scissors, Loader2, QrCode, Key, AlertTriangle, FileText, Layout, UserPlus } from 'lucide-react';
 import { LETTER_TEMPLATES } from '../constants';
 import { subscribeToConfig, saveMail } from '../services/storage';
 import { Mail, MailType, MailStatus, UrgencyLevel, SchoolConfig } from '../types';
@@ -55,56 +55,46 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     
-    // 1. Handle Cut Lines
-    if (trimmed.includes('✂') || trimmed.includes('-CUT-LINE')) {
+    if (trimmed === '[PAGE_BREAK]') {
       flushTable();
       renderedBlocks.push(
-        <div key={`cut-${index}`} className="flex items-center gap-4 my-8 select-none print:my-12 break-inside-avoid">
-          <Scissors size={16} className="text-black transform -rotate-90" />
-          <div className="flex-1 border-b-2 border-dashed border-black"></div>
+        <div key={`pb-${index}`} className="page-breaker print:break-after-page h-0 my-10 relative border-t border-dashed border-slate-300 print:border-none">
+          <span className="absolute right-0 -top-3 bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 print:hidden">HALAMAN BARU</span>
         </div>
       );
       return;
     }
 
-    // 2. Handle Pasal / Judul Tengah (Centered)
-    if (trimmed.startsWith('PASAL') || (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && trimmed.length > 3 && !trimmed.includes(':') && !trimmed.startsWith('NO'))) {
+    if (trimmed.startsWith('PASAL') || trimmed === 'MEMUTUSKAN' || trimmed === 'MEMERINTAHKAN' || (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && trimmed.length > 3 && !trimmed.includes(':') && !trimmed.startsWith('NO'))) {
       flushTable();
-      renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-3 font-bold text-center text-black font-serif uppercase tracking-wider break-after-avoid">{trimmed}</div>);
+      renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-3 font-bold text-center text-black font-serif uppercase tracking-wider break-after-avoid underline underline-offset-4">{trimmed}</div>);
       return;
     }
 
-    // 3. Handle Key:Value pairs (e.g., Nama : Budi)
     const columns = line.split(':');
-    if (columns.length > 2 && line.includes('Rp')) {
-       // Deteksi baris tabel sederhana jika ada Rupiah dan banyak kolom
-       tableRows.push(columns);
-    } else if (columns.length > 3) {
-      tableRows.push(columns); // Detect as table row if many colons
+    if (columns.length > 3) {
+      tableRows.push(columns);
     } else if (columns.length === 2 && trimmed.length > 0 && !trimmed.endsWith(':')) {
       flushTable();
       const label = columns[0].trim();
       const value = columns[1].trim();
       
-      // Indentasi khusus untuk "Menimbang", "Mengingat", dll
-      const isKonsideran = label.toLowerCase() === 'menimbang' || label.toLowerCase() === 'mengingat' || label.toLowerCase() === 'memperhatikan' || label.toLowerCase() === 'menetapkan';
+      const isKonsideran = ['menimbang', 'mengingat', 'memperhatikan', 'menetapkan'].includes(label.toLowerCase());
       
       renderedBlocks.push(
-        <div key={`info-${index}`} className={`flex mb-1.5 break-inside-avoid text-black font-serif ${isKonsideran ? '' : 'pl-8'}`}>
-          <span className={`${isKonsideran ? 'w-[100px] font-bold italic' : 'w-[28%]'} shrink-0 align-top`}>{label}</span>
+        <div key={`info-${index}`} className={`flex mb-1.5 break-inside-avoid text-black font-serif ${isKonsideran ? 'mt-4' : 'pl-8'}`}>
+          <span className={`${isKonsideran ? 'w-[110px] font-bold italic' : 'w-[28%]'} shrink-0 align-top`}>{label}</span>
           <span className="w-[15px] text-center shrink-0 align-top">:</span>
           <span className="flex-1 pl-1 text-justify">{value}</span>
         </div>
       );
     } 
-    // 4. Handle List Items (Numbered or Bulleted) - HANGING INDENT
     else if (/^(\d+\.|[a-zA-Z]\.|-)\s/.test(trimmed)) {
        flushTable();
-       // Pisahkan marker (1.) dengan kontennya
        const match = trimmed.match(/^(\d+\.|[a-zA-Z]\.|-)\s+(.*)/);
        if (match) {
          renderedBlocks.push(
-           <div key={`list-${index}`} className="flex mb-1.5 pl-8 font-serif text-black leading-relaxed">
+           <div key={`list-${index}`} className="flex mb-2 pl-8 font-serif text-black leading-relaxed">
               <span className="w-8 shrink-0">{match[1]}</span>
               <span className="flex-1 text-justify">{match[2]}</span>
            </div>
@@ -113,19 +103,17 @@ const SmartContentRenderer = ({ text, isTableTemplate }: { text: string; isTable
          renderedBlocks.push(<p key={`list-${index}`} className="mb-1 pl-8">{trimmed}</p>);
        }
     }
-    // 5. Handle Normal Paragraphs
     else {
       flushTable();
       if (trimmed === '') {
-         renderedBlocks.push(<div className="h-3" key={`br-${index}`}></div>);
+         renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
       } else {
-         // Cek apakah ini paragraf pembuka/penutup standar (biasanya tidak di indent)
          const lower = trimmed.toLowerCase();
          const isStandardPhrase = lower.startsWith('dengan hormat') || lower.startsWith('demikian') || lower.startsWith('untuk') || lower.startsWith('dasar');
-         const indentClass = isStandardPhrase ? '' : 'indent-8'; // Indentasi paragraf first-line
+         const indentClass = isStandardPhrase ? '' : 'indent-10';
 
          renderedBlocks.push(
-           <p key={`p-${index}`} className={`mb-2 text-justify font-serif text-black leading-[1.5] ${indentClass} ${isTableTemplate && trimmed.toUpperCase() === trimmed && trimmed.length > 10 ? 'font-bold text-center text-[12pt] mb-4 underline !indent-0' : ''}`}>
+           <p key={`p-${index}`} className={`mb-3 text-justify font-serif text-black leading-[1.6] ${indentClass} ${isTableTemplate && trimmed.toUpperCase() === trimmed && trimmed.length > 10 ? 'font-bold text-center text-[12pt] mb-4 underline !indent-0' : ''}`}>
              {trimmed}
            </p>
          );
@@ -174,7 +162,8 @@ const LetterCreator: React.FC = () => {
         ...prev, 
         subject: template.subject || prev.subject,
         content: template.content,
-        signatureTitle: (template.id === 't_rolstan_pekerja' || template.id === 't_honor_ekskul') ? 'Kepala Sekolah,' : (template.signatureTitle || 'Kepala Sekolah'),
+        signatureTitle: (template.id === 't_rolstan_pekerja' || template.id === 't_honor_ekskul') ? 'Kepala Sekolah,' : ((template as any).signatureTitle || 'Kepala Sekolah'),
+        signerNamePihak2: template.category === 'Kerjasama' ? prev.signerNamePihak2 : '( ........................................... )'
       }));
     }
   };
@@ -192,134 +181,130 @@ const LetterCreator: React.FC = () => {
   
   const isCenteredLayout = selectedTemplate.layout === 'centered';
 
+  const contentParts = formData.content.split('[PAGE_BREAK]');
+  const page1Content = contentParts[0];
+  const page2Content = contentParts.slice(1).join('\n');
+
   if (!config) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in">
-      {/* Header UI */}
+    <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in text-slate-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm print:hidden">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-800">Cetak Dokumen Sekolah</h2>
-          <p className="text-slate-500 text-sm">Pilih format seperti Rolstan, Honor Ekskul, atau MOU.</p>
+          <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+            <FileText className="text-indigo-600" />
+            Editor Dokumen 2 Halaman
+          </h2>
+          <p className="text-slate-500 text-sm">Gunakan <code className="bg-slate-100 px-1 rounded">[PAGE_BREAK]</code> untuk memecah ke halaman kedua.</p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
-          <button onClick={() => window.print()} className="flex-1 md:flex-none flex items-center justify-center px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm">
-            <Printer size={18} className="mr-2"/>
-            Cetak / PDF
-          </button>
-        </div>
+        <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm flex items-center gap-2">
+          <Printer size={18} /> Cetak / PDF
+        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
-        {/* Editor UI */}
+        {/* Editor Pane */}
         <div className="w-full lg:w-5/12 flex flex-col gap-4 overflow-y-auto pr-2 print:hidden">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 shadow-sm">
              <div>
-               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Jenis Dokumen</label>
-               <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700" onChange={handleTemplateChange} value={selectedTemplate.id}>
+               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Template Surat</label>
+               <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700 transition-all" onChange={handleTemplateChange} value={selectedTemplate.id}>
                  {LETTER_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                </select>
              </div>
              
              <div className="space-y-3">
                 <div>
-                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Judul / Perihal Surat</label>
-                   <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800" />
+                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Judul / Perihal</label>
+                   <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Surat</label>
-                       <input name="refNumber" value={formData.refNumber} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
+                       <input name="refNumber" value={formData.refNumber} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
                     </div>
                     <div>
-                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Surat</label>
-                       <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
+                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal</label>
+                       <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
                     </div>
                 </div>
-                <div>
-                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tujuan / Deskripsi (Opsional)</label>
-                   <input name="recipient" value={formData.recipient} onChange={handleInputChange} placeholder="Contoh: Yth. Wali Murid..." className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
-                </div>
+                {!isCenteredLayout && (
+                  <div>
+                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tujuan Surat</label>
+                     <input name="recipient" value={formData.recipient} onChange={handleInputChange} placeholder="Yth. Orang Tua / Instansi..." className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
+                  </div>
+                )}
              </div>
 
-             {isTableTemplate && (
-               <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 space-y-3">
-                  <label className="block text-[10px] font-black text-amber-600 uppercase tracking-widest">Data Bendahara Sekolah</label>
-                  <input name="signerNameBendahara" placeholder="Nama Bendahara (dengan gelar)" value={formData.signerNameBendahara} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-bold text-slate-800" />
-                  <input name="signerNipBendahara" placeholder="NIP Bendahara" value={formData.signerNipBendahara} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-slate-800" />
-               </div>
-             )}
-
              <div className="pt-2 border-t border-slate-100 space-y-3">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kepala Sekolah (Penanda Tangan)</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tanda Tangan Pihak Pertama (Sekolah)</label>
                 <div className="grid grid-cols-2 gap-3">
-                   <input name="signerName" value={formData.signerName} onChange={handleInputChange} placeholder="Nama Lengkap" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800" />
-                   <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
+                   <input name="signerName" value={formData.signerName} onChange={handleInputChange} placeholder="Nama Kepala Sekolah" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800" />
+                   <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800" />
                 </div>
+
+                {isMOU && (
+                  <div className="animate-fade-in">
+                    <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wide mb-1.5 mt-4 flex items-center gap-2">
+                       <UserPlus size={14} /> Tanda Tangan Pihak Kedua (Mitra/Pelatih)
+                    </label>
+                    <input name="signerNamePihak2" value={formData.signerNamePihak2 === '( ........................................... )' ? '' : formData.signerNamePihak2} onChange={handleInputChange} placeholder="Nama Lengkap Pihak Kedua" className="w-full px-3 py-2.5 bg-indigo-50 border border-indigo-100 rounded-lg text-sm font-bold text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  </div>
+                )}
              </div>
           </div>
           
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex-1 flex flex-col min-h-[400px]">
-             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Editor Isi Surat</label>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex-1 flex flex-col min-h-[400px] shadow-sm">
+             <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Editor Isi Naskah</label>
+                <button onClick={() => setFormData(prev => ({...prev, content: prev.content + '\n[PAGE_BREAK]\n'}))} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors flex items-center gap-1">
+                   <Layout size={12} /> + Hal 2
+                </button>
+             </div>
              <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono text-xs leading-relaxed text-slate-800" />
           </div>
         </div>
 
-        {/* Preview Paper */}
-        <div className="w-full lg:w-7/12 bg-slate-200/50 rounded-2xl border border-slate-200 overflow-y-auto p-4 md:p-8 flex justify-center print:p-0 print:m-0 print:bg-white print:block">
-           <div className="letter-paper bg-white w-[215mm] min-h-[330mm] shadow-2xl mx-auto relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black">
+        {/* Paper Pane (Visual 2 Pages) */}
+        <div className="w-full lg:w-7/12 bg-slate-200/50 rounded-2xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
+           
+           {/* PAGE 1 */}
+           <div className="letter-paper bg-white w-[215mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
               {/* Kop Surat */}
-              <div className="border-b-[4px] border-double border-black pb-4 mb-2 pt-2 grid grid-cols-[80px_1fr_80px] items-center text-black">
+              <div className="border-b-[4px] border-double border-black pb-3 mb-2 pt-2 grid grid-cols-[80px_1fr_80px] items-center text-black">
                  <div className="flex justify-center">
                    {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[20mm] h-auto" alt="Logo Daerah"/>}
                  </div>
-                 <div className="text-center w-full px-2">
-                    <h3 className="text-[12pt] font-bold uppercase leading-tight font-serif text-black tracking-wide">{config.headerLine1}</h3>
-                    <h3 className="text-[12pt] font-bold uppercase leading-tight font-serif text-black tracking-wide">{config.headerLine2}</h3>
-                    <h1 className="text-[16pt] font-extrabold uppercase my-1 leading-none font-serif text-black tracking-wider">{config.name}</h1>
-                    <p className="text-[9pt] font-serif leading-tight text-black">{config.address}</p>
-                    <p className="text-[9pt] font-serif leading-tight text-black">Email: {config.email}</p>
+                 <div className="text-center w-full px-4">
+                    <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide text-black">{config.headerLine1}</h3>
+                    <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide text-black">{config.headerLine2}</h3>
+                    <h1 className="text-[17pt] font-extrabold uppercase my-1 leading-none tracking-wider text-black">{config.name}</h1>
+                    <p className="text-[9pt] leading-tight italic text-black">{config.address}</p>
+                    <p className="text-[9pt] leading-tight text-black">Email: {config.email}</p>
                  </div>
                  <div className="flex justify-center">
                    {config.logoUrl && <img src={config.logoUrl} className="w-[20mm] h-auto" alt="Logo Sekolah"/>}
                  </div>
               </div>
 
-              {/* Layout Logic: Centered vs Standard */}
-              <div className="font-serif text-black flex-1 flex flex-col">
-                 
-                 {/* A. LAYOUT TERPUSAT (SK, MOU, TUGAS) */}
+              {/* Layout Content Page 1 */}
+              <div className="flex-1 flex flex-col pt-4">
                  {isCenteredLayout ? (
-                   <div className="text-center mt-6 mb-8">
-                      <h2 className="text-[13pt] font-bold uppercase underline tracking-wide leading-tight">{formData.subject}</h2>
-                      <p className="text-[11pt] mt-1">Nomor: {formData.refNumber}</p>
+                   <div className="text-center mb-8">
+                      <h2 className="text-[13pt] font-bold uppercase underline tracking-wide leading-tight text-black">{formData.subject}</h2>
+                      <p className="text-[11pt] mt-1 font-bold text-black">Nomor: {formData.refNumber}</p>
                    </div>
                  ) : (
-                 /* B. LAYOUT STANDAR (UNDANGAN, DINAS BIASA) */
-                   <div className="mt-4 mb-8">
-                      {/* Tanggal di kanan atas */}
-                      <div className="flex justify-end mb-4">
+                   <div className="mb-8 text-black">
+                      <div className="flex justify-end mb-6">
                          <p className="text-[11pt]">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
                       </div>
-                      
-                      {/* Blok Nomor/Lampiran/Perihal di Kiri */}
-                      <div className="flex items-start">
-                         <div className="w-[80px] text-[11pt]">Nomor</div>
-                         <div className="w-[10px] text-[11pt]">:</div>
-                         <div className="flex-1 text-[11pt]">{formData.refNumber}</div>
+                      <div className="space-y-0.5">
+                        <div className="flex"><span className="w-24">Nomor</span><span>: {formData.refNumber}</span></div>
+                        <div className="flex"><span className="w-24">Lampiran</span><span>: -</span></div>
+                        <div className="flex"><span className="w-24">Perihal</span><span className="font-bold underline">: {formData.subject}</span></div>
                       </div>
-                      <div className="flex items-start">
-                         <div className="w-[80px] text-[11pt]">Lampiran</div>
-                         <div className="w-[10px] text-[11pt]">:</div>
-                         <div className="flex-1 text-[11pt]">-</div>
-                      </div>
-                      <div className="flex items-start">
-                         <div className="w-[80px] text-[11pt]">Perihal</div>
-                         <div className="w-[10px] text-[11pt]">:</div>
-                         <div className="flex-1 font-bold text-[11pt] underline">{formData.subject}</div>
-                      </div>
-                      
-                      <div className="mt-8 text-[11pt]">
+                      <div className="mt-8">
                         <p>Kepada Yth.</p>
                         <p className="font-bold">{formData.recipient || '................................'}</p>
                         <p>di Tempat</p>
@@ -327,112 +312,112 @@ const LetterCreator: React.FC = () => {
                    </div>
                  )}
 
-                 {/* Body Content */}
-                 <div className="flex-1 text-black">
-                    <SmartContentRenderer text={formData.content} isTableTemplate={isTableTemplate} />
+                 <div className="flex-1">
+                    <SmartContentRenderer text={page1Content} isTableTemplate={isTableTemplate} />
                  </div>
 
-                 {/* Tanda Tangan Wrapper */}
-                 <div className={`mt-10 break-inside-avoid grid ${isTableTemplate ? 'grid-cols-3' : (isMOU ? 'grid-cols-2' : 'grid-cols-1')} gap-4 text-center text-[11pt] font-serif text-black`}>
-                    {isTableTemplate && (
-                      <div className="flex flex-col text-black">
-                        <p>&nbsp;</p>
-                        <p>Setuju Dibayar,</p>
-                        <p>Bendahara Sekolah</p>
-                        <div className="h-20"></div>
-                        <p className="font-bold underline">{formData.signerNameBendahara}</p>
-                        <p>{formData.signerNipBendahara ? `NIP. ${formData.signerNipBendahara}` : ''}</p>
-                      </div>
-                    )}
-                    
-                    {isMOU && (
-                      <div className="flex flex-col text-black">
-                        <p>&nbsp;</p>
-                        <p>PIHAK KEDUA,</p>
-                        <div className="h-20"></div>
-                        <p className="font-bold underline">{formData.signerNamePihak2}</p>
-                      </div>
-                    )}
+                 {/* Signatures Page 1 (Hanya jika tidak ada Page 2) */}
+                 {!page2Content && (
+                   <div className={`mt-12 break-inside-avoid grid ${isTableTemplate ? 'grid-cols-3' : (isMOU ? 'grid-cols-2' : 'grid-cols-1')} gap-6 text-center text-[11pt] font-serif text-black`}>
+                      
+                      {isMOU && (
+                        <div className="flex flex-col">
+                          <p className="mb-1">&nbsp;</p>
+                          <p className="font-bold uppercase tracking-wider mb-2">PIHAK KEDUA,</p>
+                          <div className="h-24"></div>
+                          <p className="font-bold underline uppercase">{formData.signerNamePihak2 || '( ........................................... )'}</p>
+                        </div>
+                      )}
 
-                    <div className={`${!isTableTemplate && !isMOU ? 'ml-auto w-[240px]' : ''} flex flex-col text-black`}>
-                       {isCenteredLayout && (
-                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
-                       )}
-                       <p>{isTableTemplate ? 'Mengetahui,' : ''}</p>
-                       <p className="font-bold">{formData.signatureTitle}</p>
-                       <div className="h-20"></div>
-                       <p className="font-bold underline uppercase">{formData.signerName}</p>
-                       <p>{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
-                    </div>
-                    
-                    {isTableTemplate && (
-                      <div className="flex flex-col text-black">
-                        <p>&nbsp;</p>
-                        <p>Telah Menerima,</p>
-                        <p>Penerima / Pelatih</p>
-                        <div className="h-20"></div>
-                        <p className="italic text-slate-400">(Tanda Tangan Terlampir)</p>
+                      <div className={`${!isTableTemplate && !isMOU ? 'ml-auto w-[250px]' : ''} flex flex-col`}>
+                         {isCenteredLayout && <p className="mb-1 text-black">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
+                         {isMOU && <p className="font-bold uppercase tracking-wider mb-2">PIHAK PERTAMA,</p>}
+                         <p className="font-bold">{formData.signatureTitle}</p>
+                         <div className="h-20"></div>
+                         <p className="font-bold underline uppercase tracking-wide">{formData.signerName}</p>
+                         <p>{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
                       </div>
-                    )}
-                 </div>
+                   </div>
+                 )}
               </div>
+              <div className="absolute bottom-4 right-8 text-[9pt] italic text-slate-300 print:hidden">Halaman 1</div>
            </div>
+
+           {/* PAGE 2 */}
+           {page2Content && (
+             <div className="letter-paper bg-white w-[215mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif print:mt-0">
+                <div className="flex-1 pt-10">
+                   <SmartContentRenderer text={page2Content.replace(/\[NOMOR_SURAT\]/g, formData.refNumber).replace(/\[TANGGAL_SURAT\]/g, format(new Date(formData.date), 'dd MMMM yyyy', { locale: id }))} />
+                   
+                   {/* Signatures Page 2 (Final) */}
+                   <div className={`mt-12 break-inside-avoid grid ${isTableTemplate ? 'grid-cols-3' : (isMOU ? 'grid-cols-2' : 'grid-cols-1')} gap-6 text-center text-[11pt] font-serif text-black`}>
+                      
+                      {isMOU && (
+                        <div className="flex flex-col">
+                          <p className="mb-1">&nbsp;</p>
+                          <p className="font-bold uppercase tracking-wider mb-2">PIHAK KEDUA,</p>
+                          <div className="h-24"></div>
+                          <p className="font-bold underline uppercase">{formData.signerNamePihak2 || '( ........................................... )'}</p>
+                        </div>
+                      )}
+
+                      <div className={`${!isTableTemplate && !isMOU ? 'ml-auto w-[250px]' : ''} flex flex-col`}>
+                         {isMOU && <p className="font-bold uppercase tracking-wider mb-2">PIHAK PERTAMA,</p>}
+                         <p className="font-bold">{formData.signatureTitle}</p>
+                         <div className="h-20"></div>
+                         <p className="font-bold underline uppercase tracking-wide">{formData.signerName}</p>
+                         <p>{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
+                      </div>
+                   </div>
+                </div>
+                <div className="absolute bottom-4 right-8 text-[9pt] italic text-slate-300 print:hidden">Halaman 2</div>
+             </div>
+           )}
+
         </div>
       </div>
       <style>{`
-        /* PREVIEW MODE (Screen) */
         .letter-paper {
-           padding: 15mm 20mm;
+           padding: 20mm 20mm 20mm 30mm;
+           min-height: 297mm;
         }
 
-        /* PRINT MODE */
         @media print {
           @page { 
-            size: 215mm 330mm portrait; /* F4 Portrait */
-            margin: 20mm 20mm 20mm 30mm; /* Atas 2cm, Kanan 2cm, Bawah 2cm, Kiri 3cm (Standar Dinas) */
+            size: 215mm 330mm portrait; 
+            margin: 0;
           }
           
-          /* RESET OVERFLOW CONTAINER UTAMA agar halaman bisa memanjang */
           html, body, #root {
             height: auto !important;
-            min-height: 100vh !important;
             overflow: visible !important;
             position: static !important;
-            width: 100% !important;
-            margin: 0 !important;
-            display: block !important;
+            background: white !important;
           }
           
-          /* Hide everything except print area */
           body * { visibility: hidden; }
           .letter-paper, .letter-paper * { visibility: visible !important; }
           
           .letter-paper { 
             position: relative !important;
-            left: auto !important;
-            top: auto !important; 
             width: 100% !important;
-            height: auto !important; /* Biarkan tinggi otomatis */
-            min-height: 0 !important;
+            height: 330mm !important; 
             margin: 0 !important;
-            padding: 0 !important; /* Margin sudah dihandle oleh @page */
-            background: transparent !important;
+            padding: 20mm 20mm 20mm 30mm !important;
+            background: white !important;
             border: none !important;
             box-shadow: none !important;
             display: block !important;
+            page-break-after: always !important;
+            font-family: 'Times New Roman', serif !important;
           }
           
-          /* Table styling untuk print */
-          table { width: 100% !important; border-collapse: collapse !important; border: 1px solid black !important; }
+          .page-breaker { display: none !important; }
+          
+          table { width: 100% !important; border-collapse: collapse !important; border: 1.5px solid black !important; }
           th, td { border: 1px solid #000 !important; page-break-inside: avoid !important; }
-          
-          /* Cegah elemen penting terpotong */
           .break-inside-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
-          .break-after-avoid { break-after: avoid !important; }
-          tr { break-inside: avoid !important; page-break-inside: avoid !important; }
-          
-          /* Pastikan text hitam pekat */
-          * { color: black !important; text-shadow: none !important; }
+          * { color: black !important; -webkit-print-color-adjust: exact; }
         }
       `}</style>
     </div>

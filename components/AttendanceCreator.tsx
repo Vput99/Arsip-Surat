@@ -32,9 +32,7 @@ const AttendanceCreator: React.FC = () => {
     };
   }, []);
 
-  // Filter staff berdasarkan kategori aktif
   const currentStaffList = allStaff.filter(s => s.category === activeCategory);
-
   const daysInMonth = getDaysInMonth(new Date(year, month));
   const dateRange = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
@@ -79,12 +77,12 @@ const AttendanceCreator: React.FC = () => {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case 'P': return <span className="text-indigo-600 font-bold text-[8.5pt] italic print:text-black leading-none">✓</span>;
-      case 'S': return <span className="text-amber-600 font-bold text-[7.5pt] leading-none">S</span>;
-      case 'I': return <span className="text-blue-600 font-bold text-[7.5pt] leading-none">I</span>;
-      case 'A': return <span className="text-rose-600 font-bold text-[7.5pt] leading-none">A</span>;
-      case 'C': return <span className="text-emerald-600 font-bold text-[7.5pt] leading-none">C</span>;
-      case 'DL': return <span className="text-violet-600 font-bold text-[7.5pt] leading-none">DL</span>;
+      case 'P': return <span className="text-indigo-600 font-bold text-[9pt] italic print:text-black leading-none">✓</span>;
+      case 'S': return <span className="text-amber-600 font-bold text-[8pt] leading-none">S</span>;
+      case 'I': return <span className="text-blue-600 font-bold text-[8pt] leading-none">I</span>;
+      case 'A': return <span className="text-rose-600 font-bold text-[8pt] leading-none">A</span>;
+      case 'C': return <span className="text-emerald-600 font-bold text-[8pt] leading-none">C</span>;
+      case 'DL': return <span className="text-violet-600 font-bold text-[8pt] leading-none">DL</span>;
       default: return null;
     }
   };
@@ -97,8 +95,6 @@ const AttendanceCreator: React.FC = () => {
         workingDays++;
         const statusIn = attendance[`${staffId}-${day}-in`];
         const statusOut = attendance[`${staffId}-${day}-out`];
-        
-        // Count statuses. If one session is absent, count as absent for the day priority
         const dailyStatus = [statusIn, statusOut];
         
         if (dailyStatus.includes('S')) s++;
@@ -108,23 +104,11 @@ const AttendanceCreator: React.FC = () => {
         else if (dailyStatus.includes('DL')) dl++;
       }
     });
-    
-    // Total Presence = Working Days - (S + I + A + C). 
     const presence = workingDays - (s + i + a + c); 
-
     return { s, i, a, c, dl, presence, workingDays };
   };
 
-  const openEditor = (cat: AttendanceCategory) => {
-    setActiveCategory(cat);
-    setView('editor');
-  };
-
-  const openRecap = () => {
-    setView('recap');
-  };
-
-  if (!config) return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-indigo-600"/></div>;
+  if (!config) return <div className="flex justify-center items-center h-64 text-slate-900"><Loader2 className="animate-spin text-indigo-600"/></div>;
 
   if (view === 'menu') {
     const menus = [
@@ -135,7 +119,7 @@ const AttendanceCreator: React.FC = () => {
     ];
 
     return (
-      <div className="max-w-5xl mx-auto py-10 animate-fade-in">
+      <div className="max-w-5xl mx-auto py-10 animate-fade-in text-slate-900">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black text-slate-800 mb-2">Buat Absensi Sekolah</h2>
           <p className="text-slate-500 font-medium">Data personil tersimpan otomatis di database cloud.</p>
@@ -143,25 +127,22 @@ const AttendanceCreator: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {menus.map((m) => (
-            <button key={m.id} onClick={() => openEditor(m.id)} className={`group relative bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-${m.color}-500 transition-all duration-300 text-left overflow-hidden`}>
-              <div className={`absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-${m.color}-500/5 rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
-              <div className={`w-16 h-16 bg-${m.color}-50 text-${m.color}-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-${m.color}-500 group-hover:text-white transition-all duration-300`}>
+            <button key={m.id} onClick={() => { setActiveCategory(m.id); setView('editor'); }} className="group relative bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all text-left overflow-hidden">
+              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 {m.icon}
               </div>
               <h3 className="text-xl font-black text-slate-800 mb-2">{m.title}</h3>
               <p className="text-slate-500 text-sm leading-relaxed mb-6">{m.desc}</p>
-              <div className={`flex items-center text-xs font-black uppercase tracking-widest text-${m.color}-600`}>
+              <div className="flex items-center text-xs font-black uppercase tracking-widest text-indigo-600">
                 Buka Absensi <ArrowRight size={14} className="ml-2 group-hover:translate-x-2 transition-transform" />
               </div>
             </button>
           ))}
         </div>
 
-        {/* Menu Rekapitulasi */}
-        <button onClick={openRecap} className="w-full group relative bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-xl hover:shadow-2xl transition-all duration-300 text-left overflow-hidden flex items-center justify-between">
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/5 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+        <button onClick={() => setView('recap')} className="w-full group relative bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-xl hover:shadow-2xl transition-all text-left overflow-hidden flex items-center justify-between">
             <div className="relative z-10 flex items-center gap-6">
-               <div className="w-16 h-16 bg-white/10 text-white rounded-2xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform">
+               <div className="w-16 h-16 bg-white/10 text-white rounded-2xl flex items-center justify-center backdrop-blur-sm">
                   <ClipboardList size={32} />
                </div>
                <div>
@@ -169,7 +150,7 @@ const AttendanceCreator: React.FC = () => {
                  <p className="text-slate-400 text-sm">Cetak rekap total hari kerja, ijin, cuti, dan kehadiran per personil.</p>
                </div>
             </div>
-            <div className="relative z-10 bg-white text-slate-900 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest group-hover:translate-x-[-10px] transition-transform flex items-center gap-2">
+            <div className="relative z-10 bg-white text-slate-900 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">
               Buka Rekap <ArrowRight size={14}/>
             </div>
         </button>
@@ -178,7 +159,7 @@ const AttendanceCreator: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-20">
+    <div className="flex flex-col gap-6 animate-fade-in pb-20 text-slate-900">
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 print:hidden">
         <div className="xl:col-span-1 space-y-4">
           <button onClick={() => setView('menu')} className="flex items-center gap-2 text-slate-500 font-bold text-sm hover:text-indigo-600 transition-colors mb-2">
@@ -228,244 +209,210 @@ const AttendanceCreator: React.FC = () => {
             </div>
 
             <button onClick={() => window.print()} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2">
-              <Printer size={18} /> Cetak Dokumen
+              <Printer size={18} /> Cetak (Landscape F4)
             </button>
           </div>
         </div>
 
         <div className="xl:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-slate-100 text-slate-600 rounded-lg">{view === 'recap' ? <ClipboardList size={20}/> : <Users size={20} />}</div>
-              <h3 className="font-bold text-slate-800">
-                {view === 'recap' ? 'Filter Rekapitulasi' : `Daftar Personil (${currentStaffList.length})`}
-              </h3>
-            </div>
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Users size={18} className="text-slate-400" />
+              {view === 'recap' ? 'Rekap Kehadiran' : 'Daftar Personil'}
+            </h3>
             <Link to="/settings" className="px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">
               <Settings size={14} /> Kelola Personil
             </Link>
           </div>
-
           {view === 'recap' && (
              <div className="flex gap-2 overflow-x-auto pb-2">
-                {[
-                  { id: 'reg', label: 'Guru/PNS' }, 
-                  { id: 'pppk', label: 'PPPK' }, 
-                  { id: 'extra', label: 'Ekstrakurikuler' }, 
-                  { id: 'tukang', label: 'Tukang' }
-                ].map(cat => (
-                  <button 
-                    key={cat.id}
-                    onClick={() => setActiveCategory(cat.id as AttendanceCategory)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat.id ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'}`}
-                  >
-                    {cat.label}
+                {['reg', 'pppk', 'extra', 'tukang'].map(cat => (
+                  <button key={cat} onClick={() => setActiveCategory(cat as AttendanceCategory)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
+                    {cat.toUpperCase()}
                   </button>
                 ))}
              </div>
           )}
-          
-          {view === 'editor' && (
-            <>
-              <div className="mb-4 p-3 bg-blue-50 text-blue-700 text-xs font-medium rounded-xl flex items-center gap-2 border border-blue-100">
-                <AlertCircle size={16} />
-                <span>Untuk menambah, mengedit, atau menghapus personil, silakan buka menu <b>Pengaturan</b>.</span>
-              </div>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {currentStaffList.length === 0 ? (
-                  <div className="p-10 text-center border-2 border-dashed border-slate-100 rounded-2xl text-slate-400 italic text-sm">
-                    Belum ada data personil.
-                  </div>
-                ) : (
-                  currentStaffList.map((staff, idx) => (
-                    <div key={staff.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <div className="md:col-span-1 text-xs font-bold text-slate-400 text-center">#{idx + 1}</div>
-                      <div className="md:col-span-4">
-                        <div className="text-sm font-bold text-slate-700">{staff.name || 'Tanpa Nama'}</div>
-                      </div>
-                      <div className="md:col-span-3">
-                        <div className="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 inline-block">
-                          NIP: {staff.nip || '-'}
-                        </div>
-                      </div>
-                      <div className="md:col-span-4">
-                        <div className="text-xs font-medium text-slate-600">{staff.rank || '-'}</div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          )}
         </div>
       </div>
 
-      {/* Preview Paper */}
-      <div className="flex justify-center overflow-x-auto p-4 bg-slate-200/30 rounded-3xl border border-slate-200 print:p-0 print:bg-white print:block">
-        <div className="attendance-paper bg-white w-[330mm] min-h-[215mm] p-[10mm] shadow-2xl print:shadow-none print:p-0 print:w-full print:min-h-0 text-black mx-auto">
-          {/* Header Kop */}
-          <div className="border-b-[3px] border-black pb-2 mb-3 grid grid-cols-[80px_1fr_80px] items-center text-black">
-             <div className="flex justify-center">
-               {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[18mm] h-auto" alt="Logo Daerah"/>}
-             </div>
-             <div className="text-center">
-                <h3 className="text-[12pt] font-bold uppercase leading-tight font-serif text-black">{config.headerLine1}</h3>
-                <h3 className="text-[12pt] font-bold uppercase leading-tight font-serif text-black">{config.headerLine2}</h3>
-                <h1 className="text-[14pt] font-extrabold uppercase my-0.5 leading-none font-serif text-black">{config.name}</h1>
-                <p className="text-[8pt] font-serif leading-tight text-black">{config.address}</p>
-             </div>
-             <div className="flex justify-center">
-               {config.logoUrl && <img src={config.logoUrl} className="w-[18mm] h-auto" alt="Logo Sekolah"/>}
-             </div>
-          </div>
+      {/* Preview Landscape */}
+      <div className="flex justify-center overflow-x-auto p-8 bg-slate-200/50 rounded-3xl border border-slate-200 print:p-0 print:bg-white print:block">
+        <div className="attendance-paper bg-white w-[330mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif print:p-0">
+          
+          <div className="p-[15mm]">
+            <div className="border-b-[4px] border-double border-black pb-3 mb-4 pt-2 grid grid-cols-[80px_1fr_80px] items-center text-black">
+               <div className="flex justify-center">
+                 {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[18mm] h-auto" alt="Logo Daerah"/>}
+               </div>
+               <div className="text-center w-full px-4">
+                  <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide text-black">{config.headerLine1}</h3>
+                  <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide text-black">{config.headerLine2}</h3>
+                  <h1 className="text-[16pt] font-extrabold uppercase my-1 leading-none tracking-wider text-black">{config.name}</h1>
+                  <p className="text-[9pt] leading-tight italic text-black">{config.address}</p>
+               </div>
+               <div className="flex justify-center">
+                 {config.logoUrl && <img src={config.logoUrl} className="w-[18mm] h-auto" alt="Logo Sekolah"/>}
+               </div>
+            </div>
 
-          <div className="text-center mb-3 text-black">
-            <h2 className="text-[11pt] font-bold underline uppercase text-black">
-               {view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}
-            </h2>
-            <p className="text-[9pt] font-serif uppercase text-black">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
-          </div>
+            <div className="text-center mb-6 text-black">
+              <h2 className="text-[12pt] font-bold underline uppercase text-black">{view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}</h2>
+              <p className="text-[10pt] font-serif uppercase text-black">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
+            </div>
 
-          {view === 'recap' ? (
-             // --- TAMPILAN REKAP ---
-             <table className="w-full border-collapse text-[9pt] font-serif text-black">
-               <thead>
-                 <tr className="bg-slate-50 print:bg-transparent">
-                   <th rowSpan={2} className="border border-black p-1 w-10">NO</th>
-                   <th rowSpan={2} className="border border-black p-1">NAMA / NIP</th>
-                   <th rowSpan={2} className="border border-black p-1">PANGKAT / GOL</th>
-                   <th rowSpan={2} className="border border-black p-1 w-20">JML HARI KERJA</th>
-                   <th colSpan={5} className="border border-black p-1">KETERANGAN</th>
-                   <th rowSpan={2} className="border border-black p-1 w-20">JML KEHADIRAN</th>
-                 </tr>
-                 <tr className="bg-slate-50 print:bg-transparent">
-                   <th className="border border-black p-1 w-10">S</th>
-                   <th className="border border-black p-1 w-10">I</th>
-                   <th className="border border-black p-1 w-10">C</th>
-                   <th className="border border-black p-1 w-10">DL</th>
-                   <th className="border border-black p-1 w-10">A</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {currentStaffList.map((staff, idx) => {
-                   const r = calculateRecap(staff.id);
-                   return (
-                     <tr key={staff.id}>
-                       <td className="border border-black text-center">{idx + 1}</td>
-                       <td className="border border-black px-2 py-1 align-middle">
-                         <div className="font-bold text-[9pt] leading-tight">{staff.name || '...'}</div>
-                         <div className="text-[8pt] text-slate-600 print:text-black mt-0.5">NIP. {staff.nip || '-'}</div>
-                       </td>
-                       <td className="border border-black text-center">{staff.rank || '-'}</td>
-                       <td className="border border-black text-center font-bold">{r.workingDays}</td>
-                       <td className="border border-black text-center">{r.s || '-'}</td>
-                       <td className="border border-black text-center">{r.i || '-'}</td>
-                       <td className="border border-black text-center">{r.c || '-'}</td>
-                       <td className="border border-black text-center">{r.dl || '-'}</td>
-                       <td className="border border-black text-center">{r.a || '-'}</td>
-                       <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent">{r.presence}</td>
-                     </tr>
-                   );
-                 })}
-               </tbody>
-             </table>
-          ) : (
-             // --- TAMPILAN ABSENSI HARIAN (EDITOR) ---
-             <table className="w-full border-collapse text-[8pt] font-serif table-fixed text-black">
-              <colgroup>
-                <col className="w-8" />
-                <col className="w-[180px]" />
-                <col className="w-[100px]" />
-                {dateRange.map(d => <col key={d} className="w-auto" />)}
-                <col className="w-7" /> <col className="w-7" /> <col className="w-7" /> <col className="w-7" /> <col className="w-7" /> <col className="w-9" />
-              </colgroup>
-              <thead>
-                <tr className="bg-slate-50 print:bg-transparent">
-                  <th rowSpan={2} className="border border-black p-0.5 text-black">NO</th>
-                  <th rowSpan={2} className="border border-black p-0.5 text-black">NAMA / NIP</th>
-                  <th rowSpan={2} className="border border-black p-0.5 text-black">JABATAN</th>
-                  <th colSpan={daysInMonth} className="border border-black p-0.5 text-black">TANGGAL (Atas=Masuk, Bawah=Pulang)</th>
-                  <th colSpan={6} className="border border-black p-0.5 text-black">REKAP</th>
-                </tr>
-                <tr className="bg-slate-50 print:bg-transparent">
-                  {dateRange.map(d => (
-                    <th key={d} className={`border border-black p-0.5 text-[7pt] h-6 ${isDayOff(d) ? 'bg-rose-100 text-rose-600 print:bg-rose-200' : 'text-black'}`}>
-                      {d}
-                    </th>
-                  ))}
-                  <th className="border border-black text-black">S</th>
-                  <th className="border border-black text-black">I</th>
-                  <th className="border border-black text-black">A</th>
-                  <th className="border border-black text-black">C</th>
-                  <th className="border border-black text-black">DL</th>
-                  <th className="border border-black text-black">JML</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentStaffList.map((staff, sIdx) => {
-                  const recap = calculateRecap(staff.id);
-                  return (
-                    <tr key={staff.id} className="h-10"> {/* Set Minimum Row Height */}
-                      <td className="border border-black text-center text-black align-middle">{sIdx + 1}</td>
-                      <td className="border border-black px-1 py-1 leading-tight overflow-hidden align-middle">
-                        <div className="font-bold text-black text-[8pt] whitespace-normal leading-tight mb-0.5">{staff.name || '...'}</div>
-                        <div className="text-[7pt] text-slate-500 print:text-black">NIP. {staff.nip || '...'}</div>
-                      </td>
-                      <td className="border border-black text-center text-[7pt] leading-tight px-0.5 text-black align-middle whitespace-normal">{staff.rank || '-'}</td>
-                      {dateRange.map(d => (
-                        // Teknik height:1px pada TD agar child div bisa h-full (memenuhi tinggi sel)
-                        <td key={`cell-${d}`} style={{height: '1px'}} className={`border border-black p-0 ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
-                           <div className="flex flex-col h-full w-full">
-                              <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black min-h-[16px] transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
-                                {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
-                              </div>
-                              <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center min-h-[16px] transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
-                                {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
-                              </div>
-                           </div>
+            {view === 'recap' ? (
+               <table className="w-full border-collapse text-[9pt] font-serif text-black border-black">
+                 <thead>
+                   <tr className="bg-slate-50 print:bg-transparent">
+                     <th rowSpan={2} className="border border-black p-1 w-12">NO</th>
+                     <th rowSpan={2} className="border border-black p-1">NAMA / NIP</th>
+                     <th rowSpan={2} className="border border-black p-1">PANGKAT / GOL</th>
+                     <th rowSpan={2} className="border border-black p-1 w-24">JML HARI KERJA</th>
+                     <th colSpan={5} className="border border-black p-1">KETERANGAN</th>
+                     <th rowSpan={2} className="border border-black p-1 w-24">JML KEHADIRAN</th>
+                   </tr>
+                   <tr className="bg-slate-50 print:bg-transparent">
+                     <th className="border border-black p-1 w-12">S</th>
+                     <th className="border border-black p-1 w-12">I</th>
+                     <th className="border border-black p-1 w-12">C</th>
+                     <th className="border border-black p-1 w-12">DL</th>
+                     <th className="border border-black p-1 w-12">A</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {currentStaffList.map((staff, idx) => {
+                     const r = calculateRecap(staff.id);
+                     return (
+                       <tr key={staff.id}>
+                         <td className="border border-black text-center">{idx + 1}</td>
+                         <td className="border border-black px-2 py-1.5 align-middle">
+                           <div className="font-bold text-[10pt] leading-tight text-black">{staff.name || '...'}</div>
+                           <div className="text-[9pt] text-slate-600 print:text-black mt-0.5">NIP. {staff.nip || '-'}</div>
+                         </td>
+                         <td className="border border-black text-center">{staff.rank || '-'}</td>
+                         <td className="border border-black text-center font-bold">{r.workingDays}</td>
+                         <td className="border border-black text-center">{r.s || '-'}</td>
+                         <td className="border border-black text-center">{r.i || '-'}</td>
+                         <td className="border border-black text-center">{r.c || '-'}</td>
+                         <td className="border border-black text-center">{r.dl || '-'}</td>
+                         <td className="border border-black text-center">{r.a || '-'}</td>
+                         <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent">{r.presence}</td>
+                       </tr>
+                     );
+                   })}
+                 </tbody>
+               </table>
+            ) : (
+               <table className="w-full border-collapse text-[8.5pt] font-serif table-fixed text-black border-black">
+                <colgroup>
+                  <col className="w-8" />
+                  <col className="w-[180px]" />
+                  <col className="w-[110px]" />
+                  {dateRange.map(d => <col key={d} className="w-auto" />)}
+                  <col className="w-8" /> <col className="w-8" /> <col className="w-8" /> <col className="w-8" /> <col className="w-8" /> <col className="w-10" />
+                </colgroup>
+                <thead>
+                  <tr className="bg-slate-50 print:bg-transparent">
+                    <th rowSpan={2} className="border border-black p-1 text-black">NO</th>
+                    <th rowSpan={2} className="border border-black p-1 text-black">NAMA / NIP</th>
+                    <th rowSpan={2} className="border border-black p-1 text-black">JABATAN</th>
+                    <th colSpan={daysInMonth} className="border border-black p-1 text-black">TANGGAL (Atas=Masuk, Bawah=Pulang)</th>
+                    <th colSpan={6} className="border border-black p-1 text-black">REKAP</th>
+                  </tr>
+                  <tr className="bg-slate-50 print:bg-transparent">
+                    {dateRange.map(d => (
+                      <th key={d} className={`border border-black p-0.5 text-[7.5pt] h-7 ${isDayOff(d) ? 'bg-rose-100 text-rose-600 print:bg-rose-200' : 'text-black'}`}>
+                        {d}
+                      </th>
+                    ))}
+                    <th className="border border-black text-black">S</th>
+                    <th className="border border-black text-black">I</th>
+                    <th className="border border-black text-black">A</th>
+                    <th className="border border-black text-black">C</th>
+                    <th className="border border-black text-black">DL</th>
+                    <th className="border border-black text-black">JML</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentStaffList.map((staff, sIdx) => {
+                    const recap = calculateRecap(staff.id);
+                    return (
+                      <tr key={staff.id} style={{height: '36px'}}>
+                        <td className="border border-black text-center text-black align-middle">{sIdx + 1}</td>
+                        <td className="border border-black px-1.5 py-1 leading-tight align-middle">
+                          <div className="font-bold text-black text-[9pt] leading-tight mb-0.5">{staff.name || '...'}</div>
+                          <div className="text-[8pt] text-slate-500 print:text-black">NIP. {staff.nip || '...'}</div>
                         </td>
-                      ))}
-                      <td className="border border-black text-center font-bold text-black align-middle">{recap.s || ''}</td>
-                      <td className="border border-black text-center font-bold text-black align-middle">{recap.i || ''}</td>
-                      <td className="border border-black text-center font-bold text-black align-middle">{recap.a || ''}</td>
-                      <td className="border border-black text-center font-bold text-black align-middle">{recap.c || ''}</td>
-                      <td className="border border-black text-center font-bold text-black align-middle">{recap.dl || ''}</td>
-                      <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent text-black align-middle">{recap.presence}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+                        <td className="border border-black text-center text-[8pt] leading-tight px-0.5 text-black align-middle whitespace-normal">{staff.rank || '-'}</td>
+                        {dateRange.map(d => (
+                          <td key={`cell-${d}`} style={{height: '1px'}} className={`border border-black p-0 ${isDayOff(d) ? 'bg-rose-100 print:bg-rose-200' : ''}`}>
+                             <div className="flex flex-col h-full w-full">
+                                <div onClick={() => toggleAttendance(staff.id, d, 'in')} className={`flex-1 flex items-center justify-center border-b border-black min-h-[16px] transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
+                                  {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
+                                </div>
+                                <div onClick={() => toggleAttendance(staff.id, d, 'out')} className={`flex-1 flex items-center justify-center min-h-[16px] transition-colors ${isDayOff(d) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
+                                  {getStatusDisplay(attendance[`${staff.id}-${d}-out`])}
+                                </div>
+                             </div>
+                          </td>
+                        ))}
+                        <td className="border border-black text-center font-bold text-black align-middle">{recap.s || ''}</td>
+                        <td className="border border-black text-center font-bold text-black align-middle">{recap.i || ''}</td>
+                        <td className="border border-black text-center font-bold text-black align-middle">{recap.a || ''}</td>
+                        <td className="border border-black text-center font-bold text-black align-middle">{recap.c || ''}</td>
+                        <td className="border border-black text-center font-bold text-black align-middle">{recap.dl || ''}</td>
+                        <td className="border border-black text-center font-bold bg-slate-50 print:bg-transparent text-black align-middle">{recap.presence}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
 
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center font-serif text-[9pt] break-inside-avoid text-black">
-            <div></div>
-            <div></div>
-            <div className="flex flex-col">
-              <p>Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
-              <p>Kepala Sekolah,</p>
-              <div className="h-16"></div>
-              <p className="font-bold underline text-[10pt]">{config.principalName}</p>
-              <p>NIP. {config.principalNip}</p>
+            <div className="mt-8 grid grid-cols-3 gap-12 text-center font-serif text-[11pt] break-inside-avoid text-black">
+              <div className="flex flex-col">
+                <p>&nbsp;</p>
+                <p>Bendahara,</p>
+                <div className="h-20"></div>
+                <p className="font-bold underline text-[11pt]">( ........................................ )</p>
+                <p>&nbsp;</p>
+              </div>
+              <div></div>
+              <div className="flex flex-col">
+                <p>Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
+                <p>Kepala Sekolah,</p>
+                <div className="h-20"></div>
+                <p className="font-bold underline text-[11pt]">{config.principalName}</p>
+                <p>NIP. {config.principalNip}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <style>{`
+        .attendance-paper {
+           min-height: 215mm;
+           background: white;
+        }
+
         @media print {
           @page { 
-            size: 330mm 215mm landscape; /* Explicitly set landscape F4 */
-            margin: 0mm; 
+            size: 330mm 215mm landscape; /* Paksa F4 Landscape */
+            margin: 0; 
           }
-          body { 
-            margin: 0;
-            padding: 0;
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact;
+          
+          html, body, #root {
+            height: auto !important;
+            overflow: visible !important;
+            position: static !important;
+            background: white !important;
           }
+          
           body * { visibility: hidden; }
           .attendance-paper, .attendance-paper * { visibility: visible !important; }
+          
           .attendance-paper { 
             position: absolute !important; 
             left: 0 !important; 
@@ -473,21 +420,19 @@ const AttendanceCreator: React.FC = () => {
             width: 330mm !important; 
             height: 215mm !important; 
             margin: 0 !important;
-            padding: 10mm !important; /* Margin aman cetak */
+            padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
             background: white !important;
+            display: block !important;
           }
-          .bg-rose-100 { background-color: #fee2e2 !important; }
-          
-          /* Table border enforcement */
-          table { width: 100% !important; border-collapse: collapse !important; border-spacing: 0 !important; }
-          th, td { border: 1px solid #000 !important; }
-          
-          /* Inner Separator Line */
-          .border-b { border-bottom: 1px solid #000 !important; }
 
-          .break-inside-avoid { break-inside: avoid !important; }
+          table { width: 100% !important; border-collapse: collapse !important; border: 1.5px solid black !important; }
+          th, td { border: 1px solid black !important; }
+          .bg-rose-100 { background-color: #fee2e2 !important; }
+          .bg-slate-50 { background-color: #f8fafc !important; }
+          
+          * { color: black !important; -webkit-print-color-adjust: exact; }
         }
       `}</style>
     </div>

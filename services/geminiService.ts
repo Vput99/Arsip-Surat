@@ -1,18 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, UrgencyLevel } from "../types";
 
-const initGemini = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.warn("API_KEY is not set via environment variables.");
-    return null;
-  }
-  return new GoogleGenAI({ apiKey });
-};
+// The Google GenAI SDK always uses process.env.API_KEY
+// We initialize it right before making a call to ensure it uses the most up-to-date key.
 
 export const analyzeLetter = async (text: string): Promise<AIAnalysisResult | null> => {
-  const ai = initGemini();
-  if (!ai) return null;
+  // Always use { apiKey: process.env.API_KEY }
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
     const response = await ai.models.generateContent({
@@ -36,6 +30,7 @@ export const analyzeLetter = async (text: string): Promise<AIAnalysisResult | nu
       }
     });
 
+    // response.text is a property, not a method
     const result = JSON.parse(response.text || "{}");
     return result as AIAnalysisResult;
 
@@ -46,8 +41,8 @@ export const analyzeLetter = async (text: string): Promise<AIAnalysisResult | nu
 };
 
 export const suggestReply = async (incomingMailText: string): Promise<string> => {
-  const ai = initGemini();
-  if (!ai) return "Gagal menghubungkan ke AI.";
+  // Always use { apiKey: process.env.API_KEY }
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
     const response = await ai.models.generateContent({
@@ -57,6 +52,7 @@ export const suggestReply = async (incomingMailText: string): Promise<string> =>
       Surat Masuk:
       "${incomingMailText}"`
     });
+    // response.text is a property, not a method
     return response.text || "Tidak ada respons dari AI.";
   } catch (error) {
     console.error("Gemini Reply Error:", error);

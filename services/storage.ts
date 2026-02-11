@@ -1,20 +1,29 @@
 import { turso, initTables, isTursoConfigured } from './turso';
 import { Mail, SchoolConfig } from '../types';
-import { MOCK_INITIAL_DATA } from '../constants';
+import { MOCK_INITIAL_DATA, LETTER_TEMPLATES } from '../constants';
 
 if (isTursoConfigured()) {
   initTables().catch(console.error);
 }
 
-// Interface Staff untuk internal storage
 export interface StaffMember {
   id: string;
   category: string;
   name: string;
   nip: string;
   rank: string;
-  orderIndex?: number; // Field baru untuk menata urutan
+  orderIndex?: number;
   createdAt?: string;
+}
+
+export interface LetterTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  category: string;
+  layout: string;
+  content: string;
+  createdAt: string;
 }
 
 const DEFAULT_CONFIG: SchoolConfig = {
@@ -49,6 +58,69 @@ const setConnectionStatus = (status: boolean) => {
   }
 };
 
+// --- LETTER TEMPLATES ---
+let templateListeners: ((templates: LetterTemplate[]) => void)[] = [];
+
+export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => void) => {
+  templateListeners.push(onData);
+  
+  const fetchTemplates = async () => {
+    if (!turso) return;
+    try {
+      const rs = await turso.execute("SELECT * FROM letter_templates ORDER BY createdAt ASC");
+      let templates = rs.rows.map(row => ({ ...row } as unknown as LetterTemplate));
+      
+      // Seed initial data if table is empty
+      if (templates.length === 0) {
+        for (const t of LETTER_TEMPLATES) {
+          const newT = { ...t, createdAt: new Date().toISOString() };
+          await saveTemplate(newT as any);
+        }
+        return fetchTemplates();
+      }
+      
+      onData(templates);
+      setConnectionStatus(true);
+    } catch (e) {
+      setConnectionStatus(false);
+    }
+  };
+
+  fetchTemplates();
+  const interval = setInterval(fetchTemplates, 20000);
+  return () => {
+    clearInterval(interval);
+    templateListeners = templateListeners.filter(l => l !== onData);
+  };
+};
+
+export const saveTemplate = async (template: LetterTemplate): Promise<void> => {
+  if (!turso) return;
+  try {
+    await turso.execute({
+      sql: `INSERT OR REPLACE INTO letter_templates (id, name, subject, category, layout, content, createdAt) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [template.id, template.name, template.subject, template.category, template.layout, template.content, template.createdAt]
+    });
+    setConnectionStatus(true);
+  } catch (e) {
+    setConnectionStatus(false);
+  }
+};
+
+export const deleteTemplate = async (id: string): Promise<void> => {
+  if (!turso) return;
+  try {
+    await turso.execute({
+      sql: "DELETE FROM letter_templates WHERE id = ?",
+      args: [id]
+    });
+    setConnectionStatus(true);
+  } catch (e) {
+    setConnectionStatus(false);
+  }
+};
+
 // --- STAFF MANAGEMENT ---
 let staffListeners: ((staff: StaffMember[]) => void)[] = [];
 
@@ -58,7 +130,6 @@ export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
   const fetchStaff = async () => {
     if (!turso) return;
     try {
-      // ORDER BY orderIndex ASC first, then createdAt for fallback
       const rs = await turso.execute("SELECT * FROM staff ORDER BY orderIndex ASC, createdAt ASC");
       const staff = rs.rows.map(row => ({ ...row } as unknown as StaffMember));
       onData(staff);
@@ -78,11 +149,8 @@ export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
 
 export const saveStaff = async (member: StaffMember): Promise<void> => {
   if (!turso) return;
-  
-  // Gunakan createdAt yang lama jika ada, agar posisi tidak berubah jika orderIndex sama
   const createdTime = member.createdAt || new Date().toISOString();
   const orderIdx = member.orderIndex !== undefined ? member.orderIndex : 9999;
-
   try {
     await turso.execute({
       sql: `INSERT OR REPLACE INTO staff (id, category, name, nip, rank, orderIndex, createdAt) 
@@ -108,7 +176,7 @@ export const deleteStaff = async (id: string): Promise<void> => {
   }
 };
 
-// --- MAIL & CONFIG (KEEP EXISTING) ---
+// --- MAIL & CONFIG ---
 const getLocalMails = (): Mail[] => {
   try {
     const saved = localStorage.getItem('OFFLINE_MAILS');
@@ -175,7 +243,6 @@ const fetchConfig = async () => {
 export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   mailListeners.push(onData);
   onData(getLocalMails());
-  
   if (isTursoConfigured()) {
     fetchAllMails();
     const interval = setInterval(fetchAllMails, 5000);
@@ -190,7 +257,6 @@ export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
 export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
   configListeners.push(onData);
   onData(getLocalConfig());
-
   if (isTursoConfigured()) {
     fetchConfig();
     const interval = setInterval(fetchConfig, 30000);
@@ -205,7 +271,6 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
 export const saveMail = async (mail: Mail): Promise<void> => {
   const mailId = mail.id || Date.now().toString();
   const mailToSave = { ...mail, id: mailId };
-
   const currentMails = getLocalMails();
   const existingIdx = currentMails.findIndex(m => m.id === mailId);
   let newMails;
@@ -215,10 +280,8 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   } else {
     newMails = [mailToSave, ...currentMails];
   }
-
   localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
   mailListeners.forEach(l => l(newMails));
-
   if (turso) {
     try {
       await turso.execute({
@@ -245,7 +308,6 @@ export const deleteMail = async (id: string): Promise<void> => {
   const newMails = currentMails.filter(m => m.id !== id);
   localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
   mailListeners.forEach(l => l(newMails));
-
   if (turso) {
     try {
       await turso.execute({
@@ -262,7 +324,6 @@ export const deleteMail = async (id: string): Promise<void> => {
 export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
   localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
   configListeners.forEach(l => l(config));
-
   if (turso) {
     try {
       await turso.execute({
@@ -278,7 +339,6 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
       setConnectionStatus(true);
     } catch (e: any) {
       setConnectionStatus(false);
-      if (e.message.includes("no such column")) await initTables();
       throw new Error(`Gagal menyimpan ke database cloud: ${e.message}`);
     }
   }
@@ -287,26 +347,15 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
 export const exportDatabase = async (): Promise<string> => {
   const mails = getLocalMails();
   const config = getLocalConfig();
-  const backup = {
-    version: 2,
-    timestamp: new Date().toISOString(),
-    mails,
-    configs: [config]
-  };
+  const backup = { version: 2, timestamp: new Date().toISOString(), mails, configs: [config] };
   return JSON.stringify(backup, null, 2);
 };
 
 export const importDatabase = async (jsonString: string): Promise<boolean> => {
   try {
     const data = JSON.parse(jsonString);
-    if (data.mails) {
-      for (const m of data.mails) await saveMail(m);
-    }
-    if (data.configs && data.configs[0]) {
-      await saveSchoolConfig(data.configs[0]);
-    }
+    if (data.mails) { for (const m of data.mails) await saveMail(m); }
+    if (data.configs && data.configs[0]) { await saveSchoolConfig(data.configs[0]); }
     return true;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 };

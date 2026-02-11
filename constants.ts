@@ -53,6 +53,46 @@ Ditetapkan di : Kediri
 Pada Tanggal : [TANGGAL_SURAT]`
   },
   {
+    id: 't_pip_aktivasi',
+    name: 'Surat Keterangan Aktivasi PIP',
+    subject: 'SURAT KETERANGAN AKTIVASI REKENING SIMPEL PIP',
+    category: 'Dinas',
+    layout: 'centered',
+    content: `Yang bertanda tangan di bawah ini :
+
+Nama : ...........................................................
+NIP : ...........................................................
+Jabatan : Kepala Sekolah
+Satuan Pendidikan : SDN [NAMA_SEKOLAH]
+
+dengan ini menerangkan bahwa nama-nama tersebut di bawah ini, adalah benar Peserta Didik SDN [NAMA_SEKOLAH] dan yang bersangkutan sebagai Penerima PIP Tahun 2025:
+
+No : Nama Peserta Didik Tertera di SK : Kelas : Nomor Rekening : PIP ID/Virtual Account
+1. : ................................................... : ....... : ........................................... : ...........................................
+
+Demikian surat keterangan ini dibuat untuk digunakan sebagai salah satu persyaratan untuk melakukan aktivasi rekening SimPel PIP di bank penyalur.`
+  },
+  {
+    id: 't_sptjm_uang_makan',
+    name: 'SPTJM Uang Makan',
+    subject: 'SURAT PERNYATAAN PERTANGGUNG JAWABAN MUTLAK',
+    category: 'Dinas',
+    layout: 'centered',
+    content: `Yang bertanda tangan di bawah ini :
+
+Nama : ...........................................................
+NIP : ...........................................................
+Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
+
+Dengan ini menyatakan dengan sebenarnya bahwa :
+
+1. Perhitungan yang terdapat pada Daftar Perhitungan uang makan bulan berjalan SDN [NAMA_SEKOLAH] telah dihitung dengan benar dan berdasarkan daftar hadir Pegawai Negeri Sipil pada SDN [NAMA_SEKOLAH].
+
+2. Apabila dikemudian hari terdapat kelebihan atas pembayaran uang makan tersebut kami bersedia untuk menyetorkan kelebihan tersebut ke Kas Negara.
+
+Demikian surat pernyataan ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.`
+  },
+  {
     id: 't_sk_panitia',
     name: 'SK Kepala Sekolah (Keputusan)',
     subject: 'KEPUTUSAN KEPALA SD NEGERI [NAMA_SEKOLAH]',
@@ -126,7 +166,7 @@ PASAL 3 - HAK DAN KEWAJIBAN
 2. PIHAK PERTAMA berhak mengevaluasi kinerja dan kedisiplinan PIHAK KEDUA.
 3. PIHAK KEDUA berhak mendapatkan honorarium sesuai dengan ketentuan anggaran sekolah yang berlaku.
 
-PASAL 4 - HONORARIUM DAN PEMBAYARAN
+PASAL 4 - HONORARIUM AND PEMBAYARAN
 Besaran upah jasa pengajar disepakati sebesar Rp ........................... per pertemuan yang akan dibayarkan setiap akhir bulan berdasarkan daftar hadir yang sah.
 
 PASAL 5 - PENUTUP
@@ -185,109 +225,13 @@ I. Nama : [NAMA_KEPSEK]
    Selanjutnya disebut sebagai PIHAK PERTAMA.
 
 II. Nama : ...........................................................
-   NIK : ...........................................................
    Alamat : ...........................................................
+   Pekerjaan : Tukang / Pekerja Bangunan
    Selanjutnya disebut sebagai PIHAK KEDUA.
 
-Kedua belah pihak sepakat untuk mengadakan perjanjian kerja jasa perbaikan sarana sekolah dengan sistem UPAH HARIAN:
-
-PASAL 1 - LINGKUP PEKERJAAN
-PIHAK PERTAMA menunjuk PIHAK KEDUA untuk melaksanakan pekerjaan perbaikan sarana prasarana sekolah berupa perbaikan atap dan pengecatan ruang kelas.
-
-PASAL 2 - UPAH DAN PEMBAYARAN
-Besaran upah harian yang disepakati adalah Rp ............................ per hari kerja yang dibayarkan setiap akhir pekan.
-
-PASAL 3 - PENUTUP
-Demikian perjanjian ini dibuat dengan sebenar-benarnya.`
-  },
-  {
-    id: 't_sppd',
-    name: 'Surat Perintah Perjalanan Dinas (SPPD)',
-    subject: 'SURAT PERINTAH PERJALANAN DINAS (SPPD)',
-    category: 'Tugas',
-    layout: 'centered',
-    content: `Lembar Ke : ...................................
-Kode No : ...................................
-
-1. Pejabat Berwenang : Kepala Sekolah SDN [NAMA_SEKOLAH]
-2. Nama Pegawai : ...........................................................
-3. a. Pangkat/Gol : ...........................................................
-   b. Jabatan : ...........................................................
-4. Maksud Perjalanan : ...........................................................
-5. Alat Angkut : Kendaraan Pribadi / Umum
-6. a. Tempat Berangkat : SDN [NAMA_SEKOLAH]
-   b. Tempat Tujuan : ...........................................................
-7. a. Lamanya Dinas : ........... ( ........................ ) Hari
-   b. Tanggal Berangkat : ...........................................................
-   c. Tanggal Kembali : ...........................................................
-8. Pembebanan Anggaran : 
-   a. Instansi : Dinas Pendidikan
-   b. Mata Anggaran : Dana BOS / Komite
-
-[PAGE_BREAK]
-
-SPPD HALAMAN 2 - LAPORAN PELAKSANAAN
-
-I. Tiba di : .........................................
-   Pada Tanggal : .........................................
-   Kepala / Pejabat setempat :
-
-   ( ........................................... )
-
-II. Berangkat dari : .........................................
-    Tiba di : SDN [NAMA_SEKOLAH]
-    Pada Tanggal : .........................................
-
-    Pejabat Pelaksana Tugas :
-
-    ( ........................................... )`
-  },
-  {
-    id: 't_mutasi_keluar',
-    name: 'Surat Keterangan Pindah (Mutasi)',
-    subject: 'SURAT KETERANGAN PINDAH SEKOLAH',
-    category: 'Dinas',
-    layout: 'centered',
-    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH], menerangkan bahwa :
-
-Nama : ...........................................................
-Tempat/Tgl Lahir : ...........................................................
-NISN : ...........................................................
-Murid Tingkat / Kelas : ...........................................................
-
-Sesuai Surat permohonan pindah sekolah oleh orang tua / wali murid tanggal ......................., siswa tersebut telah mengajukan pindah ke sekolah tujuan ...........................................................
-
-Demikian Surat Keterangan Pindah Sekolah ini dibuat untuk dapat dipergunakan sebagaimana mestinya.
-
-[PAGE_BREAK]
-
-BUKTI PENERIMAAN (UNTUK ARSIP SEKOLAH)
-
-Nama Siswa : ...........................................................
-Diterima di kelas : ...........................................................
-Diterima tanggal : ...........................................................
-Nama Sekolah : ...........................................................
-
-TANDA TANGAN PENERIMA :
-
-( ........................................... )`
+Kedua belah pihak sepakat untuk melakukan Perjanjian Kerja Jasa Perbaikan dengan upah harian.`
   }
 ];
 
-export const MOCK_INITIAL_DATA = [
-  {
-    id: '1',
-    type: MailType.INCOMING,
-    referenceNumber: '005/DISDIK/2024',
-    date: '2024-05-20',
-    receivedDate: '2024-05-21',
-    createdAt: '2024-05-21T08:30:00.000Z',
-    sender: 'Dinas Pendidikan Kota',
-    subject: 'Undangan Rapat Koordinasi Kepala Sekolah',
-    description: 'Undangan untuk menghadiri rapat koordinasi mengenai kurikulum baru di Aula Dinas.',
-    category: 'Undangan',
-    urgency: UrgencyLevel.HIGH,
-    status: MailStatus.PROCESSED,
-    aiSummary: 'Rapat wajib Kepsek mengenai kurikulum baru pada tanggal 25 Mei.'
-  }
-];
+// Mock initial data for mails fallback
+export const MOCK_INITIAL_DATA = [];

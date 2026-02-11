@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, School, Loader2, Info, Building2, UserCircle, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, Filter, UserCheck, Briefcase, ListOrdered, Mail } from 'lucide-react';
-import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember } from '../services/storage';
+import { Save, Upload, School, Loader2, Info, Building2, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, ListOrdered, FileText, Layout, Type } from 'lucide-react';
+import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember, subscribeToTemplates, saveTemplate, deleteTemplate, LetterTemplate } from '../services/storage';
 import { SchoolConfig } from '../types';
+import { CATEGORIES } from '../constants';
 
-type SettingsTab = 'profile' | 'staff';
+type SettingsTab = 'profile' | 'staff' | 'templates';
 type StaffCategory = 'reg' | 'pppk' | 'extra' | 'tukang';
 
 const Settings: React.FC = () => {
@@ -17,34 +18,33 @@ const Settings: React.FC = () => {
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [staffCategory, setStaffCategory] = useState<StaffCategory>('reg');
   const [staffSearch, setStaffSearch] = useState('');
+  
+  // Templates State
+  const [allTemplates, setAllTemplates] = useState<LetterTemplate[]>([]);
+  const [templateSearch, setTemplateSearch] = useState('');
+  
   const isEditingRef = useRef(false);
 
   useEffect(() => {
-    const unsubscribeConfig = subscribeToConfig((newConfig) => {
-      setConfig(newConfig);
-    });
-    const unsubscribeDb = subscribeToConnectionStatus((isConnected) => {
-      setDbConnected(isConnected);
-    });
-    
-    // Subscribe Staff Data
+    const unsubscribeConfig = subscribeToConfig(setConfig);
+    const unsubscribeDb = subscribeToConnectionStatus(setDbConnected);
     const unsubscribeStaff = subscribeToStaff((data) => {
-      if (!isEditingRef.current) {
-        setAllStaff(data);
-      }
+      if (!isEditingRef.current) setAllStaff(data);
+    });
+    const unsubscribeTemplates = subscribeToTemplates((data) => {
+      if (!isEditingRef.current) setAllTemplates(data);
     });
 
     return () => {
       unsubscribeConfig();
       unsubscribeDb();
       unsubscribeStaff();
+      unsubscribeTemplates();
     };
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (config) {
-      setConfig({ ...config, [e.target.name]: e.target.value });
-    }
+    if (config) setConfig({ ...config, [e.target.name]: e.target.value });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'logoDaerahUrl') => {
@@ -65,20 +65,14 @@ const Settings: React.FC = () => {
   const handleSubmitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!config) return;
-
     setLoading(true);
     setMessage({ text: '', type: '' });
-    
     try {
       await saveSchoolConfig(config);
       setMessage({ text: 'Profil sekolah berhasil diperbarui.', type: 'success' });
       setTimeout(() => setMessage({ text: '', type: '' }), 4000);
     } catch (err: any) {
-      console.error(err);
-      setMessage({ 
-        text: `Gagal menyimpan: ${err.message}.`, 
-        type: 'error' 
-      });
+      setMessage({ text: `Gagal menyimpan: ${err.message}.`, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -94,40 +88,54 @@ const Settings: React.FC = () => {
       name: '',
       nip: '',
       rank: '',
-      orderIndex: existingCount + 1, // Auto increment order
+      orderIndex: existingCount + 1,
       createdAt: new Date().toISOString()
     };
     await saveStaff(newMember);
     setLoading(false);
   };
 
-  const handleStaffChange = async (id: string, field: keyof StaffMember, value: string | number) => {
-    const member = allStaff.find(s => s.id === id);
-    if (member) {
-      const updatedMember = { ...member, [field]: value };
-      setAllStaff(allStaff.map(s => s.id === id ? updatedMember : s)); 
-    }
+  const handleStaffChange = (id: string, field: keyof StaffMember, value: string | number) => {
+    setAllStaff(allStaff.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const handleSaveStaffRow = async (staff: StaffMember) => {
     setLoading(true);
-    try {
-      await saveStaff(staff);
-      setMessage({ text: 'Data personil tersimpan.', type: 'success' });
-      setTimeout(() => setMessage({ text: '', type: '' }), 2000);
-    } catch (e) {
-      setMessage({ text: 'Gagal menyimpan personil.', type: 'error' });
-    }
+    await saveStaff(staff);
+    setMessage({ text: 'Data personil tersimpan.', type: 'success' });
+    setTimeout(() => setMessage({ text: '', type: '' }), 2000);
     setLoading(false);
     isEditingRef.current = false;
   };
 
-  const handleRemoveStaff = async (id: string) => {
-    if (window.confirm("Hapus personil ini dari database?")) {
-      setLoading(true);
-      await deleteStaff(id);
-      setLoading(false);
-    }
+  // --- TEMPLATE FUNCTIONS ---
+  const handleAddTemplate = async () => {
+    setLoading(true);
+    const newT: LetterTemplate = {
+      id: `t_${Date.now()}`,
+      name: 'Template Baru',
+      subject: 'PERIHAL SURAT',
+      category: 'Dinas',
+      layout: 'centered',
+      content: 'Tulis naskah surat di sini...',
+      createdAt: new Date().toISOString()
+    };
+    await saveTemplate(newT);
+    setLoading(false);
+    setActiveTab('templates');
+  };
+
+  const handleTemplateUpdate = (id: string, field: keyof LetterTemplate, value: string) => {
+    setAllTemplates(allTemplates.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+
+  const handleSaveTemplateRow = async (template: LetterTemplate) => {
+    setLoading(true);
+    await saveTemplate(template);
+    setMessage({ text: 'Template surat tersimpan.', type: 'success' });
+    setTimeout(() => setMessage({ text: '', type: '' }), 2000);
+    setLoading(false);
+    isEditingRef.current = false;
   };
 
   const filteredStaff = allStaff.filter(s => 
@@ -135,14 +143,12 @@ const Settings: React.FC = () => {
     (s.name.toLowerCase().includes(staffSearch.toLowerCase()) || s.nip.includes(staffSearch))
   );
 
-  if (!config) {
-    return (
-      <div className="flex flex-col justify-center items-center h-64 gap-4">
-        <Loader2 className="animate-spin text-indigo-600" size={32} />
-        <p className="text-slate-500 font-medium">Memuat konfigurasi...</p>
-      </div>
-    );
-  }
+  const filteredTemplates = allTemplates.filter(t => 
+    t.name.toLowerCase().includes(templateSearch.toLowerCase()) || 
+    t.category.toLowerCase().includes(templateSearch.toLowerCase())
+  );
+
+  if (!config) return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-indigo-600" /></div>;
 
   return (
     <div className="max-w-5xl mx-auto py-6 animate-fade-in pb-20">
@@ -153,7 +159,7 @@ const Settings: React.FC = () => {
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-600/20 to-violet-600/20"></div>
           <div className="relative z-10 flex flex-col items-center">
             <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Pengaturan Sistem</h2>
-            <p className="text-slate-400 text-sm max-w-md">Kelola identitas sekolah dan database personil guru/pegawai.</p>
+            <p className="text-slate-400 text-sm max-w-md">Kelola identitas sekolah, naskah template, dan database personil.</p>
           </div>
           <div className="absolute top-6 right-6 z-10">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${dbConnected ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
@@ -165,22 +171,12 @@ const Settings: React.FC = () => {
 
         {/* Tab Navigation */}
         <div className="flex border-b border-slate-100">
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'profile' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}
-          >
-            <School size={18} /> Profil Sekolah
-          </button>
-          <button 
-            onClick={() => setActiveTab('staff')}
-            className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'staff' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}
-          >
-            <Users size={18} /> Database Personil
-          </button>
+          <button onClick={() => setActiveTab('profile')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'profile' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><School size={18} /> Profil</button>
+          <button onClick={() => setActiveTab('templates')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'templates' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><FileText size={18} /> Template</button>
+          <button onClick={() => setActiveTab('staff')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'staff' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><Users size={18} /> Personil</button>
         </div>
       </div>
 
-      {/* Feedback Messages */}
       {message.text && (
         <div className={`mb-6 p-4 rounded-2xl flex items-center gap-3 animate-fade-in ${message.type === 'success' ? 'bg-emerald-50 border border-emerald-100 text-emerald-700' : 'bg-rose-50 border border-rose-100 text-rose-700'}`}>
           {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
@@ -190,231 +186,133 @@ const Settings: React.FC = () => {
 
       {/* CONTENT: PROFILE TAB */}
       {activeTab === 'profile' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 animate-fade-in">
            <form onSubmit={handleSubmitProfile} className="space-y-10">
-             {/* 1. Logo Section */}
              <section>
-               <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                 <span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Building2 size={16}/></span>
-                 Logo Header (Kop)
-               </h3>
+               <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3"><span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Building2 size={16}/></span>Logo Kop</h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Logo Daerah */}
-                  <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Daerah (Kiri)</span>
+                  <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Daerah</span>
                     <div className="relative group">
-                      <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 shadow-sm border border-slate-200 overflow-hidden">
-                        {config.logoDaerahUrl ? <img src={config.logoDaerahUrl} alt="Logo" className="w-full h-full object-contain" /> : <Building2 className="text-slate-200 w-12 h-12" />}
-                      </div>
-                      <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
-                        <Upload size={24} className="mb-1" />
-                        <span className="text-[10px] font-bold">Ganti</span>
-                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoDaerahUrl')} />
-                      </label>
+                      <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 border border-slate-200">{config.logoDaerahUrl ? <img src={config.logoDaerahUrl} alt="Logo" className="w-full h-full object-contain" /> : <Building2 className="text-slate-200 w-12 h-12" />}</div>
+                      <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer"><Upload size={24} /><span className="text-[10px] font-bold">Ganti</span><input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoDaerahUrl')} /></label>
                     </div>
                   </div>
-                  {/* Logo Sekolah */}
-                  <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Sekolah (Kanan)</span>
+                  <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Sekolah</span>
                     <div className="relative group">
-                      <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 shadow-sm border border-slate-200 overflow-hidden">
-                        {config.logoUrl ? <img src={config.logoUrl} alt="Logo" className="w-full h-full object-contain" /> : <School className="text-slate-200 w-12 h-12" />}
-                      </div>
-                      <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
-                        <Upload size={24} className="mb-1" />
-                        <span className="text-[10px] font-bold">Ganti</span>
-                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoUrl')} />
-                      </label>
+                      <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 border border-slate-200">{config.logoUrl ? <img src={config.logoUrl} alt="Logo" className="w-full h-full object-contain" /> : <School className="text-slate-200 w-12 h-12" />}</div>
+                      <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer"><Upload size={24} /><span className="text-[10px] font-bold">Ganti</span><input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoUrl')} /></label>
                     </div>
                   </div>
                </div>
              </section>
-
-             <div className="h-px bg-slate-100 w-full"></div>
-
-             {/* 2. Text Config */}
              <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-               <div className="space-y-6">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Informasi Utama</h3>
+               <div className="space-y-4">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Data Sekolah</h3>
                   <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Sekolah</label>
-                      <input name="name" value={config.name} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 text-sm" />
-                    </div>
+                    <input name="name" value={config.name} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" placeholder="Nama Sekolah" />
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">NPSN</label>
-                        <input name="npsn" value={config.npsn} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 text-sm" placeholder="20xxxxxx" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Sekolah</label>
-                        <input name="email" value={config.email} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 text-sm" placeholder="sekolah@mail.com" />
-                      </div>
+                      <input name="npsn" value={config.npsn} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="NPSN" />
+                      <input name="email" value={config.email} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Email" />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kop Baris 1</label>
-                      <input name="headerLine1" value={config.headerLine1} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 text-sm" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kop Baris 2</label>
-                      <input name="headerLine2" value={config.headerLine2} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 text-sm" />
-                    </div>
+                    <input name="headerLine1" value={config.headerLine1} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 1" />
+                    <input name="headerLine2" value={config.headerLine2} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 2" />
                   </div>
                </div>
-               <div className="space-y-6">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Pejabat & Kontak</h3>
+               <div className="space-y-4">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Pejabat</h3>
                   <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kepala Sekolah</label>
-                      <input name="principalName" value={config.principalName} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 text-sm" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">NIP Kepsek</label>
-                      <input name="principalNip" value={config.principalNip} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 text-sm" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Alamat</label>
-                      <textarea name="address" rows={2} value={config.address} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 text-sm resize-none" />
-                    </div>
+                    <input name="principalName" value={config.principalName} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Nama Kepala Sekolah" />
+                    <input name="principalNip" value={config.principalNip} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="NIP Kepala Sekolah" />
+                    <textarea name="address" rows={2} value={config.address} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm resize-none" placeholder="Alamat Lengkap" />
                   </div>
                </div>
              </section>
-
-             <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-3 group">
-               {loading ? <Loader2 className="animate-spin" /> : <Save className="group-hover:scale-110 transition-transform"/>}
-               Simpan Profil
-             </button>
+             <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">{loading ? <Loader2 className="animate-spin" /> : <Save />}Simpan Profil</button>
            </form>
+        </div>
+      )}
+
+      {/* CONTENT: TEMPLATE TAB */}
+      {activeTab === 'templates' && (
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 animate-fade-in">
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+              <div><h3 className="text-lg font-black text-slate-800">Manajemen Template</h3><p className="text-slate-500 text-sm">Sesuaikan naskah template surat yang muncul di editor.</p></div>
+              <button onClick={handleAddTemplate} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20"><Plus size={18} /> Tambah Template</button>
+           </div>
+           <div className="relative mb-6">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input type="text" placeholder="Cari naskah template..." value={templateSearch} onChange={(e) => setTemplateSearch(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none" />
+           </div>
+           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+             {filteredTemplates.map((t) => (
+               <div key={t.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-indigo-300 transition-all">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+                    <div className="lg:col-span-2 space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Template</label>
+                      <input value={t.name} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} onChange={(e) => handleTemplateUpdate(t.id, 'name', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm font-bold" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                      <select value={t.category} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} onChange={(e) => handleTemplateUpdate(t.id, 'category', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm font-bold">
+                        {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Layout</label>
+                      <select value={t.layout} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} onChange={(e) => handleTemplateUpdate(t.id, 'layout', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm font-bold">
+                        <option value="centered">Centered (SK/SPT)</option>
+                        <option value="standard">Standard (Biasa)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1 mb-4">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul Default</label>
+                     <input value={t.subject} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} onChange={(e) => handleTemplateUpdate(t.id, 'subject', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm font-bold" />
+                  </div>
+                  <div className="space-y-1">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Isi Naskah (Mendukung [PAGE_BREAK])</label>
+                     <textarea rows={6} value={t.content} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} onChange={(e) => handleTemplateUpdate(t.id, 'content', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-xs font-mono leading-relaxed resize-y" />
+                  </div>
+                  <div className="flex justify-end mt-4 pt-4 border-t border-slate-100 gap-3">
+                    <button onClick={async () => { if(confirm('Hapus template?')){ await deleteTemplate(t.id); } }} className="px-4 py-2 bg-rose-50 text-rose-600 rounded-lg font-bold text-xs flex items-center gap-1 hover:bg-rose-100 transition-colors"><Trash2 size={14} /> Hapus</button>
+                    <button onClick={() => handleSaveTemplateRow(t)} className="px-5 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs flex items-center gap-1 hover:bg-indigo-700 transition-all shadow-md"><Save size={14} /> Simpan Perubahan</button>
+                  </div>
+               </div>
+             ))}
+           </div>
         </div>
       )}
 
       {/* CONTENT: STAFF TAB */}
       {activeTab === 'staff' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 animate-fade-in">
            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-              <div>
-                <h3 className="text-lg font-black text-slate-800">Manajemen Personil</h3>
-                <p className="text-slate-500 text-sm">Atur urutan dan data Guru & Pegawai.</p>
-              </div>
-              <button onClick={handleAddStaff} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all">
-                {loading ? <Loader2 className="animate-spin" size={18}/> : <Plus size={18} />} Tambah Personil
-              </button>
+              <div><h3 className="text-lg font-black text-slate-800">Manajemen Personil</h3><p className="text-slate-500 text-sm">Atur urutan dan data Guru & Pegawai.</p></div>
+              <button onClick={handleAddStaff} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm"><Plus size={18} /> Tambah Personil</button>
            </div>
-
-           {/* Filters */}
-           <div className="flex flex-col md:flex-row gap-4 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Cari nama atau NIP..." 
-                  value={staffSearch}
-                  onChange={(e) => setStaffSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-                 {[
-                   { id: 'reg', label: 'Guru/PNS' }, 
-                   { id: 'pppk', label: 'PPPK' }, 
-                   { id: 'extra', label: 'Ekstrakurikuler' }, 
-                   { id: 'tukang', label: 'Tukang' }
-                 ].map(cat => (
-                   <button 
-                     key={cat.id}
-                     onClick={() => setStaffCategory(cat.id as StaffCategory)}
-                     className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${staffCategory === cat.id ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}
-                   >
-                     {cat.label}
-                   </button>
-                 ))}
+           <div className="flex flex-col md:flex-row gap-4 mb-6 bg-slate-50 p-4 rounded-2xl">
+              <div className="flex-1 relative"><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="text" placeholder="Cari nama atau NIP..." value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none" /></div>
+              <div className="flex gap-2">
+                 {['reg', 'pppk', 'extra', 'tukang'].map(cat => <button key={cat} onClick={() => setStaffCategory(cat as StaffCategory)} className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${staffCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{cat.toUpperCase()}</button>)}
               </div>
            </div>
-
-           {/* Staff List */}
            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-             {filteredStaff.length === 0 ? (
-               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                 <Users className="mx-auto text-slate-300 mb-2" size={32} />
-                 <p className="text-slate-400 font-medium text-sm">Belum ada data personil di kategori ini.</p>
-               </div>
-             ) : (
-               filteredStaff.map((staff, idx) => (
-                 <div key={staff.id} className="group bg-white border border-slate-200 rounded-xl p-4 transition-all hover:shadow-lg hover:border-indigo-200">
-                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                      
-                      {/* No Urut Field */}
-                      <div className="md:col-span-1 space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                          <ListOrdered size={10} /> No
-                        </label>
-                        <input 
-                          type="number"
-                          value={staff.orderIndex || 99} 
-                          onFocus={() => isEditingRef.current = true}
-                          onBlur={(e) => handleStaffChange(staff.id, 'orderIndex', parseInt(e.target.value))}
-                          onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, orderIndex: parseInt(e.target.value)} : s))}
-                          className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-center focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                        />
-                      </div>
-
-                      <div className="md:col-span-3 space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
-                        <input 
-                          value={staff.name} 
-                          onFocus={() => isEditingRef.current = true}
-                          onBlur={(e) => handleStaffChange(staff.id, 'name', e.target.value)} 
-                          onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, name: e.target.value} : s))}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                          placeholder="Nama Personil"
-                        />
-                      </div>
-                      <div className="md:col-span-3 space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">NIP / ID</label>
-                        <input 
-                          value={staff.nip} 
-                          onFocus={() => isEditingRef.current = true}
-                          onBlur={(e) => handleStaffChange(staff.id, 'nip', e.target.value)}
-                          onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, nip: e.target.value} : s))}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                          placeholder="-"
-                        />
-                      </div>
-                      <div className="md:col-span-3 space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Jabatan</label>
-                        <input 
-                          value={staff.rank} 
-                          onFocus={() => isEditingRef.current = true}
-                          onBlur={(e) => handleStaffChange(staff.id, 'rank', e.target.value)}
-                          onChange={(e) => setAllStaff(allStaff.map(s => s.id === staff.id ? {...s, rank: e.target.value} : s))}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                          placeholder="Guru Kelas / Staff"
-                        />
-                      </div>
-                      <div className="md:col-span-2 flex gap-2">
-                        <button 
-                          onClick={() => handleSaveStaffRow(staff)} 
-                          className="flex-1 py-2 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs hover:bg-emerald-100 flex items-center justify-center gap-1"
-                          title="Simpan Perubahan"
-                        >
-                          <Save size={14} /> Simpan
-                        </button>
-                        <button 
-                          onClick={() => handleRemoveStaff(staff.id)} 
-                          className="px-3 py-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 hover:text-rose-600 transition-colors"
-                          title="Hapus"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                   </div>
+             {filteredStaff.map((staff) => (
+               <div key={staff.id} className="group bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg transition-all">
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <div className="md:col-span-1 space-y-1"><label className="text-[10px] font-bold text-slate-400">No</label><input type="number" value={staff.orderIndex} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(staff)} onChange={(e) => handleStaffChange(staff.id, 'orderIndex', parseInt(e.target.value))} className="w-full px-2 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm text-center font-bold" /></div>
+                    <div className="md:col-span-3 space-y-1"><label className="text-[10px] font-bold text-slate-400">Nama</label><input value={staff.name} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(staff)} onChange={(e) => handleStaffChange(staff.id, 'name', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm font-bold" /></div>
+                    <div className="md:col-span-3 space-y-1"><label className="text-[10px] font-bold text-slate-400">NIP</label><input value={staff.nip} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(staff)} onChange={(e) => handleStaffChange(staff.id, 'nip', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm" /></div>
+                    <div className="md:col-span-3 space-y-1"><label className="text-[10px] font-bold text-slate-400">Jabatan</label><input value={staff.rank} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(staff)} onChange={(e) => handleStaffChange(staff.id, 'rank', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm" /></div>
+                    <div className="md:col-span-2 flex gap-2"><button onClick={() => handleSaveStaffRow(staff)} className="flex-1 py-2 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs"><Save size={14} /></button><button onClick={async () => { if(confirm('Hapus personil?')){ await deleteStaff(staff.id); } }} className="px-3 py-2 bg-rose-50 text-rose-500 rounded-lg"><Trash2 size={16} /></button></div>
                  </div>
-               ))
-             )}
+               </div>
+             ))}
            </div>
         </div>
       )}
-
     </div>
   );
 };

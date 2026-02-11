@@ -48,7 +48,9 @@ export const initTables = async () => {
         headerLine1 TEXT,
         headerLine2 TEXT,
         logoUrl TEXT,
-        logoDaerahUrl TEXT
+        logoDaerahUrl TEXT,
+        principalName TEXT,
+        principalNip TEXT
       )`,
       `CREATE TABLE IF NOT EXISTS staff (
         id TEXT PRIMARY KEY,
@@ -57,6 +59,15 @@ export const initTables = async () => {
         nip TEXT,
         rank TEXT,
         orderIndex INTEGER DEFAULT 9999,
+        createdAt TEXT
+      )`,
+      `CREATE TABLE IF NOT EXISTS letter_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        subject TEXT,
+        category TEXT,
+        layout TEXT,
+        content TEXT,
         createdAt TEXT
       )`
     ], "write");
@@ -74,7 +85,6 @@ export const initTables = async () => {
       await turso.execute("ALTER TABLE school_config ADD COLUMN npsn TEXT");
     } catch (e) { /* Kolom mungkin sudah ada */ }
 
-    // Migrasi kolom orderIndex untuk tabel staff
     try {
       await turso.execute("ALTER TABLE staff ADD COLUMN orderIndex INTEGER DEFAULT 9999");
     } catch (e) { /* Kolom mungkin sudah ada */ }

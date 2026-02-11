@@ -79,6 +79,11 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
           newData.subject = result.subject;
           highlights.push('subject');
         }
+
+        if (result.date) {
+          newData.date = result.date;
+          highlights.push('date');
+        }
         
         if (result.summary) {
           newData.aiSummary = result.summary;

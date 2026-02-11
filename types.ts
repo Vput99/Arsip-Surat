@@ -50,6 +50,7 @@ export interface AIAnalysisResult {
   referenceNumber?: string;
   sender?: string;
   subject?: string;
+  date?: string;
 }
 
 export interface SchoolConfig {

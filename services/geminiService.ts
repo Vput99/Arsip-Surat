@@ -12,10 +12,11 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
         1. referenceNumber: Cari nomor surat (contoh: 421.2/123/2024).
         2. sender: Nama lembaga, dinas, atau instansi pengirim surat.
         3. subject: Perihal atau judul surat.
-        4. summary: Ringkasan singkat isi surat (maksimal 2 kalimat).
-        5. category: Tentukan kategori (Undangan, Dinas, Pemberitahuan, Permohonan, Keputusan, atau Tugas).
-        6. urgency: Tingkat kepentingan (Biasa, Penting, atau Segera).
-        7. sentiment: Nada surat.
+        4. date: Tanggal surat tersebut diterbitkan/dibuat (Format: YYYY-MM-DD). Jika tidak ditemukan, kosongkan.
+        5. summary: Ringkasan singkat isi surat (maksimal 2 kalimat).
+        6. category: Tentukan kategori (Undangan, Dinas, Pemberitahuan, Permohonan, Keputusan, atau Tugas).
+        7. urgency: Tingkat kepentingan (Biasa, Penting, atau Segera).
+        8. sentiment: Nada surat.
 
         Input Teks: "${text}"`
       }
@@ -46,9 +47,10 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
             sentiment: { type: Type.STRING },
             referenceNumber: { type: Type.STRING, description: "Nomor resmi surat" },
             sender: { type: Type.STRING, description: "Instansi pengirim" },
-            subject: { type: Type.STRING, description: "Perihal surat" }
+            subject: { type: Type.STRING, description: "Perihal surat" },
+            date: { type: Type.STRING, description: "Tanggal surat diterbitkan (YYYY-MM-DD)" }
           },
-          required: ["summary", "category", "urgency", "sentiment", "referenceNumber", "sender", "subject"]
+          required: ["summary", "category", "urgency", "sentiment", "referenceNumber", "sender", "subject", "date"]
         }
       }
     });

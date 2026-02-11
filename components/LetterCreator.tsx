@@ -8,7 +8,14 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const SmartContentRenderer = ({ text }: { text: string }) => {
-  const lines = text.split('\n');
+  // Membersihkan teks dari kalimat pembuka AI yang sering muncul
+  const cleanAIIntro = (t: string) => {
+    return t.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '')
+            .replace(/\*\*/g, '') // Hapus semua tanda bold markdown agar bersih
+            .trim();
+  };
+
+  const lines = cleanAIIntro(text).split('\n');
   const renderedBlocks: React.ReactNode[] = [];
   let tableRows: string[][] = [];
   let isInTableMode = false;
@@ -59,60 +66,62 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       return;
     }
 
+    // Deteksi baris dengan format Label : Value (untuk Dasar, Untuk, Tempat, dll)
     const columns = line.split(':');
-    const hasManyColumns = columns.length >= 3;
+    const hasColon = columns.length >= 2;
     const isNumberedData = /^\d+\./.test(trimmed);
-    const isContinuedData = line.startsWith(':');
-    const shouldBeInTable = hasManyColumns || (isInTableMode && (isNumberedData || isContinuedData));
-
+    const isContinuedData = line.startsWith(' ');
+    
     if (trimmed === '[PAGE_BREAK]') {
       flushTable();
       renderedBlocks.push(<div key={`pb-${index}`} className="page-breaker print:break-after-page h-0 my-1 relative border-t border-dashed border-slate-300 print:border-none print:my-0"></div>);
       return;
     }
 
-    if (shouldBeInTable) {
+    // Jika baris berisi banyak kolom (data tabel)
+    if (columns.length >= 3 || (isInTableMode && isNumberedData)) {
       isInTableMode = true;
-      let finalRow = columns;
-      if (columns.length < 3 && isNumberedData) {
-        const match = trimmed.match(/^(\d+\.)\s*(.*)/);
-        if (match) {
-          finalRow = [match[1], match[2], '', '', ''];
-        }
-      }
-      tableRows.push(finalRow);
+      tableRows.push(columns);
       return;
     }
 
     flushTable();
 
-    if (trimmed.startsWith('PASAL') || trimmed === 'MEMUTUSKAN' || (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && trimmed.length > 3 && !trimmed.includes(':'))) {
-      renderedBlocks.push(<div key={`title-${index}`} className="mt-5 mb-2 font-bold text-center text-black font-serif uppercase tracking-wider underline underline-offset-4 decoration-1">{trimmed}</div>);
+    // Render Judul atau Instruksi Kapital
+    if (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && !trimmed.includes(':') && trimmed.length > 3) {
+      renderedBlocks.push(<div key={`title-${index}`} className="mt-5 mb-3 font-bold text-center text-black font-serif uppercase tracking-wider underline underline-offset-4 decoration-1">{trimmed}</div>);
     } 
-    else if (columns.length === 2 && !trimmed.endsWith(':')) {
-      const isKonsideran = ['menimbang', 'mengingat', 'memperhatikan', 'menetapkan', 'hari/tanggal', 'waktu', 'tempat', 'keperluan', 'dasar'].some(k => columns[0].trim().toLowerCase().includes(k));
+    // Render Baris Berkolom (Indentasi Rapi)
+    else if (hasColon && !trimmed.startsWith('http')) {
+      const label = columns[0].trim();
+      const value = columns.slice(1).join(':').trim();
       renderedBlocks.push(
-        <div key={`info-${index}`} className={`flex mb-1 break-inside-avoid text-black font-serif ${isKonsideran ? 'mt-3' : 'pl-8'}`}>
-          <span className={`${isKonsideran ? 'w-[120px] font-bold' : 'w-[28%]'} shrink-0 align-top`}>{columns[0].trim()}</span>
-          <span className="w-[15px] text-center shrink-0">:</span>
-          <span className="flex-1 pl-1 text-justify">{columns[1].trim()}</span>
+        <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid text-[11pt] font-serif text-black">
+          <span className="w-[110px] shrink-0 font-bold">{label}</span>
+          <span className="w-[20px] text-center shrink-0">:</span>
+          <span className="flex-1 text-justify">{value}</span>
         </div>
       );
     } 
-    else if (/^(\d+\.|[a-zA-Z]\.|-)\s/.test(trimmed)) {
-       const match = trimmed.match(/^(\d+\.|[a-zA-Z]\.|-)\s+(.*)/);
-       if (match) renderedBlocks.push(<div key={`list-${index}`} className="flex mb-1 pl-8 font-serif text-black leading-relaxed"><span className="w-8 shrink-0">{match[1]}</span><span className="flex-1 text-justify">{match[2]}</span></div>);
-    }
+    // Render List atau Paragraf
     else {
-      const lower = trimmed.toLowerCase();
-      const isIntro = lower.startsWith('dengan hormat') || lower.startsWith('yang bertanda tangan') || lower.startsWith('menindaklanjuti');
-      const isClosing = lower.startsWith('demikian') || lower.startsWith('atas perhatian');
-      renderedBlocks.push(<p key={`p-${index}`} className={`mb-3 text-justify font-serif text-black leading-[1.6] ${isIntro || isClosing ? '' : 'indent-10'}`}>{trimmed}</p>);
+      const isList = /^(\d+\.|[a-zA-Z]\.|-)\s/.test(trimmed);
+      if (isList) {
+        const match = trimmed.match(/^(\d+\.|[a-zA-Z]\.|-)\s+(.*)/);
+        renderedBlocks.push(
+          <div key={`list-${index}`} className="flex mb-1.5 pl-[110px] font-serif text-[11pt] text-black leading-relaxed">
+            <span className="w-6 shrink-0">{match ? match[1] : '-'}</span>
+            <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
+          </div>
+        );
+      } else {
+        renderedBlocks.push(<p key={`p-${index}`} className="mb-3 text-justify font-serif text-[11pt] text-black leading-[1.6] indent-10">{trimmed}</p>);
+      }
     }
   });
   
   flushTable();
-  return <div className="font-serif text-black leading-relaxed text-[11pt]">{renderedBlocks}</div>;
+  return <div className="font-serif text-black leading-relaxed">{renderedBlocks}</div>;
 };
 
 const LetterCreator: React.FC = () => {
@@ -158,15 +167,16 @@ const LetterCreator: React.FC = () => {
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       setTemplates(data);
       
-      // Jika datang dari SPT Generator (state navigation)
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
           setSelectedTemplate(targetTemplate);
+          // Bersihkan konten dari simbol markdown sebelum dimasukkan ke editor
+          const cleanContent = (location.state.content || targetTemplate.content).replace(/\*\*/g, '');
           setFormData(prev => ({
             ...prev,
             subject: location.state.subject || targetTemplate.subject,
-            content: location.state.content || targetTemplate.content,
+            content: cleanContent,
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
         }
@@ -205,13 +215,12 @@ const LetterCreator: React.FC = () => {
   const handleSelectStaff = (member: StaffMember) => {
     setFormData(prev => {
       let newContent = prev.content;
-      // Ganti placeholder jika ada
+      // Ganti placeholder dengan teks bersih tanpa tanda bintang
       if (newContent.includes('[NAMA_PETUGAS]')) {
         newContent = newContent.replace('[NAMA_PETUGAS]', member.name);
         newContent = newContent.replace('[NIP_PETUGAS]', member.nip ? `NIP. ${member.nip}` : '-');
         newContent = newContent.replace('[JABATAN_PETUGAS]', member.rank || '-');
       } else {
-        // Jika tidak ada placeholder, tambahkan di posisi kursor atau baris baru
         newContent += `\nNama : ${member.name}\nNIP : ${member.nip || '-'}\nJabatan : ${member.rank || '-'}\n`;
       }
       return { ...prev, content: newContent };
@@ -233,7 +242,7 @@ const LetterCreator: React.FC = () => {
         createdAt: new Date().toISOString(),
         sender: formData.recipient || 'Internal / Dinas',
         subject: formData.subject,
-        description: formData.content.split('\n').slice(0, 3).join(' '), // Ambil sedikit deskripsi
+        description: formData.content.split('\n').slice(0, 3).join(' '),
         category: selectedTemplate?.category || 'Lainnya',
         urgency: UrgencyLevel.LOW,
         status: MailStatus.ARCHIVED,
@@ -355,7 +364,6 @@ const LetterCreator: React.FC = () => {
                <Info size={10} /> Tips: Isi personil otomatis dengan klik "Pilih Petugas".
              </div>
 
-             {/* Staff Picker Popup inside Editor Area */}
              {showStaffPicker && (
                <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-5 flex flex-col animate-fade-in rounded-3xl">
                  <div className="flex justify-between items-center mb-4">
@@ -391,16 +399,13 @@ const LetterCreator: React.FC = () => {
                        </div>
                      </button>
                    ))}
-                   {filteredStaff.length === 0 && (
-                     <p className="text-center py-10 text-xs text-slate-400 font-medium">Data personil tidak ditemukan.</p>
-                   )}
                  </div>
                </div>
              )}
           </div>
         </div>
 
-        {/* Preview Area */}
+        {/* Preview Area (Standardized Indentation) */}
         <div className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white w-[215mm] shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">

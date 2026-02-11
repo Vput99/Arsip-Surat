@@ -3,7 +3,7 @@ import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
 import { subscribeToMails, deleteMail, subscribeToConfig } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply, generateSPTContent } from '../services/geminiService';
 import { SchoolConfig } from '../types';
@@ -21,6 +21,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const [filterCategory, setFilterCategory] = useState('Semua');
   const [filterMonth, setFilterMonth] = useState('all');
   const [selectedMail, setSelectedMail] = useState<Mail | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [aiReply, setAiReply] = useState<string>('');
   const [replyLoading, setReplyLoading] = useState(false);
   
@@ -41,11 +42,21 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     };
   }, [type]);
 
-  const handleDelete = async (id: string) => {
+  const handleSelectMail = (mail: Mail) => {
+    setSelectedMail(mail);
+    setAiReply('');
+    if (window.innerWidth < 1024) {
+      setShowDetailModal(true);
+    }
+  };
+
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (window.confirm('Hapus arsip ini secara permanen?')) {
       try {
         await deleteMail(id);
-        if (selectedMail?.id === id) setSelectedMail(null);
+        setSelectedMail(null);
+        setShowDetailModal(false);
       } catch (e) {
         alert('Gagal menghapus surat.');
       }
@@ -54,18 +65,21 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
 
   const handleCreateSPT = async (mail: Mail) => {
     setReplyLoading(true);
-    const content = await generateSPTContent(mail);
-    setReplyLoading(false);
-    
-    // Kirim data ke LetterCreator via state
-    navigate('/create', { 
-      state: { 
-        templateId: 't_spt',
-        subject: `SURAT PERINTAH TUGAS - ${mail.sender}`,
-        content: content,
-        referenceInvitation: mail.referenceNumber
-      } 
-    });
+    try {
+      const content = await generateSPTContent(mail);
+      navigate('/create', { 
+        state: { 
+          templateId: 't_spt',
+          subject: `SURAT PERINTAH TUGAS - ${mail.sender}`,
+          content: content,
+          referenceInvitation: mail.referenceNumber
+        } 
+      });
+    } catch (err) {
+      alert("Gagal men-generate naskah SPT. Coba lagi.");
+    } finally {
+      setReplyLoading(false);
+    }
   };
 
   const handlePrintDisposition = (mail: Mail) => {
@@ -89,32 +103,28 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
               .content-table td { padding: 8px; vertical-align: top; }
               .label { width: 160px; font-weight: bold; }
               .box { border: 1px solid black; padding: 15px; margin-top: 20px; min-height: 100px; }
-              .footer { margin-top: 50px; text-align: right; }
             </style>
           </head>
           <body>
             <div class="header-container">
-              <img src="${config.logoUrl}" class="logo" alt="Logo" />
+              <img src="${config.logoUrl}" class="logo" />
               <div class="header-text">
                 <h1>${config.name}</h1>
                 <p>${config.address}</p>
                 <p>Email: ${config.email}</p>
               </div>
             </div>
-            <div class="title">LEMBAR ARSIP / DISPOSISI DIGITAL</div>
+            <div class="title">LEMBAR ARSIP / DISPOSISI</div>
             <table class="content-table">
               <tr><td class="label">Nomor Surat</td><td>: ${mail.referenceNumber}</td></tr>
               <tr><td class="label">Tanggal Surat</td><td>: ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</td></tr>
-              <tr><td class="label">Waktu Input</td><td>: ${mail.createdAt ? format(new Date(mail.createdAt), 'dd/MM/yyyy HH:mm', { locale: id }) : '-'}</td></tr>
-              <tr><td class="label">${type === 'Masuk' ? 'Pengirim' : 'Penerima'}</td><td>: ${mail.sender}</td></tr>
+              <tr><td class="label">Pengirim</td><td>: ${mail.sender}</td></tr>
               <tr><td class="label">Perihal</td><td>: ${mail.subject}</td></tr>
-              <tr><td class="label">Kategori</td><td>: ${mail.category}</td></tr>
-              <tr><td class="label">Sifat</td><td>: ${mail.urgency}</td></tr>
             </table>
             <div style="border: 1px solid #000; padding: 10px;">
               <strong>Isi Ringkas:</strong><br/><p>${mail.description}</p>
             </div>
-            <div class="box"><strong>Catatan:</strong></div>
+            <div class="box"><strong>Catatan Disposisi:</strong></div>
             <script>window.onload = function() { window.print(); }</script>
           </body>
         </html>
@@ -123,21 +133,19 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     }
   };
 
-  const handleDownload = (mail: Mail) => {
+  const handleDownload = (mail: Mail, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (mail.fileUrl?.startsWith('data:')) {
       const link = document.createElement('a');
       link.href = mail.fileUrl;
-      let extension = 'bin';
-      if (mail.fileUrl.startsWith('data:image/jpeg')) extension = 'jpg';
-      else if (mail.fileUrl.startsWith('data:image/png')) extension = 'png';
-      else if (mail.fileUrl.startsWith('data:application/pdf')) extension = 'pdf';
-      const safeRef = mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-');
-      link.download = `Dokumen-${safeRef}.${extension}`;
+      const extension = mail.fileUrl.includes('image/png') ? 'png' : mail.fileUrl.includes('image/jpeg') ? 'jpg' : 'pdf';
+      const cleanRef = mail.referenceNumber.replace(/[/\\?%*:|"<>]/g, '-');
+      link.download = `Arsip-${cleanRef}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } else {
-      alert("Tidak ada file lampiran.");
+      alert("Tidak ada lampiran untuk surat ini.");
     }
   };
 
@@ -168,116 +176,214 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     return styles[u] || styles['Biasa'];
   };
 
+  const DetailContent = ({ mail }: { mail: Mail }) => (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white relative shrink-0">
+        <div className="flex justify-between items-start relative z-10">
+          <div>
+            <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-1">{mail.category}</p>
+            <h3 className="font-black text-lg leading-tight">{mail.subject}</h3>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => handlePrintDisposition(mail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Lembar Arsip"><Printer size={16}/></button>
+            <button onClick={(e) => handleDelete(mail.id, e)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors" title="Hapus Permanen"><Trash2 size={16}/></button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        {/* Gambar Preview Jika Ada */}
+        {mail.fileUrl && mail.fileUrl.startsWith('data:image') && (
+          <div className="relative group">
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Pratinjau Lampiran</label>
+            <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-100 aspect-[4/3] flex items-center justify-center">
+              <img src={mail.fileUrl} alt="Pratinjau Surat" className="max-w-full max-h-full object-contain" />
+              <button 
+                onClick={(e) => handleDownload(mail, e)}
+                className="absolute bottom-4 right-4 p-3 bg-indigo-600 text-white rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100"
+              >
+                <Download size={20} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Nomor Surat</label>
+            <p className="text-sm font-bold text-slate-700 truncate" title={mail.referenceNumber}>{mail.referenceNumber}</p>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+             <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tanggal Surat</label>
+             <p className="text-sm font-bold text-slate-700">{format(new Date(mail.date), 'dd MMM yyyy', { locale: id })}</p>
+          </div>
+        </div>
+
+        <div>
+           <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Isi Ringkas / Deskripsi</label>
+           <div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100 italic">
+             "{mail.description}"
+           </div>
+        </div>
+
+        {mail.aiSummary && (
+          <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+             <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-indigo-600" />
+                <span className="text-[10px] font-black text-indigo-700 uppercase">Analisis Ringkas AI</span>
+             </div>
+             <p className="text-xs text-indigo-900 leading-relaxed font-medium">"{mail.aiSummary}"</p>
+          </div>
+        )}
+
+        <div className="space-y-3 pt-4">
+          {type === MailType.INCOMING && (mail.category === 'Undangan' || mail.category === 'Dinas') && (
+            <button 
+               onClick={() => handleCreateSPT(mail)}
+               disabled={replyLoading}
+               className="w-full py-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all text-sm font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/30"
+            >
+               {replyLoading ? <Loader2 size={18} className="animate-spin" /> : <FileBadge size={20} />}
+               {replyLoading ? 'MENYUSUN SPT...' : 'BUAT SURAT TUGAS (SPT)'}
+               {!replyLoading && <Sparkles size={14} className="animate-pulse" />}
+            </button>
+          )}
+
+          {mail.fileUrl && (
+             <button 
+               onClick={(e) => handleDownload(mail, e)}
+               className="w-full py-4 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-all text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+             >
+               <Download size={18} /> UNDUH LAMPIRAN ASLI
+             </button>
+          )}
+
+          {type === MailType.INCOMING && (
+            <div className="space-y-2">
+              <button 
+                 onClick={() => handleGenerateReply(mail)}
+                 disabled={replyLoading}
+                 className="w-full py-3 bg-white border-2 border-indigo-100 text-indigo-700 rounded-2xl hover:bg-indigo-50 transition-colors text-xs font-black flex items-center justify-center gap-2"
+              >
+                 <Sparkles size={14} /> SARAN BALASAN AI
+              </button>
+              {aiReply && (
+                <div className="p-4 bg-slate-900 text-white rounded-2xl text-[11px] leading-relaxed animate-fade-in relative">
+                  <p className="text-indigo-300 font-bold mb-2 uppercase tracking-widest text-[9px]">Draft Balasan:</p>
+                  {aiReply}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">
             {type === 'Masuk' ? 'Surat Masuk' : 'Surat Keluar'}
           </h2>
-          <p className="text-slate-500 mt-1 font-medium">Kelola database arsip {type.toLowerCase()} sekolah.</p>
+          <p className="text-slate-500 font-bold text-sm">Arsip digital sekolah. Klik surat untuk detail dan unduhan.</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center justify-center px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 font-bold text-sm"
+          className="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 font-black text-sm"
         >
-          <Plus size={18} className="mr-2" />
-          Tambah Data
+          <Plus size={20} className="mr-2" /> TAMBAH DATA
         </button>
       </div>
 
-      <div className="bg-white p-2 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col xl:flex-row gap-2">
+      <div className="bg-white p-3 rounded-2xl shadow-lg border border-slate-100 flex flex-col xl:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Cari surat..."
+            placeholder="Cari nomor surat, pengirim, atau judul..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm font-medium"
+            className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold"
           />
         </div>
         
-        <div className="flex gap-2 overflow-x-auto pb-2 xl:pb-0">
-          <div className="relative group">
-            <select
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="appearance-none pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-slate-700 text-sm font-semibold cursor-pointer min-w-[160px] hover:border-indigo-300 transition-colors"
-            >
-              <option value="all">Semua Bulan</option>
-              {availableMonths.map(month => (
-                <option key={month} value={month}>{format(new Date(month + '-01'), 'MMMM yyyy', { locale: id })}</option>
-              ))}
-            </select>
-            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-          </div>
-          <div className="relative group">
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="appearance-none pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-slate-700 text-sm font-semibold cursor-pointer min-w-[160px] hover:border-indigo-300 transition-colors"
-            >
-              <option value="Semua">Semua Kategori</option>
-              <option value="Undangan">Undangan</option>
-              <option value="Dinas">Dinas</option>
-              <option value="Pemberitahuan">Pemberitahuan</option>
-              <option value="Lainnya">Lainnya</option>
-            </select>
-            <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-          </div>
+        <div className="flex gap-2">
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="px-4 py-3 bg-slate-50 border-none rounded-xl text-slate-700 text-xs font-bold outline-none cursor-pointer"
+          >
+            <option value="all">Semua Bulan</option>
+            {availableMonths.map(month => (
+              <option key={month} value={month}>{format(new Date(month + '-01'), 'MMMM yyyy', { locale: id })}</option>
+            ))}
+          </select>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="px-4 py-3 bg-slate-50 border-none rounded-xl text-slate-700 text-xs font-bold outline-none cursor-pointer"
+          >
+            <option value="Semua">Semua Kategori</option>
+            <option value="Undangan">Undangan</option>
+            <option value="Dinas">Dinas</option>
+            <option value="Pemberitahuan">Pemberitahuan</option>
+          </select>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 overflow-hidden">
         <div className="lg:col-span-7 overflow-y-auto pr-2 space-y-3">
           {filteredMails.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <div className="bg-slate-100 p-4 rounded-full mb-3">
-                <Search className="text-slate-400" size={32} />
-              </div>
-              <h3 className="text-slate-900 font-bold">Tidak ditemukan</h3>
-              <p className="text-slate-500 text-sm">Coba kata kunci lain atau periksa koneksi internet.</p>
+            <div className="flex flex-col items-center justify-center h-64 text-center opacity-40">
+              <Search size={48} className="mb-4 text-slate-300" />
+              <h3 className="text-slate-900 font-black uppercase text-xs tracking-widest">Data Tidak Ditemukan</h3>
             </div>
           ) : (
             filteredMails.map((mail) => (
               <div 
                 key={mail.id} 
-                onClick={() => setSelectedMail(mail)}
-                className={`group relative bg-white p-5 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-0.5 ${selectedMail?.id === mail.id ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-md z-10' : 'border-slate-100 hover:border-indigo-200'}`}
+                onClick={() => handleSelectMail(mail)}
+                className={`group relative bg-white p-5 rounded-3xl border-2 transition-all duration-200 cursor-pointer hover:shadow-xl ${selectedMail?.id === mail.id ? 'border-indigo-600 shadow-indigo-500/10' : 'border-white hover:border-slate-100'}`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${getUrgencyBadge(mail.urgency)}`}>
+                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${getUrgencyBadge(mail.urgency)}`}>
                       {mail.urgency}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                    <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg uppercase tracking-wider">
                       {mail.category}
                     </span>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs font-semibold text-slate-400 font-mono">
-                      {format(new Date(mail.date), 'dd MMM yyyy', { locale: id })}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-slate-400 font-mono">
+                      {format(new Date(mail.date), 'dd/MM/yyyy')}
                     </span>
-                    {mail.createdAt && (
-                      <span className="text-[10px] text-indigo-400 font-medium flex items-center mt-1">
-                        <Clock size={10} className="mr-1" />
-                        {format(new Date(mail.createdAt), 'HH:mm', { locale: id })}
-                      </span>
+                    {mail.fileUrl && (
+                      <button 
+                        onClick={(e) => handleDownload(mail, e)}
+                        className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all"
+                        title="Unduh Cepat"
+                      >
+                        <Download size={14} />
+                      </button>
                     )}
                   </div>
                 </div>
-                <h3 className="font-bold text-slate-800 text-base mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{mail.subject}</h3>
-                <p className="text-sm text-slate-500 mb-3 line-clamp-2 leading-relaxed">{mail.description}</p>
+                <h3 className="font-black text-slate-800 text-base mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1 uppercase">{mail.subject}</h3>
+                <p className="text-xs text-slate-500 mb-3 line-clamp-1 font-medium">{mail.description}</p>
                 <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                  <div className="flex items-center text-xs font-medium text-slate-500">
+                  <div className="flex items-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                     <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center mr-2 text-slate-400">
-                       {type === 'Masuk' ? 'D' : 'K'}
+                       <FileText size={10} />
                     </div>
                     {mail.sender}
                   </div>
                   {mail.fileUrl && (
-                     mail.fileUrl.startsWith('data:image') ? <ImageIcon size={14} className="text-emerald-500" /> : <FileText size={14} className="text-rose-500" />
+                    <div className="flex items-center gap-1 text-[10px] font-black text-emerald-600 uppercase">
+                      <ImageIcon size={12} /> Tersedia
+                    </div>
                   )}
                 </div>
               </div>
@@ -285,116 +391,33 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
           )}
         </div>
 
-        <div className="lg:col-span-5 h-full hidden lg:block">
+        <div className="lg:col-span-5 h-full hidden lg:block overflow-hidden">
           {selectedMail ? (
-            <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full flex flex-col overflow-hidden animate-fade-in">
-              <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white relative overflow-hidden shrink-0">
-                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                 <div className="flex justify-between items-start relative z-10">
-                    <div>
-                      <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">{selectedMail.category}</p>
-                      <h3 className="font-bold text-lg leading-tight">{selectedMail.subject}</h3>
-                    </div>
-                    <div className="flex gap-2">
-                       <button onClick={() => handlePrintDisposition(selectedMail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Disposisi"><Printer size={16}/></button>
-                       <button onClick={() => handleDelete(selectedMail.id)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors" title="Hapus Arsip"><Trash2 size={16}/></button>
-                    </div>
-                 </div>
-              </div>
-              
-              <div className="p-6 overflow-y-auto flex-1 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nomor Surat</label>
-                    <p className="text-sm font-semibold text-slate-700 truncate" title={selectedMail.referenceNumber}>{selectedMail.referenceNumber}</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Tanggal Surat</label>
-                     <p className="text-sm font-semibold text-slate-700">{format(new Date(selectedMail.date), 'dd MMM yyyy', { locale: id })}</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 col-span-2 flex items-center justify-between">
-                     <div>
-                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Waktu Input (Realtime)</label>
-                       <p className="text-sm font-semibold text-indigo-600">
-                         {selectedMail.createdAt ? format(new Date(selectedMail.createdAt), 'dd MMMM yyyy, HH:mm:ss', { locale: id }) : '-'} WIB
-                       </p>
-                     </div>
-                     <Clock size={20} className="text-indigo-200" />
-                  </div>
-                </div>
-
-                <div>
-                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Isi Ringkas</label>
-                   <div className="text-sm text-slate-600 leading-relaxed">
-                     {selectedMail.description}
-                   </div>
-                </div>
-
-                {selectedMail.aiSummary && (
-                  <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 relative overflow-hidden">
-                     <div className="absolute -left-2 -top-2 w-16 h-16 bg-indigo-200 rounded-full blur-xl opacity-50"></div>
-                     <div className="flex items-center gap-2 mb-2 relative z-10">
-                        <Sparkles size={14} className="text-indigo-600" />
-                        <span className="text-xs font-bold text-indigo-700">Analisis AI</span>
-                     </div>
-                     <p className="text-xs text-indigo-900 leading-relaxed italic relative z-10">"{selectedMail.aiSummary}"</p>
-                  </div>
-                )}
-
-                <div className="space-y-3 pt-2">
-                  {type === 'Masuk' && selectedMail.category === 'Undangan' && (
-                    <button 
-                       onClick={() => handleCreateSPT(selectedMail)}
-                       disabled={replyLoading}
-                       className="w-full py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
-                    >
-                       {replyLoading ? <Loader2 size={16} className="animate-spin" /> : <FileBadge size={18} />}
-                       {replyLoading ? 'Menyusun Naskah...' : 'Buat SPT dari Undangan'}
-                       {!replyLoading && <Sparkles size={14} className="ml-1" />}
-                    </button>
-                  )}
-
-                  {type === 'Masuk' && (
-                    <div className="p-1">
-                      <button 
-                         onClick={() => handleGenerateReply(selectedMail)}
-                         disabled={replyLoading}
-                         className="w-full py-2.5 bg-gradient-to-r from-violet-100 to-indigo-100 text-indigo-700 rounded-xl hover:from-violet-200 hover:to-indigo-200 transition-colors text-sm font-bold flex items-center justify-center gap-2"
-                      >
-                         {replyLoading ? 'Memproses...' : 'Saran Balasan Otomatis'}
-                         <Sparkles size={16} className={replyLoading ? "animate-spin" : ""} />
-                      </button>
-                      {aiReply && (
-                        <div className="mt-3 p-3 bg-white border border-indigo-100 rounded-xl text-xs text-slate-600 shadow-sm animate-fade-in">
-                          <p className="font-bold text-indigo-600 mb-1">Saran Balasan:</p>
-                          {aiReply}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {selectedMail.fileUrl && (
-                     <button 
-                       onClick={() => handleDownload(selectedMail)}
-                       className="w-full py-3 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2 group"
-                     >
-                       <Download size={16} className="text-slate-400 group-hover:text-slate-600" />
-                       Unduh File Lampiran
-                     </button>
-                  )}
-                </div>
-              </div>
+            <div className="bg-white rounded-[2rem] shadow-2xl border border-slate-100 h-full overflow-hidden animate-fade-in flex flex-col">
+              <DetailContent mail={selectedMail} />
             </div>
           ) : (
-             <div className="h-full bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
-               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                 <Eye size={24} className="opacity-50" />
-               </div>
-               <p className="font-medium">Pilih surat dari daftar<br/>untuk melihat detail lengkap.</p>
+             <div className="h-full bg-slate-50 rounded-[2rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+               <Eye size={48} className="opacity-20 mb-4" />
+               <p className="font-black text-xs uppercase tracking-widest">Pilih surat untuk melihat detail & unduhan</p>
              </div>
           )}
         </div>
       </div>
+
+      {showDetailModal && selectedMail && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm lg:hidden">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg h-[85vh] overflow-hidden relative shadow-2xl">
+            <button 
+              onClick={() => setShowDetailModal(false)}
+              className="absolute top-4 right-4 z-[70] p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <DetailContent mail={selectedMail} />
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <MailForm type={type} onClose={() => setShowForm(false)} />

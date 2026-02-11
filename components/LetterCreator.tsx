@@ -59,13 +59,14 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     const columns = line.split(':');
     
-    // Logika Deteksi: Jika baris punya banyak titik dua, itu pasti tabel.
-    // Jika baris diawali angka (1.) dan kita baru saja mulai tabel, itu juga bagian dari tabel.
+    // Logika Deteksi: 
+    // - Jika baris punya banyak kolom (>= 3)
+    // - Jika diawali angka dan kita sedang dalam mode tabel
+    // - Jika diawali titik dua (:)
     const hasManyColumns = columns.length >= 3;
     const isNumberedData = /^\d+\./.test(trimmed);
     const isContinuedData = line.startsWith(':');
 
-    // Tentukan apakah baris ini harus masuk ke tabel
     const shouldBeInTable = hasManyColumns || (isInTableMode && (isNumberedData || isContinuedData));
 
     if (trimmed === '[PAGE_BREAK]') {
@@ -75,14 +76,13 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     }
 
     if (shouldBeInTable) {
-      isInTableMode = true; // Kunci mode tabel
+      isInTableMode = true;
       let finalRow = columns;
       
-      // Jika input hanya "1. Nama Anak" tanpa ":", bantu pecah secara otomatis
+      // Auto-format jika user mengetik "1. Nama" tanpa titik dua
       if (columns.length < 3 && isNumberedData) {
         const match = trimmed.match(/^(\d+\.)\s*(.*)/);
         if (match) {
-          // Buat array dummy agar masuk ke kolom yang benar (Kolom 1: No, Kolom 2: Nama)
           finalRow = [match[1], match[2], '', '', ''];
         }
       }
@@ -91,10 +91,8 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       return;
     }
 
-    // Jika sampai sini berarti bukan baris tabel, bersihkan buffer tabel jika ada
     flushTable();
 
-    // Render elemen non-tabel
     if (trimmed.startsWith('PASAL') || trimmed === 'MEMUTUSKAN' || (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && trimmed.length > 3 && !trimmed.includes(':'))) {
       renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-3 font-bold text-center text-black font-serif uppercase tracking-wider underline underline-offset-4">{trimmed}</div>);
     } 

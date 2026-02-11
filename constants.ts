@@ -65,32 +65,13 @@ NIP : ...........................................................
 Jabatan : Kepala Sekolah
 Satuan Pendidikan : SDN [NAMA_SEKOLAH]
 
-dengan ini menerangkan bahwa nama-nama tersebut di bawah ini, adalah benar Peserta Didik SDN [NAMA_SEKOLAH] dan yang bersangkutan sebagai Penerima PIP Tahun 2025:
+dengan ini menerangkan bahwa nama-nama tersebut di bawah ini, adalah benar Peserta Didik SDN [NAMA_SEKOLAH] dan yang bersangkutan sebagai Penerima PIP Tahun 2026:
 
-No : Nama Peserta Didik Tertera di SK : Kelas : Nomor Rekening : PIP ID/Virtual Account
+NO : NAMA PESERTA DIDIK TERTERA DI SK : KELAS : NOMOR REKENING : PIP ID/VIRTUAL ACCOUNT
 1. : ................................................... : ....... : ........................................... : ...........................................
+2. : ................................................... : ....... : ........................................... : ...........................................
 
 Demikian surat keterangan ini dibuat untuk digunakan sebagai salah satu persyaratan untuk melakukan aktivasi rekening SimPel PIP di bank penyalur.`
-  },
-  {
-    id: 't_sptjm_uang_makan',
-    name: 'SPTJM Uang Makan',
-    subject: 'SURAT PERNYATAAN PERTANGGUNG JAWABAN MUTLAK',
-    category: 'Dinas',
-    layout: 'centered',
-    content: `Yang bertanda tangan di bawah ini :
-
-Nama : ...........................................................
-NIP : ...........................................................
-Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
-
-Dengan ini menyatakan dengan sebenarnya bahwa :
-
-1. Perhitungan yang terdapat pada Daftar Perhitungan uang makan bulan berjalan SDN [NAMA_SEKOLAH] telah dihitung dengan benar dan berdasarkan daftar hadir Pegawai Negeri Sipil pada SDN [NAMA_SEKOLAH].
-
-2. Apabila dikemudian hari terdapat kelebihan atas pembayaran uang makan tersebut kami bersedia untuk menyetorkan kelebihan tersebut ke Kas Negara.
-
-Demikian surat pernyataan ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.`
   },
   {
     id: 't_sk_panitia',
@@ -128,110 +109,10 @@ No : Nama : Jabatan Kedinasan : Jabatan Panitia
 1. : [NAMA_KEPSEK] : Kepala Sekolah : Penanggung Jawab
 2. : ....................... : Guru : Ketua Panitia
 3. : ....................... : Guru : Sekretaris
-4. : ....................... : Staff TU : Bendahara
 
 Ditetapkan di : Kediri
 Pada Tanggal : [TANGGAL_SURAT]`
-  },
-  {
-    id: 't_mou_ekskul',
-    name: 'MOU Pengajar Ekstrakurikuler',
-    subject: 'PERJANJIAN KERJA SAMA JASA PENGAJAR EKSTRAKURIKULER',
-    category: 'Kerjasama',
-    layout: 'centered',
-    content: `Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ............, bertempat di SDN [NAMA_SEKOLAH], kami yang bertanda tangan di bawah ini:
-
-I. Nama : [NAMA_KEPSEK]
-   Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
-   Alamat : [ALAMAT_SEKOLAH]
-   Selanjutnya disebut sebagai PIHAK PERTAMA.
-
-II. Nama : ...........................................................
-   Alamat : ...........................................................
-   Keahlian : Pelatih Bidang ...........................................
-   Selanjutnya disebut sebagai PIHAK KEDUA.
-
-Kedua belah pihak sepakat untuk melakukan Perjanjian Kerja Sama Jasa Pengajar Ekstrakurikuler dengan ketentuan sebagai berikut:
-
-PASAL 1 - LINGKUP PEKERJAAN
-PIHAK PERTAMA memberikan tugas kepada PIHAK KEDUA untuk menjadi pelatih ekstrakurikuler ........................... pada tahun pelajaran 2024/2025.
-
-PASAL 2 - JADWAL KEGIATAN
-Kegiatan dilaksanakan setiap hari ........................... pukul ........................... WIB bertempat di lingkungan sekolah atau lokasi lain yang disepakati.
-
-[PAGE_BREAK]
-
-PASAL 3 - HAK DAN KEWAJIBAN
-1. PIHAK KEDUA wajib menyusun program kerja ekstrakurikuler dan melaporkan progres latihan secara berkala kepada koordinator kesiswaan.
-2. PIHAK PERTAMA berhak mengevaluasi kinerja dan kedisiplinan PIHAK KEDUA.
-3. PIHAK KEDUA berhak mendapatkan honorarium sesuai dengan ketentuan anggaran sekolah yang berlaku.
-
-PASAL 4 - HONORARIUM AND PEMBAYARAN
-Besaran upah jasa pengajar disepakati sebesar Rp ........................... per pertemuan yang akan dibayarkan setiap akhir bulan berdasarkan daftar hadir yang sah.
-
-PASAL 5 - PENUTUP
-Demikian perjanjian ini dibuat dalam rangkap 2 (dua) untuk dipergunakan sebagaimana mestinya.`
-  },
-  {
-    id: 't_honor_ekskul',
-    name: 'Daftar Honor Ekstrakurikuler',
-    subject: 'DAFTAR PENERIMAAN HONORARIUM PELATIH EKSTRAKURIKULER',
-    category: 'Kerjasama',
-    layout: 'centered',
-    content: `Bulan : ...........................................................
-Tahun Pelajaran : ...........................................................
-
-No : Nama Pelatih : Ekstrakurikuler : Jml Pertemuan : Honor/Sesi : Total : Tanda Tangan
-1. : ....................... : Pramuka : ..... : Rp ........... : Rp ........... : 1. ........
-2. : ....................... : Tari : ..... : Rp ........... : Rp ........... : 2. ........
-3. : ....................... : Karate : ..... : Rp ........... : Rp ........... : 3. ........
-4. : ....................... : Drumband : ..... : Rp ........... : Rp ........... : 4. ........
-5. : ....................... : Keagamaan : ..... : Rp ........... : Rp ........... : 5. ........
-
-JUMLAH TOTAL : Rp ............................
-
-Pembayaran dilakukan berdasarkan absensi kehadiran pelatih yang telah diverifikasi.`
-  },
-  {
-    id: 't_undangan_wali',
-    name: 'Surat Undangan Wali Murid',
-    subject: 'Undangan Rapat Pleno Komite Sekolah',
-    category: 'Undangan',
-    layout: 'standard',
-    content: `Dengan hormat,
-
-Sehubungan dengan akan dilaksanakannya evaluasi program sekolah semester genap, kami mengharapkan kehadiran Bapak/Ibu Wali Murid pada:
-
-Hari/Tanggal : .........................................
-Waktu : 08.00 WIB s.d Selesai
-Tempat : Aula Serbaguna SDN [NAMA_SEKOLAH]
-Acara : Rapat Pleno Komite dan Sosialisasi Program Sekolah.
-
-Mengingat pentingnya acara ini, dimohon kehadiran Bapak/Ibu tepat waktu tanpa mewakilkan.
-
-Demikian undangan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.`
-  },
-  {
-    id: 't_mou_tukang_harian',
-    name: 'MOU Jasa Tukang (Upah Harian)',
-    subject: 'SURAT PERJANJIAN KERJA JASA PERBAIKAN (UPAH HARIAN)',
-    category: 'Kerjasama',
-    layout: 'centered',
-    content: `Pada hari ini ............, Tanggal ............ Bulan ............ Tahun ............, kami yang bertanda tangan di bawah ini:
-
-I. Nama : [NAMA_KEPSEK]
-   Jabatan : Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH]
-   Alamat : [ALAMAT_SEKOLAH]
-   Selanjutnya disebut sebagai PIHAK PERTAMA.
-
-II. Nama : ...........................................................
-   Alamat : ...........................................................
-   Pekerjaan : Tukang / Pekerja Bangunan
-   Selanjutnya disebut sebagai PIHAK KEDUA.
-
-Kedua belah pihak sepakat untuk melakukan Perjanjian Kerja Jasa Perbaikan dengan upah harian.`
   }
 ];
 
-// Mock initial data for mails fallback
 export const MOCK_INITIAL_DATA = [];

@@ -133,7 +133,6 @@ const LetterCreator: React.FC = () => {
   const [saveLoading, setSaveLoading] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   
-  // Refs to prevent periodic re-initialization (THE FIX)
   const isInitialized = useRef(false);
   const letterContainerRef = useRef<HTMLDivElement>(null);
   const [useQRCode, setUseQRCode] = useState(true);
@@ -151,13 +150,9 @@ const LetterCreator: React.FC = () => {
   });
 
   useEffect(() => {
-    // 1. Subscription Staff
     const unsubscribeStaff = subscribeToStaff(setStaff);
-
-    // 2. Subscription Config & Templates with Guard
     const unsubscribeConfig = subscribeToConfig((newConfig) => {
       setConfig(newConfig);
-      // Only set signer from config once
       if (!isInitialized.current) {
         setFormData(prev => ({ 
           ...prev, 
@@ -169,11 +164,8 @@ const LetterCreator: React.FC = () => {
 
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       setTemplates(data);
-      
-      // JANGAN reset formData jika aplikasi sudah terinisialisasi
       if (isInitialized.current) return;
 
-      // Logic Prioritas Inisialisasi: State > Default Template
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
@@ -225,7 +217,6 @@ const LetterCreator: React.FC = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    // Memastikan input tidak memicu reset template
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -233,7 +224,6 @@ const LetterCreator: React.FC = () => {
     if (!letterContainerRef.current) return null;
     setPdfGenerating(true);
     try {
-      // Setup PDF dengan ukuran F4 (215 x 330 mm)
       const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [215, 330] });
       const pages = letterContainerRef.current.querySelectorAll('.letter-paper');
       
@@ -244,7 +234,7 @@ const LetterCreator: React.FC = () => {
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          windowWidth: 1200 // Memastikan render lebar cukup
+          windowWidth: 1200
         });
         
         const imgData = canvas.toDataURL('image/jpeg', 0.8);
@@ -280,7 +270,7 @@ const LetterCreator: React.FC = () => {
         category: selectedTemplate?.category || 'Lainnya',
         urgency: UrgencyLevel.LOW,
         status: MailStatus.ARCHIVED,
-        fileUrl: pdfDataUri || undefined, // FILE PDF DISIMPAN DI SINI
+        fileUrl: pdfDataUri || undefined,
         aiSummary: `Dokumen digital (PDF) dibuat dari template: ${selectedTemplate?.name}`
       };
 
@@ -340,7 +330,6 @@ const LetterCreator: React.FC = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
-        {/* Editor Sidebar */}
         <div className="w-full lg:w-[400px] flex flex-col gap-4 overflow-y-auto pr-2 print:hidden shrink-0">
           <div className="bg-white p-5 rounded-3xl border border-slate-200 space-y-5 shadow-sm">
              <div>
@@ -395,11 +384,9 @@ const LetterCreator: React.FC = () => {
           </div>
         </div>
 
-        {/* Paper Preview Area */}
         <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
-                {/* Kop Surat (Only Page 1) */}
                 {pIdx === 0 && (
                   <div className="border-b-[4.5pt] border-double border-black pb-3 mb-2 grid grid-cols-[90px_1fr_90px] items-center text-black">
                      <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[22mm] h-auto" />}</div>
@@ -415,7 +402,6 @@ const LetterCreator: React.FC = () => {
                 )}
                 
                 <div className="flex-1 flex flex-col pt-5">
-                   {/* Title Area (Only Page 1) */}
                    {pIdx === 0 && (
                      <div className="text-center mb-8">
                        <h2 className="text-[13pt] font-bold uppercase underline underline-offset-4 decoration-2 tracking-wide leading-tight">{formData.subject}</h2>
@@ -427,7 +413,6 @@ const LetterCreator: React.FC = () => {
                      <SmartContentRenderer text={part} />
                    </div>
 
-                   {/* Signature Area (Only Last Page) */}
                    {pIdx === contentParts.length - 1 && (
                      <div className="mt-10 break-inside-avoid ml-auto w-[320px] flex flex-col items-center text-center">
                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
@@ -467,7 +452,6 @@ const LetterCreator: React.FC = () => {
            </div>
          </div>
       )}
-      
       <style>{`.letter-paper { width: 215mm; min-height: 297mm; padding: 5mm 20mm 20mm 30mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 5mm 20mm 20mm 30mm !important; display: flex !important; flex-direction: column !important; } }`}</style>
     </div>
   );

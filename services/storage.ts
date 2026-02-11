@@ -205,8 +205,10 @@ const fetchAllMails = async () => {
     localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails));
     mailListeners.forEach(l => l(mails));
     setConnectionStatus(true);
+    console.log("Cloud Sync: Mails fetched from Turso successfully.");
   } catch (e) {
     setConnectionStatus(false);
+    console.warn("Cloud Sync: Failed to fetch mails from Turso.");
   }
 };
 
@@ -270,6 +272,8 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
 export const saveMail = async (mail: Mail): Promise<void> => {
   const mailId = mail.id || Date.now().toString();
   const mailToSave = { ...mail, id: mailId };
+  
+  // Update Local State First
   const currentMails = getLocalMails();
   const existingIdx = currentMails.findIndex(m => m.id === mailId);
   let newMails;
@@ -281,8 +285,11 @@ export const saveMail = async (mail: Mail): Promise<void> => {
   }
   localStorage.setItem('OFFLINE_MAILS', JSON.stringify(newMails));
   mailListeners.forEach(l => l(newMails));
+
+  // Push to Turso
   if (turso) {
     try {
+      console.log(`Cloud Sync: Saving mail ${mailId} to Turso...`);
       await turso.execute({
         sql: `INSERT OR REPLACE INTO mails (
           id, type, referenceNumber, date, receivedDate, createdAt, 
@@ -296,9 +303,14 @@ export const saveMail = async (mail: Mail): Promise<void> => {
         ]
       });
       setConnectionStatus(true);
-    } catch (e) {
+      console.log("Cloud Sync: Mail saved to Turso successfully.");
+    } catch (e: any) {
       setConnectionStatus(false);
+      console.error("Cloud Sync Error: Failed to save to Turso.", e.message);
+      // Data remains in localStorage, will sync on next fetch/refresh if connection restored
     }
+  } else {
+    console.warn("Cloud Sync: Turso not configured, saving only to local storage.");
   }
 };
 
@@ -338,7 +350,6 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
       setConnectionStatus(true);
     } catch (e: any) {
       setConnectionStatus(false);
-      // Jangan lempar error agar UI tidak terganggu, cukup biarkan offline.
       console.warn("Sinkronisasi config ke cloud gagal, data tersimpan secara lokal.");
     }
   }

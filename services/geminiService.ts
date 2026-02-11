@@ -80,12 +80,11 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     2. JANGAN sertakan kalimat pembuka seperti "Berikut adalah...".
     3. JANGAN gunakan tanda bintang (**) atau markdown.
     4. MULAI LANGSUNG dari kata "Dasar :".
-    5. Format Dasar: "Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Tentang ${invitationMail.subject}."
-    6. Tambahkan poin Dasar kedua: "2. Program Kerja dan Anggaran Sekolah Tahun Pelajaran 2024/2025."
-    7. Tulis "MEMERINTAHKAN :" di baris baru.
-    8. Tulis "Kepada :" diikuti list personil dengan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], [JABATAN_PETUGAS].
-    9. Format Untuk: "Untuk : 1. Menghadiri ${invitationMail.subject} yang diselenggarakan oleh ${invitationMail.sender} pada tanggal ... (sesuaikan dari isi)."
-    10. Tambahkan poin Untuk kedua: "2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah."`;
+    5. Format Dasar (Wajib Satu Baris): "Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Tentang ${invitationMail.subject}."
+    6. Tulis "MEMERINTAHKAN :" di baris baru setelah Dasar.
+    7. Tulis "Kepada :" di baris baru, diikuti list personil dengan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], [JABATAN_PETUGAS].
+    8. Format Untuk: "Untuk : 1. Menghadiri ${invitationMail.subject} yang diselenggarakan oleh ${invitationMail.sender} pada tanggal ... (ambil dari isi naskah)."
+    9. Tambahkan poin Untuk kedua: "2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah."`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",

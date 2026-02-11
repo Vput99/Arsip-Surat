@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, MailType, UrgencyLevel } from '../types';
+import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
 import { subscribeToMails, deleteMail, subscribeToConfig } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge } from 'lucide-react';
 import MailForm from './MailForm';
-import { suggestReply } from '../services/geminiService';
+import { suggestReply, generateSPTContent } from '../services/geminiService';
 import { SchoolConfig } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 interface MailListProps {
   type: MailType;
@@ -22,14 +23,14 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const [selectedMail, setSelectedMail] = useState<Mail | null>(null);
   const [aiReply, setAiReply] = useState<string>('');
   const [replyLoading, setReplyLoading] = useState(false);
+  
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Listen to mails
     const unsubscribeMails = subscribeToMails((allMails) => {
       setMails(allMails.filter(m => m.type === type));
     });
 
-    // Listen to config (needed for print)
     const unsubscribeConfig = subscribeToConfig((config) => {
       setSchoolConfig(config);
     });
@@ -49,6 +50,22 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
         alert('Gagal menghapus surat.');
       }
     }
+  };
+
+  const handleCreateSPT = async (mail: Mail) => {
+    setReplyLoading(true);
+    const content = await generateSPTContent(mail);
+    setReplyLoading(false);
+    
+    // Kirim data ke LetterCreator via state
+    navigate('/create', { 
+      state: { 
+        templateId: 't_spt',
+        subject: `SURAT PERINTAH TUGAS - ${mail.sender}`,
+        content: content,
+        referenceInvitation: mail.referenceNumber
+      } 
+    });
   };
 
   const handlePrintDisposition = (mail: Mail) => {
@@ -110,17 +127,12 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     if (mail.fileUrl?.startsWith('data:')) {
       const link = document.createElement('a');
       link.href = mail.fileUrl;
-      
-      // Deteksi ekstensi berdasarkan MIME type di string Base64
       let extension = 'bin';
       if (mail.fileUrl.startsWith('data:image/jpeg')) extension = 'jpg';
       else if (mail.fileUrl.startsWith('data:image/png')) extension = 'png';
       else if (mail.fileUrl.startsWith('data:application/pdf')) extension = 'pdf';
-
-      // Bersihkan nomor surat untuk nama file yang valid
       const safeRef = mail.referenceNumber.replace(/[^a-zA-Z0-9]/g, '-');
       link.download = `Dokumen-${safeRef}.${extension}`;
-      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -158,7 +170,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
 
   return (
     <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
-      {/* Header Area */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
@@ -175,7 +186,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
         </button>
       </div>
 
-      {/* Floating Filter Bar */}
       <div className="bg-white p-2 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col xl:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
@@ -202,7 +212,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
             </select>
             <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
           </div>
-
           <div className="relative group">
             <select
               value={filterCategory}
@@ -221,7 +230,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
-        {/* List Column (Scrollable) */}
         <div className="lg:col-span-7 overflow-y-auto pr-2 space-y-3">
           {filteredMails.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -247,12 +255,10 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                       {mail.category}
                     </span>
                   </div>
-                  
                   <div className="flex flex-col items-end">
                     <span className="text-xs font-semibold text-slate-400 font-mono">
                       {format(new Date(mail.date), 'dd MMM yyyy', { locale: id })}
                     </span>
-                    {/* Realtime timestamp display */}
                     {mail.createdAt && (
                       <span className="text-[10px] text-indigo-400 font-medium flex items-center mt-1">
                         <Clock size={10} className="mr-1" />
@@ -263,7 +269,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                 </div>
                 <h3 className="font-bold text-slate-800 text-base mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{mail.subject}</h3>
                 <p className="text-sm text-slate-500 mb-3 line-clamp-2 leading-relaxed">{mail.description}</p>
-                
                 <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                   <div className="flex items-center text-xs font-medium text-slate-500">
                     <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center mr-2 text-slate-400">
@@ -275,19 +280,14 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                      mail.fileUrl.startsWith('data:image') ? <ImageIcon size={14} className="text-emerald-500" /> : <FileText size={14} className="text-rose-500" />
                   )}
                 </div>
-                {selectedMail?.id === mail.id && (
-                  <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-12 bg-indigo-500 rounded-r-lg lg:block hidden"></div>
-                )}
               </div>
             ))
           )}
         </div>
 
-        {/* Detail Column (Sticky/Fixed) */}
         <div className="lg:col-span-5 h-full hidden lg:block">
           {selectedMail ? (
             <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full flex flex-col overflow-hidden animate-fade-in">
-              {/* Detail Header */}
               <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white relative overflow-hidden shrink-0">
                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                  <div className="flex justify-between items-start relative z-10">
@@ -296,13 +296,12 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                       <h3 className="font-bold text-lg leading-tight">{selectedMail.subject}</h3>
                     </div>
                     <div className="flex gap-2">
-                       <button onClick={() => handlePrintDisposition(selectedMail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors"><Printer size={16}/></button>
-                       <button onClick={() => handleDelete(selectedMail.id)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors"><Trash2 size={16}/></button>
+                       <button onClick={() => handlePrintDisposition(selectedMail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Disposisi"><Printer size={16}/></button>
+                       <button onClick={() => handleDelete(selectedMail.id)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors" title="Hapus Arsip"><Trash2 size={16}/></button>
                     </div>
                  </div>
               </div>
               
-              {/* Detail Content (Scrollable) */}
               <div className="p-6 overflow-y-auto flex-1 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -313,7 +312,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Tanggal Surat</label>
                      <p className="text-sm font-semibold text-slate-700">{format(new Date(selectedMail.date), 'dd MMM yyyy', { locale: id })}</p>
                   </div>
-                  {/* Realtime Info Box */}
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 col-span-2 flex items-center justify-between">
                      <div>
                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Waktu Input (Realtime)</label>
@@ -343,8 +341,19 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="space-y-3 pt-2">
+                  {type === 'Masuk' && selectedMail.category === 'Undangan' && (
+                    <button 
+                       onClick={() => handleCreateSPT(selectedMail)}
+                       disabled={replyLoading}
+                       className="w-full py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                    >
+                       {replyLoading ? <Loader2 size={16} className="animate-spin" /> : <FileBadge size={18} />}
+                       {replyLoading ? 'Menyusun Naskah...' : 'Buat SPT dari Undangan'}
+                       {!replyLoading && <Sparkles size={14} className="ml-1" />}
+                    </button>
+                  )}
+
                   {type === 'Masuk' && (
                     <div className="p-1">
                       <button 
@@ -352,7 +361,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                          disabled={replyLoading}
                          className="w-full py-2.5 bg-gradient-to-r from-violet-100 to-indigo-100 text-indigo-700 rounded-xl hover:from-violet-200 hover:to-indigo-200 transition-colors text-sm font-bold flex items-center justify-center gap-2"
                       >
-                         {replyLoading ? 'Memproses...' : 'Buat Balasan Otomatis'}
+                         {replyLoading ? 'Memproses...' : 'Saran Balasan Otomatis'}
                          <Sparkles size={16} className={replyLoading ? "animate-spin" : ""} />
                       </button>
                       {aiReply && (
@@ -370,7 +379,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                        className="w-full py-3 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2 group"
                      >
                        <Download size={16} className="text-slate-400 group-hover:text-slate-600" />
-                       Unduh File Asli
+                       Unduh File Lampiran
                      </button>
                   )}
                 </div>
@@ -393,5 +402,11 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     </div>
   );
 };
+
+const Loader2 = ({ className, size = 16 }: { className?: string, size?: number }) => (
+  <svg className={`animate-spin ${className}`} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
 
 export default MailList;

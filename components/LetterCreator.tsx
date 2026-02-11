@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode } from 'lucide-react';
-import { subscribeToConfig, subscribeToTemplates, LetterTemplate } from '../services/storage';
-import { SchoolConfig } from '../types';
+import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check } from 'lucide-react';
+import { subscribeToConfig, subscribeToTemplates, LetterTemplate, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
+import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { QRCodeSVG } from 'qrcode.react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const SmartContentRenderer = ({ text }: { text: string }) => {
   const lines = text.split('\n');
@@ -61,7 +62,6 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     const columns = line.split(':');
     const hasManyColumns = columns.length >= 3;
     const isNumberedData = /^\d+\./.test(trimmed);
-    const isLetteredData = /^[a-zA-Z]\./.test(trimmed);
     const isContinuedData = line.startsWith(':');
     const shouldBeInTable = hasManyColumns || (isInTableMode && (isNumberedData || isContinuedData));
 
@@ -86,13 +86,11 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     flushTable();
 
-    // Deteksi Judul Tengah / Kapital
     if (trimmed.startsWith('PASAL') || trimmed === 'MEMUTUSKAN' || (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && trimmed.length > 3 && !trimmed.includes(':'))) {
       renderedBlocks.push(<div key={`title-${index}`} className="mt-5 mb-2 font-bold text-center text-black font-serif uppercase tracking-wider underline underline-offset-4 decoration-1">{trimmed}</div>);
     } 
-    // Deteksi Format Kolom Info (Label : Isi)
     else if (columns.length === 2 && !trimmed.endsWith(':')) {
-      const isKonsideran = ['menimbang', 'mengingat', 'memperhatikan', 'menetapkan', 'hari/tanggal', 'waktu', 'tempat', 'keperluan'].some(k => columns[0].trim().toLowerCase().includes(k));
+      const isKonsideran = ['menimbang', 'mengingat', 'memperhatikan', 'menetapkan', 'hari/tanggal', 'waktu', 'tempat', 'keperluan', 'dasar'].some(k => columns[0].trim().toLowerCase().includes(k));
       renderedBlocks.push(
         <div key={`info-${index}`} className={`flex mb-1 break-inside-avoid text-black font-serif ${isKonsideran ? 'mt-3' : 'pl-8'}`}>
           <span className={`${isKonsideran ? 'w-[120px] font-bold' : 'w-[28%]'} shrink-0 align-top`}>{columns[0].trim()}</span>
@@ -101,12 +99,10 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
         </div>
       );
     } 
-    // Deteksi Daftar (List 1. 2. a. b. -)
     else if (/^(\d+\.|[a-zA-Z]\.|-)\s/.test(trimmed)) {
        const match = trimmed.match(/^(\d+\.|[a-zA-Z]\.|-)\s+(.*)/);
        if (match) renderedBlocks.push(<div key={`list-${index}`} className="flex mb-1 pl-8 font-serif text-black leading-relaxed"><span className="w-8 shrink-0">{match[1]}</span><span className="flex-1 text-justify">{match[2]}</span></div>);
     }
-    // Paragraf Biasa
     else {
       const lower = trimmed.toLowerCase();
       const isIntro = lower.startsWith('dengan hormat') || lower.startsWith('yang bertanda tangan') || lower.startsWith('menindaklanjuti');
@@ -120,9 +116,15 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 };
 
 const LetterCreator: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<LetterTemplate | null>(null);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [showStaffPicker, setShowStaffPicker] = useState(false);
+  const [staffSearch, setStaffSearch] = useState('');
+  const [saveLoading, setSaveLoading] = useState(false);
   const isInitialized = useRef({ config: false, templates: false });
   const [useQRCode, setUseQRCode] = useState(true);
 
@@ -151,9 +153,24 @@ const LetterCreator: React.FC = () => {
       }
     });
 
+    const unsubscribeStaff = subscribeToStaff(setStaff);
+
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       setTemplates(data);
-      if (data.length > 0 && !isInitialized.current.templates) {
+      
+      // Jika datang dari SPT Generator (state navigation)
+      if (location.state && location.state.templateId) {
+        const targetTemplate = data.find(t => t.id === location.state.templateId);
+        if (targetTemplate) {
+          setSelectedTemplate(targetTemplate);
+          setFormData(prev => ({
+            ...prev,
+            subject: location.state.subject || targetTemplate.subject,
+            content: location.state.content || targetTemplate.content,
+            signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
+          }));
+        }
+      } else if (data.length > 0 && !isInitialized.current.templates) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
         setFormData(prev => ({ 
@@ -165,8 +182,8 @@ const LetterCreator: React.FC = () => {
       }
     });
 
-    return () => { unsubscribeConfig(); unsubscribeTemplates(); };
-  }, []);
+    return () => { unsubscribeConfig(); unsubscribeTemplates(); unsubscribeStaff(); };
+  }, [location.state]);
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const template = templates.find(t => t.id === e.target.value);
@@ -185,14 +202,66 @@ const LetterCreator: React.FC = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleSelectStaff = (member: StaffMember) => {
+    setFormData(prev => {
+      let newContent = prev.content;
+      // Ganti placeholder jika ada
+      if (newContent.includes('[NAMA_PETUGAS]')) {
+        newContent = newContent.replace('[NAMA_PETUGAS]', member.name);
+        newContent = newContent.replace('[NIP_PETUGAS]', member.nip ? `NIP. ${member.nip}` : '-');
+        newContent = newContent.replace('[JABATAN_PETUGAS]', member.rank || '-');
+      } else {
+        // Jika tidak ada placeholder, tambahkan di posisi kursor atau baris baru
+        newContent += `\nNama : ${member.name}\nNIP : ${member.nip || '-'}\nJabatan : ${member.rank || '-'}\n`;
+      }
+      return { ...prev, content: newContent };
+    });
+    setShowStaffPicker(false);
+  };
+
+  const handleSaveToOutbox = async () => {
+    if (!confirm('Simpan naskah ini ke database Surat Keluar?')) return;
+    
+    setSaveLoading(true);
+    try {
+      const newMail: Mail = {
+        id: Date.now().toString(),
+        type: MailType.OUTGOING,
+        referenceNumber: formData.refNumber,
+        date: formData.date,
+        receivedDate: formData.date,
+        createdAt: new Date().toISOString(),
+        sender: formData.recipient || 'Internal / Dinas',
+        subject: formData.subject,
+        description: formData.content.split('\n').slice(0, 3).join(' '), // Ambil sedikit deskripsi
+        category: selectedTemplate?.category || 'Lainnya',
+        urgency: UrgencyLevel.LOW,
+        status: MailStatus.ARCHIVED,
+        aiSummary: `Dokumen digital dibuat dari template: ${selectedTemplate?.name}`
+      };
+      
+      await saveMail(newMail);
+      alert('Surat berhasil disimpan ke arsip Surat Keluar.');
+      navigate('/outbox');
+    } catch (e) {
+      alert('Gagal menyimpan ke arsip.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   if (!config || templates.length === 0) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
 
   const isMOU = selectedTemplate?.category === 'Kerjasama';
   const isCenteredLayout = selectedTemplate?.layout === 'centered';
   const contentParts = formData.content.split('[PAGE_BREAK]');
 
-  // Data QR Code
   const qrValue = `DOKUMEN SAH SDN ${config.name.toUpperCase()}\nNomor: ${formData.refNumber}\nPejabat: ${formData.signerName}\nTanggal: ${formData.date}`;
+
+  const filteredStaff = staff.filter(s => 
+    s.name.toLowerCase().includes(staffSearch.toLowerCase()) || 
+    s.nip.includes(staffSearch)
+  );
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in text-slate-900">
@@ -203,12 +272,22 @@ const LetterCreator: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-black text-slate-800">Editor Surat Digital</h2>
-            <p className="text-slate-500 text-xs font-medium">Drafting naskah dinas dengan pratinjau F4.</p>
+            <p className="text-slate-500 text-xs font-medium">Buat naskah dinas resmi dan arsipkan otomatis.</p>
           </div>
         </div>
-        <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm flex items-center gap-2">
-          <Printer size={18} /> Cetak / PDF
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleSaveToOutbox} 
+            disabled={saveLoading}
+            className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/30 font-bold text-sm flex items-center gap-2"
+          >
+            {saveLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            Simpan Arsip
+          </button>
+          <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm flex items-center gap-2">
+            <Printer size={18} /> Cetak / PDF
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
@@ -256,21 +335,68 @@ const LetterCreator: React.FC = () => {
                   <input name="signerName" value={formData.signerName} onChange={handleInputChange} placeholder="Nama Pejabat" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
                   <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} placeholder="NIP" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
                 </div>
-                {isMOU && <input name="signerNamePihak2" value={formData.signerNamePihak2} onChange={handleInputChange} placeholder="Nama Pihak Kedua" className="w-full px-3 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-xs font-bold" />}
              </div>
           </div>
           
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 flex flex-col min-h-[350px] shadow-sm">
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 flex flex-col min-h-[350px] shadow-sm relative">
              <div className="flex justify-between items-center mb-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Isi Naskah</label>
-                <button onClick={() => setFormData(prev => ({...prev, content: prev.content + '\n[PAGE_BREAK]\n'}))} className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg border border-indigo-100 flex items-center gap-1.5 hover:bg-indigo-100 transition-all">
-                  <Layout size={12} /> Tambah Halaman
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-all">
+                    <Users size={12} /> Pilih Petugas
+                  </button>
+                  <button onClick={() => setFormData(prev => ({...prev, content: prev.content + '\n[PAGE_BREAK]\n'}))} className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg border border-indigo-100 flex items-center gap-1.5 hover:bg-indigo-100 transition-all">
+                    <Layout size={12} /> + Halaman
+                  </button>
+                </div>
              </div>
              <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] leading-relaxed resize-none focus:ring-2 focus:ring-indigo-500 transition-all" />
              <div className="mt-3 text-[9px] text-slate-400 font-medium italic flex items-center gap-1">
-               <Info size={10} /> Gunakan tanda titik dua (:) untuk format tabel otomatis.
+               <Info size={10} /> Tips: Isi personil otomatis dengan klik "Pilih Petugas".
              </div>
+
+             {/* Staff Picker Popup inside Editor Area */}
+             {showStaffPicker && (
+               <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-5 flex flex-col animate-fade-in rounded-3xl">
+                 <div className="flex justify-between items-center mb-4">
+                   <h4 className="text-sm font-black text-slate-800 flex items-center gap-2"><Users size={16} className="text-indigo-600"/> Database Personil</h4>
+                   <button onClick={() => setShowStaffPicker(false)} className="text-slate-400 hover:text-rose-500 transition-colors">Batal</button>
+                 </div>
+                 <div className="relative mb-4">
+                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                   <input 
+                     autoFocus
+                     type="text" 
+                     placeholder="Cari guru/staf..." 
+                     value={staffSearch}
+                     onChange={(e) => setStaffSearch(e.target.value)}
+                     className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                   />
+                 </div>
+                 <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                   {filteredStaff.map(member => (
+                     <button 
+                       key={member.id} 
+                       onClick={() => handleSelectStaff(member)}
+                       className="w-full p-3 bg-white border border-slate-100 rounded-xl text-left hover:border-indigo-300 hover:shadow-sm transition-all group"
+                     >
+                       <div className="flex justify-between items-start">
+                         <div>
+                            <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-600">{member.name}</p>
+                            <p className="text-[10px] text-slate-400">{member.rank} • NIP: {member.nip || '-'}</p>
+                         </div>
+                         <div className="bg-indigo-50 text-indigo-600 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                           <Check size={12} />
+                         </div>
+                       </div>
+                     </button>
+                   ))}
+                   {filteredStaff.length === 0 && (
+                     <p className="text-center py-10 text-xs text-slate-400 font-medium">Data personil tidak ditemukan.</p>
+                   )}
+                 </div>
+               </div>
+             )}
           </div>
         </div>
 

@@ -64,6 +64,37 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
   }
 };
 
+export const generateSPTContent = async (invitationMail: any): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  try {
+    const prompt = `Buatkan isi naskah untuk Surat Perintah Tugas (SPT) sekolah berdasarkan surat undangan masuk berikut:
+    
+    NOMOR SURAT UNDANGAN: ${invitationMail.referenceNumber}
+    PENGIRIM: ${invitationMail.sender}
+    PERIHAL: ${invitationMail.subject}
+    ISI RINGKAS: ${invitationMail.description}
+    
+    Ketentuan output:
+    1. Format naskah harus formal.
+    2. Bagian 'Dasar' harus merujuk pada surat undangan di atas.
+    3. Bagian 'Untuk' harus menjelaskan detail acara (waktu/tempat) jika ada di isi ringkas.
+    4. Gunakan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], [JABATAN_PETUGAS] untuk personil yang ditugaskan.
+    5. Pisahkan lampiran daftar nama dengan [PAGE_BREAK] jika diperlukan.
+    6. Jangan sertakan Kop Surat atau tanda tangan, hanya isi naskahnya saja mulai dari 'Dasar' sampai kalimat penutup.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt
+    });
+
+    return response.text || "Terjadi kesalahan dalam menyusun naskah.";
+  } catch (error) {
+    console.error("Gemini SPT Error:", error);
+    return "Gagal menyusun naskah SPT otomatis.";
+  }
+};
+
 export const suggestReply = async (incomingMailText: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 

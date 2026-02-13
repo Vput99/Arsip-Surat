@@ -1,5 +1,5 @@
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -11,16 +11,20 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID || "1:182905923814:web:c7f868614167a6ed5ff327"
 };
 
-// Initialize Firebase
-// Check if config is valid to avoid crash loop
+// Initialize Firebase only once
 let app;
-try {
-  app = initializeApp(firebaseConfig);
-} catch (e) {
-  console.error("Firebase init failed (Cek .env):", e);
+if (!getApps().length) {
+  try {
+    app = initializeApp(firebaseConfig);
+    console.log("Firebase App Initialized Successfully");
+  } catch (e) {
+    console.error("Firebase Initialization Error:", e);
+  }
+} else {
+  app = getApps()[0];
 }
 
-export const db = app ? getFirestore(app) : getFirestore(); // Fallback if init fails
+export const db = getFirestore(app!);
 
 export const COLLECTIONS = {
   CONFIG: 'school_config',

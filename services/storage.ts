@@ -9,7 +9,9 @@ import {
   query, 
   orderBy, 
   setDoc, 
-  deleteDoc 
+  deleteDoc,
+  enableNetwork,
+  disableNetwork
 } from "firebase/firestore";
 import { Mail, SchoolConfig } from '../types';
 import { LETTER_TEMPLATES } from '../constants';
@@ -53,74 +55,70 @@ let isFirebaseConnected = false;
 const connectionListeners: ((status: { turso: boolean, firebase: boolean }) => void)[] = [];
 
 const updateStatus = (turso?: boolean, firebase?: boolean) => {
-  if (turso !== undefined) isTursoConnected = turso;
-  if (firebase !== undefined) isFirebaseConnected = firebase;
-  connectionListeners.forEach(cb => cb({ turso: isTursoConnected, firebase: isFirebaseConnected }));
+  let changed = false;
+  if (turso !== undefined && isTursoConnected !== turso) {
+    isTursoConnected = turso;
+    changed = true;
+  }
+  if (firebase !== undefined && isFirebaseConnected !== firebase) {
+    isFirebaseConnected = firebase;
+    changed = true;
+  }
+  
+  if (changed) {
+    connectionListeners.forEach(cb => cb({ turso: isTursoConnected, firebase: isFirebaseConnected }));
+  }
 };
 
 // Fungsi untuk memaksa cek koneksi (Ping)
 export const forceCheckConnections = async () => {
-  // 1. Cek Turso
+  // 1. Cek Turso (SQL Archive)
   if (turso) {
     try {
-      console.log("Pinging Turso...");
-      // Coba query ringan
       await turso.execute("SELECT 1");
-      // Jika berhasil, pastikan tabel ada
       await initTables();
-      console.log("Ping Turso Success");
       updateStatus(true, undefined);
-      fetchMails(); // Refresh data
     } catch (e) {
-      console.error("Turso Check Failed:", e);
+      console.error("Turso Ping Failed:", e);
       updateStatus(false, undefined);
     }
-  } else {
-    updateStatus(false, undefined);
   }
 
-  // 2. Cek Firebase
+  // 2. Cek Firebase (Real-time Sync)
   try {
+    await enableNetwork(db); // Pastikan network aktif
     const docRef = doc(db, COLLECTIONS.CONFIG, "main_settings");
-    await getDoc(docRef); // Ping read
+    const snap = await getDoc(docRef);
+    // Jika bisa melakukan getDoc, berarti terkoneksi
     updateStatus(undefined, true);
+    return { turso: isTursoConnected, firebase: true };
   } catch (e) {
-    console.error("Firebase Check Failed:", e);
+    console.error("Firebase Ping Failed:", e);
     updateStatus(undefined, false);
+    return { turso: isTursoConnected, firebase: false };
   }
-  
-  return { turso: isTursoConnected, firebase: isFirebaseConnected };
 };
 
 export const subscribeToConnectionStatus = (callback: (status: { turso: boolean, firebase: boolean }) => void) => {
   connectionListeners.push(callback);
   callback({ turso: isTursoConnected, firebase: isFirebaseConnected });
-  
-  // Jika belum terkoneksi, coba konek otomatis saat ada yang subscribe
-  if (!isTursoConnected || !isFirebaseConnected) {
-    forceCheckConnections();
-  }
-
   return () => {
     const index = connectionListeners.indexOf(callback);
     if (index > -1) connectionListeners.splice(index, 1);
   };
 };
 
-// --- TURSO: MAILS (SQL ARCHIVE) ---
+// --- TURSO: MAILS ---
 let mailListeners: ((mails: Mail[]) => void)[] = [];
 
 const fetchMails = async () => {
-  if (!turso) {
-    return;
-  }
+  if (!turso) return;
   try {
     const rs = await turso.execute("SELECT * FROM mails ORDER BY createdAt DESC");
     const mails = rs.rows.map(row => ({ ...row } as unknown as Mail));
     mailListeners.forEach(l => l(mails));
     updateStatus(true);
   } catch (e) { 
-    console.error("Turso Fetch Error:", e);
     updateStatus(false); 
   }
 };
@@ -128,7 +126,6 @@ const fetchMails = async () => {
 export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   mailListeners.push(onData);
   fetchMails();
-  // Polling setiap 10 detik untuk update data SQL
   const interval = setInterval(fetchMails, 10000); 
   return () => { 
     clearInterval(interval); 
@@ -137,21 +134,13 @@ export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
 };
 
 export const saveMail = async (mail: Mail): Promise<void> => {
-  if (turso) {
-    try {
-      await turso.execute({
-        sql: `INSERT OR REPLACE INTO mails (id, type, referenceNumber, date, receivedDate, createdAt, sender, subject, description, fileUrl, category, urgency, status, aiSummary) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [mail.id, mail.type, mail.referenceNumber, mail.date, mail.receivedDate, mail.createdAt, mail.sender, mail.subject, mail.description, mail.fileUrl || null, mail.category, mail.urgency, mail.status, mail.aiSummary || null]
-      });
-      fetchMails();
-    } catch (e) {
-      console.error("Turso Save Error:", e);
-      throw new Error("Gagal menyimpan ke database arsip.");
-    }
-  } else {
-    throw new Error("Koneksi database arsip (Turso) tidak tersedia.");
-  }
+  if (!turso) throw new Error("Database SQL Offline");
+  await turso.execute({
+    sql: `INSERT OR REPLACE INTO mails (id, type, referenceNumber, date, receivedDate, createdAt, sender, subject, description, fileUrl, category, urgency, status, aiSummary) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [mail.id, mail.type, mail.referenceNumber, mail.date, mail.receivedDate, mail.createdAt, mail.sender, mail.subject, mail.description, mail.fileUrl || null, mail.category, mail.urgency, mail.status, mail.aiSummary || null]
+  });
+  fetchMails();
 };
 
 export const deleteMail = async (id: string): Promise<void> => {
@@ -161,7 +150,7 @@ export const deleteMail = async (id: string): Promise<void> => {
   }
 };
 
-// --- FIREBASE: STAFF & CONFIG (REAL-TIME SYNC) ---
+// --- FIREBASE: STAFF & CONFIG ---
 
 export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
   const q = query(collection(db, "staff"), orderBy("orderIndex", "asc"));
@@ -170,9 +159,8 @@ export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
     onData(staff);
     updateStatus(undefined, true);
   }, (err) => {
-    console.error("Firebase Staff Error:", err);
-    onData([]); 
     updateStatus(undefined, false);
+    onData([]); 
   });
 };
 
@@ -186,19 +174,17 @@ export const deleteStaff = async (id: string): Promise<void> => {
 
 export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
   const configRef = doc(db, COLLECTIONS.CONFIG, "main_settings");
-  
   return onSnapshot(configRef, (docSnap) => {
     if (docSnap.exists()) {
       onData(docSnap.data() as SchoolConfig);
     } else {
       onData(DEFAULT_CONFIG);
-      saveSchoolConfig(DEFAULT_CONFIG).catch(e => console.warn("Auto-save config failed:", e));
+      saveSchoolConfig(DEFAULT_CONFIG).catch(() => {});
     }
     updateStatus(undefined, true);
   }, (err) => {
-    console.error("Firebase Config Error:", err);
-    onData(DEFAULT_CONFIG);
     updateStatus(undefined, false);
+    onData(DEFAULT_CONFIG);
   });
 };
 
@@ -206,10 +192,8 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
   await setDoc(doc(db, COLLECTIONS.CONFIG, "main_settings"), config);
 };
 
-// Sinkronisasi Template secara Real-time
 export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => void) => {
   const q = query(collection(db, "letter_templates"), orderBy("createdAt", "asc"));
-  
   return onSnapshot(q, (snapshot) => {
     let templates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LetterTemplate));
     if (templates.length === 0) {
@@ -218,10 +202,9 @@ export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => vo
       defaults.forEach(t => saveTemplate(t).catch(() => {}));
     }
     onData(templates);
+    updateStatus(undefined, true);
   }, (err) => {
-    console.error("Firebase Templates Error:", err);
-    const defaults = LETTER_TEMPLATES.map(t => ({...t, createdAt: new Date().toISOString()})) as LetterTemplate[];
-    onData(defaults);
+    updateStatus(undefined, false);
   });
 };
 
@@ -233,5 +216,5 @@ export const deleteTemplate = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, "letter_templates", id));
 };
 
-// Initial check on load
+// Initial check
 forceCheckConnections();

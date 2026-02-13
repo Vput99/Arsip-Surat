@@ -1,29 +1,32 @@
 
 import { createClient } from "@libsql/client/web";
 
-const rawUrl = process.env.TURSO_DATABASE_URL || "libsql://arsip-surat-vput99.aws-ap-northeast-1.turso.io";
-const authToken = (process.env.TURSO_AUTH_TOKEN || "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1M2JmYzBmYy01Yzc1LTQ0MTktYmIzNi0zM2RkNTMxYzFmZDQiLCJpYXQiOjE3NzA5NTMyNDIsInJpZCI6ImZjMzE2ZDVjLTlhYjAtNDY2ZC1hMGUyLTJjYmQ3MzZiYzIxMyJ9.z-1IctIEns0dc17jWTwJWgOf0LmfB3qciT_fc_EXsSsRTP8QaRr7JDz5ilf0d6p8oIng1DM8OkYLzluG_cx0Dw").trim();
+// Credentials Hardcoded dari input user
+const RAW_URL = "libsql://arsip-surat-vput99.aws-ap-northeast-1.turso.io";
+const AUTH_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiI1M2JmYzBmYy01Yzc1LTQ0MTktYmIzNi0zM2RkNTMxYzFmZDQiLCJpYXQiOjE3NzA5NTMyNDIsInJpZCI6ImZjMzE2ZDVjLTlhYjAtNDY2ZC1hMGUyLTJjYmQ3MzZiYzIxMyJ9.z-1IctIEns0dc17jWTwJWgOf0LmfB3qciT_fc_EXsSsRTP8QaRr7JDz5ilf0d6p8oIng1DM8OkYLzluG_cx0Dw";
 
-const url = rawUrl && rawUrl.startsWith("libsql://") 
-  ? rawUrl.replace("libsql://", "https://") 
-  : rawUrl;
+// Web client harus menggunakan https://, bukan libsql://
+const dbUrl = RAW_URL.startsWith("libsql://") 
+  ? RAW_URL.replace("libsql://", "https://") 
+  : RAW_URL;
 
-export const isTursoConfigured = () => {
-  // Validasi URL dan Token minimal
-  return !!url && url.startsWith("https://") && !!authToken && authToken.length > 20;
-};
+console.log("Initializing Turso Client with URL:", dbUrl);
 
-export const turso = isTursoConfigured() 
-  ? createClient({ url: url!, authToken })
-  : null;
+export const turso = createClient({
+  url: dbUrl,
+  authToken: AUTH_TOKEN,
+});
+
+export const isTursoConfigured = () => true;
 
 export const initTables = async () => {
-  if (!turso) {
-    console.warn("Turso DB belum dikonfigurasi atau URL salah. Mode arsip offline (read-only).");
-    return;
-  }
-
+  console.log("Turso: Memulai inisialisasi tabel...");
   try {
+    // 1. Cek koneksi dasar
+    await turso.execute("SELECT 1");
+    console.log("Turso: Ping berhasil.");
+
+    // 2. Buat tabel jika belum ada
     await turso.execute(`
       CREATE TABLE IF NOT EXISTS mails (
         id TEXT PRIMARY KEY,
@@ -42,8 +45,14 @@ export const initTables = async () => {
         aiSummary TEXT
       )
     `);
-    console.log("Turso: Koneksi database berhasil.");
+    console.log("Turso: Tabel 'mails' siap.");
   } catch (e: any) {
-    console.warn("Turso Init Error (Cek Token/URL):", e.message);
+    console.error("Turso Init Error:", e);
+    // Log pesan error yang lebih jelas untuk debugging
+    if (e.message.includes("401")) {
+      console.error("Turso Error: Unauthorized. Cek Token.");
+    } else if (e.message.includes("404")) {
+      console.error("Turso Error: Database tidak ditemukan. Cek URL.");
+    }
   }
 };

@@ -22,7 +22,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleRefreshConnection = async () => {
     setIsChecking(true);
-    await forceCheckConnections();
+    const result = await forceCheckConnections();
+    
+    // Feedback visual sederhana
+    if (result.turso) {
+      // Koneksi sukses - opsional: bisa tambah toast notification
+      console.log("Turso Connected");
+    } else {
+      alert("Gagal terhubung ke Database Arsip (Turso). Periksa koneksi internet atau token database Anda.");
+    }
+    
     setTimeout(() => setIsChecking(false), 1000);
   };
 

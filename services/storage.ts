@@ -61,12 +61,14 @@ const updateStatus = (turso?: boolean, firebase?: boolean) => {
 // Fungsi untuk memaksa cek koneksi (Ping)
 export const forceCheckConnections = async () => {
   // 1. Cek Turso
-  if (isTursoConfigured() && turso) {
+  if (turso) {
     try {
+      console.log("Pinging Turso...");
       // Coba query ringan
       await turso.execute("SELECT 1");
       // Jika berhasil, pastikan tabel ada
       await initTables();
+      console.log("Ping Turso Success");
       updateStatus(true, undefined);
       fetchMails(); // Refresh data
     } catch (e) {

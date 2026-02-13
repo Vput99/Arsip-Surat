@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Save, Upload, School, Loader2, Info, Building2, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, ListOrdered, FileText, Layout, Type } from 'lucide-react';
 import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember, subscribeToTemplates, saveTemplate, deleteTemplate, LetterTemplate } from '../services/storage';
@@ -10,7 +11,8 @@ type StaffCategory = 'reg' | 'pppk' | 'extra' | 'tukang';
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [config, setConfig] = useState<SchoolConfig | null>(null);
-  const [dbConnected, setDbConnected] = useState(false);
+  // Fix: updated state from boolean to object to match subscribeToConnectionStatus signature
+  const [dbStatus, setDbStatus] = useState({ turso: false, firebase: false });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -27,7 +29,8 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig(setConfig);
-    const unsubscribeDb = subscribeToConnectionStatus(setDbConnected);
+    // Fix: passing setDbStatus directly as its signature matches (status: { turso: boolean; firebase: boolean; }) => void
+    const unsubscribeDb = subscribeToConnectionStatus(setDbStatus);
     const unsubscribeStaff = subscribeToStaff((data) => {
       if (!isEditingRef.current) setAllStaff(data);
     });
@@ -162,9 +165,10 @@ const Settings: React.FC = () => {
             <p className="text-slate-400 text-sm max-w-md">Kelola identitas sekolah, naskah template, dan database personil.</p>
           </div>
           <div className="absolute top-6 right-6 z-10">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${dbConnected ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+            {/* Fix: utilizing dbStatus.turso for the archive database status display */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${dbStatus.turso ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
               <Database size={12} />
-              {dbConnected ? 'Online' : 'Offline'}
+              {dbStatus.turso ? 'Online' : 'Offline'}
             </div>
           </div>
         </div>

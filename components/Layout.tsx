@@ -1,8 +1,8 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, AlertCircle, RefreshCw, CalendarCheck } from 'lucide-react';
+import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, AlertCircle, RefreshCw, CalendarCheck, Cloud, Server } from 'lucide-react';
 import { subscribeToConnectionStatus } from '../services/storage';
-import { format } from 'date-fns';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,26 +10,13 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [dbConnected, setDbConnected] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSync, setLastSync] = useState<Date>(new Date());
+  const [status, setStatus] = useState({ turso: false, firebase: false });
   
   const location = useLocation();
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const isActive = (path: string) => location.pathname === path;
-
   useEffect(() => {
-    const unsubscribeDb = subscribeToConnectionStatus((isConnected) => {
-      setDbConnected(isConnected);
-      if (isConnected) {
-        setIsSyncing(true);
-        setLastSync(new Date());
-        setTimeout(() => setIsSyncing(false), 2000);
-      }
-    });
-
-    return () => unsubscribeDb();
+    const unsubscribe = subscribeToConnectionStatus(setStatus);
+    return () => unsubscribe();
   }, []);
 
   const navItems = [
@@ -47,7 +34,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)}/>
       )}
 
-      {/* Sidebar Navigation */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
         <div className="flex items-center h-24 px-8 border-b border-white/5 bg-gradient-to-b from-slate-800 to-slate-900">
           <div className="bg-indigo-600 p-2 rounded-xl mr-3 shadow-lg shadow-indigo-500/20">
@@ -55,14 +41,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">ArsipSurat</h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SD Pintar Cloud</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Hybrid Cloud SD</p>
           </div>
         </div>
 
         <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
           <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Menu Utama</p>
           {navItems.map((item) => {
-            const active = isActive(item.path);
+            const active = location.pathname === item.path;
             return (
               <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)} className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40 translate-x-1' : 'text-slate-400 hover:bg-white/5 hover:text-white hover:translate-x-1'}`}>
                 <div className="flex items-center">
@@ -75,30 +61,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           })}
         </nav>
 
-        {/* Status Indicator Sidebar */}
-        <div className="p-4 mx-4 mb-8 bg-slate-800/40 rounded-2xl border border-white/5 backdrop-blur-md">
-          <div className={`flex flex-col gap-1.5 p-3 rounded-xl border transition-all duration-500 ${dbConnected ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
-            <div className="flex items-center justify-between">
+        {/* Status Indicators (Hybrid Display) */}
+        <div className="px-6 py-6 space-y-3 bg-slate-800/20 border-t border-white/5">
+           <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {dbConnected ? <Database size={14} className="text-emerald-400" /> : <AlertCircle size={14} className="text-rose-400" />}
-                <span className={`text-[10px] font-black uppercase tracking-widest ${dbConnected ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {dbConnected ? 'Status: Online' : 'Status: Offline'}
-                </span>
+                 <Server size={12} className={status.turso ? 'text-emerald-400' : 'text-rose-400'} />
+                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Archive (SQL)</span>
               </div>
-            </div>
-          </div>
+              <div className={`w-1.5 h-1.5 rounded-full ${status.turso ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-rose-400'}`}></div>
+           </div>
+           <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                 <Cloud size={12} className={status.firebase ? 'text-emerald-400' : 'text-rose-400'} />
+                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time (Sync)</span>
+              </div>
+              <div className={`w-1.5 h-1.5 rounded-full ${status.firebase ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-rose-400'}`}></div>
+           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30">
           <div className="font-black text-slate-900 text-lg flex items-center">
             <School className="mr-2 text-indigo-600" size={22} />
             ArsipSurat
           </div>
-          <button onClick={toggleSidebar} className="p-3 text-indigo-600 bg-indigo-50 rounded-2xl">
-            {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
+          <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-indigo-600 bg-indigo-50 rounded-2xl">
+            <Menu size={22} />
           </button>
         </header>
 

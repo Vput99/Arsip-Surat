@@ -33,8 +33,9 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
       });
     }
 
+    // Upgrade to gemini-3-pro-preview for complex information extraction and structured data reasoning.
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview",
       contents: { parts },
       config: {
         responseMimeType: "application/json",
@@ -88,12 +89,13 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     10. Tambahkan poin Untuk kedua: "2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah."
     11. Gunakan spasi setelah tanda titik dua ( : ).`;
 
+    // Upgrade to gemini-3-pro-preview for formal legal document generation based on complex reasoning rules.
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview",
       contents: prompt
     });
 
-    // Menghilangkan redundansi jika AI masih keras kepala
+    // Menghilangkan redundansi jika AI still provides prefixes
     let text = response.text || "";
     text = text.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '');
     return text.replace(/\*\*/g, '').trim();
@@ -107,8 +109,9 @@ export const suggestReply = async (incomingMailText: string): Promise<string> =>
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
+    // Upgrade to gemini-3-pro-preview for drafting professional and formal responses.
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview",
       contents: `Buatkan draf surat balasan resmi untuk sekolah dasar berdasarkan surat masuk berikut. Gunakan bahasa Indonesia yang sopan dan format surat dinas yang benar.
       
       Surat Masuk:

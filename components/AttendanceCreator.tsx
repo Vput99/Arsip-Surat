@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, Info, MousePointer2, ClipboardList, CheckSquare } from 'lucide-react';
+import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, Info, MousePointer2, ClipboardList, CheckSquare, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, StaffMember } from '../services/storage';
 import { SchoolConfig } from '../types';
 import { format, getDaysInMonth, isSunday, isSaturday } from 'date-fns';
@@ -20,6 +21,7 @@ const AttendanceCreator: React.FC = () => {
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
+  const [scale, setScale] = useState(0.9); // Default scale agar pas di layar laptop
   
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig(setConfig);
@@ -91,7 +93,7 @@ const AttendanceCreator: React.FC = () => {
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case 'P': return <span className="text-blue-700 font-bold text-[11pt] print:text-blue-800 leading-none">✓</span>;
+      case 'P': return <span className="text-blue-900 font-bold text-[10pt] print:text-black leading-none">✓</span>;
       case 'S': return <span className="text-amber-600 font-bold text-[9pt] leading-none">S</span>;
       case 'I': return <span className="text-cyan-600 font-bold text-[9pt] leading-none">I</span>;
       case 'A': return <span className="text-red-600 font-bold text-[10pt] print:text-red-600 leading-none">A</span>;
@@ -111,6 +113,7 @@ const AttendanceCreator: React.FC = () => {
         const statusOut = attendance[`${staffId}-${day}-out`];
         const dailyStatus = [statusIn, statusOut];
         
+        // Logika hitung: Jika salah satu sesi ada S/I/A/C/DL, dihitung 1 hari kejadian
         if (dailyStatus.includes('S')) s++;
         else if (dailyStatus.includes('I')) i++;
         else if (dailyStatus.includes('A')) a++;
@@ -118,6 +121,8 @@ const AttendanceCreator: React.FC = () => {
         else if (dailyStatus.includes('DL')) dl++;
       }
     });
+    // Kehadiran = Hari Kerja - (Total Tidak Hadir)
+    // Asumsi: Hadir (P) atau kosong dianggap hadir jika tidak ada keterangan lain
     const presence = workingDays - (s + i + a + c); 
     return { s, i, a, c, dl, presence, workingDays };
   };
@@ -173,9 +178,9 @@ const AttendanceCreator: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-20">
+    <div className="flex flex-col gap-6 animate-fade-in pb-20 h-screen overflow-hidden">
       {/* Top Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 print:hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 print:hidden shrink-0">
          <div className="flex items-center gap-4">
             <button onClick={() => setView('menu')} className="w-11 h-11 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm">
               <ChevronLeft size={22} />
@@ -198,9 +203,9 @@ const AttendanceCreator: React.FC = () => {
          </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 print:hidden px-2">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 print:hidden px-2 flex-1 min-h-0">
         {/* Settings Card */}
-        <div className="xl:col-span-1 space-y-4">
+        <div className="xl:col-span-1 space-y-4 overflow-y-auto pr-2">
           <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-6">
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -272,24 +277,38 @@ const AttendanceCreator: React.FC = () => {
           </div>
         </div>
 
-        {/* Preview Area */}
-        <div className="xl:col-span-3 space-y-4 flex flex-col min-h-0 overflow-visible">
-           <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1 shadow-sm shrink-0">
+        {/* Preview Area Container */}
+        <div className="xl:col-span-3 flex flex-col h-full bg-slate-200/50 rounded-[2.5rem] border border-slate-300 relative overflow-hidden group">
+           {/* Header Controls inside preview */}
+           <div className="absolute top-6 left-6 z-20 flex gap-2">
               {(['reg', 'pppk', 'extra', 'tukang'] as const).map(cat => (
                 <button 
                   key={cat} 
                   onClick={() => setActiveCategory(cat)} 
-                  className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${activeCategory === cat ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
                 >
                   {cat}
                 </button>
               ))}
            </div>
+           
+           {/* Zoom Controls */}
+           <div className="absolute bottom-6 right-6 z-20 flex gap-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl shadow-xl border border-slate-200">
+              <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"><ZoomOut size={16}/></button>
+              <div className="w-12 flex items-center justify-center font-black text-xs text-slate-700">{Math.round(scale * 100)}%</div>
+              <button onClick={() => setScale(s => Math.min(1.5, s + 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"><ZoomIn size={16}/></button>
+              <button onClick={() => setScale(0.9)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors border-l border-slate-200 ml-1"><Maximize size={14}/></button>
+           </div>
 
-           <div className="flex-1 overflow-x-auto overflow-y-auto p-8 bg-slate-200/50 rounded-[2.5rem] border border-slate-300 group shadow-inner print:p-0 print:bg-white print:block print:rounded-none print:border-none print:shadow-none print:overflow-visible">
-             <div className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col text-black font-serif">
+           {/* Scrollable Paper Container */}
+           <div className="flex-1 overflow-auto flex items-start justify-center p-12 print:p-0 print:block">
+             <div 
+                className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col text-black font-serif transition-transform duration-200 origin-top"
+                style={{ transform: `scale(${scale})` }}
+             >
                
                <div className="paper-padding flex flex-col items-center">
+                 {/* KOP SURAT */}
                  <div className="kop-surat border-b-[3.5pt] border-double border-black pb-3 mb-6 pt-2 grid grid-cols-[110px_1fr_110px] items-center text-black w-full">
                     <div className="flex justify-center">
                       {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[20mm] h-auto" alt="Logo Daerah"/>}
@@ -306,6 +325,7 @@ const AttendanceCreator: React.FC = () => {
                     </div>
                  </div>
 
+                 {/* JUDUL */}
                  <div className="judul-laporan text-center mb-6 text-black w-full">
                    <h2 className="text-[14pt] font-bold underline underline-offset-4 decoration-2 uppercase text-black mb-1">{view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}</h2>
                    <p className="text-[11pt] font-serif uppercase text-black font-bold tracking-[0.2em]">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
@@ -313,6 +333,7 @@ const AttendanceCreator: React.FC = () => {
 
                  <div className="w-full">
                    {view === 'recap' ? (
+                      /* TABEL REKAP */
                       <table className="recap-table w-full border-collapse text-[10pt] font-serif text-black border-black">
                         <thead>
                           <tr className="bg-slate-50/50 print:bg-transparent">
@@ -355,6 +376,7 @@ const AttendanceCreator: React.FC = () => {
                         </tbody>
                       </table>
                    ) : (
+                      /* TABEL PRESENSI UTAMA */
                       <table className="attendance-table w-full border-collapse text-[8.5pt] font-serif table-fixed text-black border-black border-[1.5pt]">
                        <thead>
                          <tr className="bg-slate-50/50 print:bg-transparent">
@@ -415,6 +437,7 @@ const AttendanceCreator: React.FC = () => {
                    )}
                  </div>
 
+                 {/* TANDA TANGAN */}
                  <div className="mt-12 flex justify-end font-serif text-[11pt] break-inside-avoid text-black w-full pr-[15mm]">
                    <div className="flex flex-col text-center w-[350px]">
                      <p className="mb-1">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
@@ -442,6 +465,7 @@ const AttendanceCreator: React.FC = () => {
            display: flex;
            flex-direction: column;
            border: 1px solid #e2e8f0;
+           transform-origin: top center;
         }
 
         .paper-padding {
@@ -458,6 +482,7 @@ const AttendanceCreator: React.FC = () => {
           body { 
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            overflow: visible !important;
           }
 
           body * { visibility: hidden; }
@@ -468,9 +493,11 @@ const AttendanceCreator: React.FC = () => {
             left: 0 !important; 
             top: 0 !important; 
             width: 330mm !important; 
+            height: 215mm !important;
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
+            transform: none !important; /* Reset zoom for print */
           }
 
           .bg-red-600 { background-color: #dc2626 !important; }

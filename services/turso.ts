@@ -1,3 +1,4 @@
+
 import { createClient } from "@libsql/client/web";
 
 const rawUrl = process.env.TURSO_DATABASE_URL || "libsql://arsip-surat-vput99.aws-ap-northeast-1.turso.io";
@@ -19,15 +20,8 @@ export const initTables = async () => {
   if (!turso) return;
 
   try {
-    // Gunakan timeout singkat untuk tes koneksi agar tidak hang
-    const testPromise = turso.execute("SELECT 1");
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
-    
-    await Promise.race([testPromise, timeoutPromise]);
-    
-    // Inisialisasi Tabel
-    await turso.batch([
-      `CREATE TABLE IF NOT EXISTS mails (
+    await turso.execute(`
+      CREATE TABLE IF NOT EXISTS mails (
         id TEXT PRIMARY KEY,
         type TEXT,
         referenceNumber TEXT,
@@ -42,43 +36,10 @@ export const initTables = async () => {
         urgency TEXT,
         status TEXT,
         aiSummary TEXT
-      )`,
-      `CREATE TABLE IF NOT EXISTS school_config (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        address TEXT,
-        email TEXT,
-        npsn TEXT,
-        headerLine1 TEXT,
-        headerLine2 TEXT,
-        logoUrl TEXT,
-        logoDaerahUrl TEXT,
-        principalName TEXT,
-        principalNip TEXT
-      )`,
-      `CREATE TABLE IF NOT EXISTS staff (
-        id TEXT PRIMARY KEY,
-        category TEXT,
-        name TEXT,
-        nip TEXT,
-        rank TEXT,
-        orderIndex INTEGER DEFAULT 9999,
-        createdAt TEXT
-      )`,
-      `CREATE TABLE IF NOT EXISTS letter_templates (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        subject TEXT,
-        category TEXT,
-        layout TEXT,
-        content TEXT,
-        createdAt TEXT
-      )`
-    ], "write");
-
-    console.log("Database Turso: Sinkronisasi Aktif.");
+      )
+    `);
+    console.log("Turso: Tabel Mails siap.");
   } catch (e: any) {
-    // Jangan lempar error ke UI, cukup log dan biarkan storage.ts menangani fallback
-    console.warn("Database Cloud tidak terjangkau (Mode Offline Aktif):", e.message);
+    console.warn("Turso Init Error:", e.message);
   }
 };

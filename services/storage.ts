@@ -1,8 +1,11 @@
 
 import { turso, initTables, isTursoConfigured } from './turso';
+import { db, COLLECTIONS } from './firebase';
+import { doc, onSnapshot, setDoc, collection, query, orderBy, deleteDoc, getDocs } from "firebase/firestore";
 import { Mail, SchoolConfig } from '../types';
-import { MOCK_INITIAL_DATA, LETTER_TEMPLATES } from '../constants';
+import { LETTER_TEMPLATES } from '../constants';
 
+// Inisialisasi Tabel Turso untuk Mails
 if (isTursoConfigured()) {
   initTables().catch(console.error);
 }
@@ -28,208 +31,140 @@ export interface LetterTemplate {
 }
 
 const DEFAULT_CONFIG: SchoolConfig = {
-  name: 'SD NEGERI TEMPUREJO 1',
-  address: 'Jl. Raya Tempurejo No. 12 Kec. Pesantren Kota Kediri',
-  email: 'admin@sdntempurejo1.sch.id',
-  npsn: '20534567',
+  name: 'SD NEGERI CONTOH',
+  address: 'Jl. Pendidikan No. 123',
+  email: 'admin@sekolah.sch.id',
+  npsn: '12345678',
   headerLine1: 'PEMERINTAH KOTA KEDIRI',
   headerLine2: 'DINAS PENDIDIKAN',
   logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg',
   logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png',
-  principalName: 'Nita Ekaningkarti Adji, S.Pd',
-  principalNip: '19860213 201409 2 002'
+  principalName: 'Nama Kepala Sekolah, S.Pd',
+  principalNip: '19800101 200501 1 001'
 };
 
-let isDatabaseConnected = false; 
-const connectionListeners: ((isConnected: boolean) => void)[] = [];
+// --- STATUS TRACKING ---
+let isTursoConnected = false;
+let isFirebaseConnected = false;
+const connectionListeners: ((status: { turso: boolean, firebase: boolean }) => void)[] = [];
 
-export const subscribeToConnectionStatus = (callback: (isConnected: boolean) => void) => {
+export const subscribeToConnectionStatus = (callback: (status: { turso: boolean, firebase: boolean }) => void) => {
   connectionListeners.push(callback);
-  callback(isDatabaseConnected);
+  callback({ turso: isTursoConnected, firebase: isFirebaseConnected });
   return () => {
     const index = connectionListeners.indexOf(callback);
     if (index > -1) connectionListeners.splice(index, 1);
   };
 };
 
-const setConnectionStatus = (status: boolean) => {
-  if (isDatabaseConnected !== status) {
-    isDatabaseConnected = status;
-    connectionListeners.forEach(cb => cb(status));
-  }
+const updateStatus = (turso?: boolean, firebase?: boolean) => {
+  if (turso !== undefined) isTursoConnected = turso;
+  if (firebase !== undefined) isFirebaseConnected = firebase;
+  connectionListeners.forEach(cb => cb({ turso: isTursoConnected, firebase: isFirebaseConnected }));
 };
 
-// --- SUBSCRIPTIONS ---
-let templateListeners: ((templates: LetterTemplate[]) => void)[] = [];
+// --- TURSO: MAILS (SQL ARCHIVE) ---
 let mailListeners: ((mails: Mail[]) => void)[] = [];
-let configListeners: ((config: SchoolConfig) => void)[] = [];
-let staffListeners: ((staff: StaffMember[]) => void)[] = [];
-
-// Fetchers
-const fetchTemplates = async () => {
-  if (!turso) return;
-  try {
-    const rs = await turso.execute("SELECT * FROM letter_templates ORDER BY createdAt ASC");
-    let templates = rs.rows.map(row => ({ ...row } as unknown as LetterTemplate));
-    if (templates.length === 0) {
-      for (const t of LETTER_TEMPLATES) {
-        await saveTemplate({ ...t, createdAt: new Date().toISOString() } as any);
-      }
-      return fetchTemplates();
-    }
-    templateListeners.forEach(l => l(templates));
-    setConnectionStatus(true);
-  } catch (e) { setConnectionStatus(false); }
-};
 
 const fetchMails = async () => {
   if (!turso) return;
   try {
     const rs = await turso.execute("SELECT * FROM mails ORDER BY createdAt DESC");
     const mails = rs.rows.map(row => ({ ...row } as unknown as Mail));
-    try { localStorage.setItem('OFFLINE_MAILS', JSON.stringify(mails)); } catch(e) {}
     mailListeners.forEach(l => l(mails));
-    setConnectionStatus(true);
-  } catch (e) { setConnectionStatus(false); }
-};
-
-const fetchStaff = async () => {
-  if (!turso) return;
-  try {
-    const rs = await turso.execute("SELECT * FROM staff ORDER BY orderIndex ASC, createdAt ASC");
-    const staff = rs.rows.map(row => ({ ...row } as unknown as StaffMember));
-    staffListeners.forEach(l => l(staff));
-    setConnectionStatus(true);
-  } catch (e) { setConnectionStatus(false); }
-};
-
-// Public Subscriptions
-export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => void) => {
-  templateListeners.push(onData);
-  fetchTemplates();
-  const interval = setInterval(fetchTemplates, isDatabaseConnected ? 30000 : 60000);
-  return () => { clearInterval(interval); templateListeners = templateListeners.filter(l => l !== onData); };
+    updateStatus(true);
+  } catch (e) { 
+    console.error("Turso Fetch Error:", e);
+    updateStatus(false); 
+  }
 };
 
 export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   mailListeners.push(onData);
-  const local = localStorage.getItem('OFFLINE_MAILS');
-  if (local) onData(JSON.parse(local));
   fetchMails();
-  const interval = setInterval(fetchMails, isDatabaseConnected ? 15000 : 45000);
-  return () => { clearInterval(interval); mailListeners = mailListeners.filter(l => l !== onData); };
-};
-
-export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
-  staffListeners.push(onData);
-  fetchStaff();
-  const interval = setInterval(fetchStaff, isDatabaseConnected ? 20000 : 60000);
-  return () => { clearInterval(interval); staffListeners = staffListeners.filter(l => l !== onData); };
-};
-
-export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
-  configListeners.push(onData);
-  const local = localStorage.getItem('OFFLINE_CONFIG');
-  onData(local ? JSON.parse(local) : DEFAULT_CONFIG);
-  
-  const fetchConfig = async () => {
-    if (!turso) return;
-    try {
-      const rs = await turso.execute("SELECT * FROM school_config WHERE id = 'main_settings'");
-      if (rs.rows.length > 0) {
-        const config = rs.rows[0] as unknown as SchoolConfig;
-        localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
-        configListeners.forEach(l => l(config));
-      }
-    } catch (e) {}
+  const interval = setInterval(fetchMails, 15000); 
+  return () => { 
+    clearInterval(interval); 
+    mailListeners = mailListeners.filter(l => l !== onData); 
   };
-  fetchConfig();
-  const interval = setInterval(fetchConfig, 60000);
-  return () => { clearInterval(interval); configListeners = configListeners.filter(l => l !== onData); };
 };
 
-// Savers
 export const saveMail = async (mail: Mail): Promise<void> => {
-  // 1. Local Cache
-  const current = JSON.parse(localStorage.getItem('OFFLINE_MAILS') || '[]');
-  const index = current.findIndex((m: any) => m.id === mail.id);
-  const next = index >= 0 ? current.map((m: any, i: number) => i === index ? mail : m) : [mail, ...current];
-  
-  try { localStorage.setItem('OFFLINE_MAILS', JSON.stringify(next)); } catch(e) {
-    // If quota exceeded, save metadata only in local
-    const meta = next.map((m: any) => m.id === mail.id ? { ...m, fileUrl: '[CLOUD_ONLY]' } : m);
-    try { localStorage.setItem('OFFLINE_MAILS', JSON.stringify(meta)); } catch(e2) {}
-  }
-  
-  mailListeners.forEach(l => l(next));
-
-  // 2. Cloud Save
   if (turso) {
     await turso.execute({
       sql: `INSERT OR REPLACE INTO mails (id, type, referenceNumber, date, receivedDate, createdAt, sender, subject, description, fileUrl, category, urgency, status, aiSummary) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [mail.id, mail.type, mail.referenceNumber, mail.date, mail.receivedDate, mail.createdAt, mail.sender, mail.subject, mail.description, mail.fileUrl || null, mail.category, mail.urgency, mail.status, mail.aiSummary || null]
     });
+    fetchMails();
   }
 };
 
-// Delete a mail record from local cache and cloud database
 export const deleteMail = async (id: string): Promise<void> => {
-  // 1. Local Cache
-  const current = JSON.parse(localStorage.getItem('OFFLINE_MAILS') || '[]');
-  const next = current.filter((m: any) => m.id !== id);
-  localStorage.setItem('OFFLINE_MAILS', JSON.stringify(next));
-  mailListeners.forEach(l => l(next));
-
-  // 2. Cloud Delete
   if (turso) {
-    await turso.execute({
-      sql: "DELETE FROM mails WHERE id = ?",
-      args: [id]
-    });
+    await turso.execute({ sql: "DELETE FROM mails WHERE id = ?", args: [id] });
+    fetchMails();
   }
+};
+
+// --- FIREBASE: STAFF & CONFIG (REAL-TIME SYNC) ---
+
+export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
+  const q = query(collection(db, "staff"), orderBy("orderIndex", "asc"));
+  return onSnapshot(q, (snapshot) => {
+    const staff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StaffMember));
+    onData(staff);
+    updateStatus(undefined, true);
+  }, (err) => {
+    console.error("Firebase Staff Error:", err);
+    updateStatus(undefined, false);
+  });
 };
 
 export const saveStaff = async (member: StaffMember): Promise<void> => {
-  if (turso) {
-    await turso.execute({
-      sql: `INSERT OR REPLACE INTO staff (id, category, name, nip, rank, orderIndex, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [member.id, member.category, member.name, member.nip, member.rank, member.orderIndex || 9999, member.createdAt || new Date().toISOString()]
-    });
-    fetchStaff();
-  }
+  await setDoc(doc(db, "staff", member.id), { ...member }, { merge: true });
 };
 
 export const deleteStaff = async (id: string): Promise<void> => {
-  if (turso) {
-    await turso.execute({ sql: "DELETE FROM staff WHERE id = ?", args: [id] });
-    fetchStaff();
-  }
+  await deleteDoc(doc(db, "staff", id));
 };
 
-export const saveTemplate = async (t: LetterTemplate): Promise<void> => {
-  if (turso) {
-    await turso.execute({
-      sql: `INSERT OR REPLACE INTO letter_templates (id, name, subject, category, layout, content, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [t.id, t.name, t.subject, t.category, t.layout, t.content, t.createdAt]
-    });
-    fetchTemplates();
-  }
-};
-
-export const deleteTemplate = async (id: string): Promise<void> => {
-  if (turso) {
-    await turso.execute({ sql: "DELETE FROM letter_templates WHERE id = ?", args: [id] });
-    fetchTemplates();
-  }
+export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
+  const configRef = doc(db, COLLECTIONS.CONFIG, "main_settings");
+  return onSnapshot(configRef, (docSnap) => {
+    if (docSnap.exists()) {
+      onData(docSnap.data() as SchoolConfig);
+    } else {
+      onData(DEFAULT_CONFIG);
+      saveSchoolConfig(DEFAULT_CONFIG);
+    }
+    updateStatus(undefined, true);
+  }, () => updateStatus(undefined, false));
 };
 
 export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
-  localStorage.setItem('OFFLINE_CONFIG', JSON.stringify(config));
-  if (turso) {
-    await turso.execute({
-      sql: `INSERT OR REPLACE INTO school_config (id, name, address, email, npsn, headerLine1, headerLine2, logoUrl, logoDaerahUrl, principalName, principalNip) VALUES ('main_settings', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [config.name, config.address, config.email, config.npsn, config.headerLine1, config.headerLine2, config.logoUrl, config.logoDaerahUrl, config.principalName, config.principalNip]
-    });
-  }
+  await setDoc(doc(db, COLLECTIONS.CONFIG, "main_settings"), config);
+};
+
+// Sinkronisasi Template secara Real-time
+export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => void) => {
+  const q = query(collection(db, "letter_templates"), orderBy("createdAt", "asc"));
+  return onSnapshot(q, (snapshot) => {
+    let templates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LetterTemplate));
+    // Jika data template di Firebase kosong, inisialisasi dari konstanta lokal
+    if (templates.length === 0) {
+      LETTER_TEMPLATES.forEach(t => {
+        saveTemplate({ ...t, createdAt: new Date().toISOString() } as any);
+      });
+    }
+    onData(templates);
+  });
+};
+
+export const saveTemplate = async (t: LetterTemplate): Promise<void> => {
+  await setDoc(doc(db, "letter_templates", t.id), { ...t });
+};
+
+export const deleteTemplate = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, "letter_templates", id));
 };

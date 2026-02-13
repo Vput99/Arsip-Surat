@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, AlertCircle, RefreshCw, CalendarCheck, Cloud, Server } from 'lucide-react';
-import { subscribeToConnectionStatus } from '../services/storage';
+import { subscribeToConnectionStatus, forceCheckConnections } from '../services/storage';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +11,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [status, setStatus] = useState({ turso: false, firebase: false });
+  const [isChecking, setIsChecking] = useState(false);
   
   const location = useLocation();
 
@@ -18,6 +19,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const unsubscribe = subscribeToConnectionStatus(setStatus);
     return () => unsubscribe();
   }, []);
+
+  const handleRefreshConnection = async () => {
+    setIsChecking(true);
+    await forceCheckConnections();
+    setTimeout(() => setIsChecking(false), 1000);
+  };
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -62,7 +69,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         {/* Status Indicators (Hybrid Display) */}
-        <div className="px-6 py-6 space-y-3 bg-slate-800/20 border-t border-white/5">
+        <div className="px-6 py-6 space-y-3 bg-slate-800/20 border-t border-white/5 relative group">
+           <button 
+             onClick={handleRefreshConnection}
+             disabled={isChecking}
+             className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors disabled:animate-spin"
+             title="Cek Koneksi"
+           >
+             <RefreshCw size={14} />
+           </button>
+           
            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <Server size={12} className={status.turso ? 'text-emerald-400' : 'text-rose-400'} />

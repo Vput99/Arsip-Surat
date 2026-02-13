@@ -4,6 +4,7 @@ import { db, COLLECTIONS } from './firebase';
 import { 
   collection, 
   doc, 
+  getDoc,
   onSnapshot, 
   query, 
   orderBy, 
@@ -12,11 +13,6 @@ import {
 } from "firebase/firestore";
 import { Mail, SchoolConfig } from '../types';
 import { LETTER_TEMPLATES } from '../constants';
-
-// Inisialisasi Tabel Turso untuk Mails
-if (isTursoConfigured()) {
-  initTables().catch(console.error);
-}
 
 export interface StaffMember {
   id: string;
@@ -56,19 +52,57 @@ let isTursoConnected = false;
 let isFirebaseConnected = false;
 const connectionListeners: ((status: { turso: boolean, firebase: boolean }) => void)[] = [];
 
-export const subscribeToConnectionStatus = (callback: (status: { turso: boolean, firebase: boolean }) => void) => {
-  connectionListeners.push(callback);
-  callback({ turso: isTursoConnected, firebase: isFirebaseConnected });
-  return () => {
-    const index = connectionListeners.indexOf(callback);
-    if (index > -1) connectionListeners.splice(index, 1);
-  };
-};
-
 const updateStatus = (turso?: boolean, firebase?: boolean) => {
   if (turso !== undefined) isTursoConnected = turso;
   if (firebase !== undefined) isFirebaseConnected = firebase;
   connectionListeners.forEach(cb => cb({ turso: isTursoConnected, firebase: isFirebaseConnected }));
+};
+
+// Fungsi untuk memaksa cek koneksi (Ping)
+export const forceCheckConnections = async () => {
+  // 1. Cek Turso
+  if (isTursoConfigured() && turso) {
+    try {
+      // Coba query ringan
+      await turso.execute("SELECT 1");
+      // Jika berhasil, pastikan tabel ada
+      await initTables();
+      updateStatus(true, undefined);
+      fetchMails(); // Refresh data
+    } catch (e) {
+      console.error("Turso Check Failed:", e);
+      updateStatus(false, undefined);
+    }
+  } else {
+    updateStatus(false, undefined);
+  }
+
+  // 2. Cek Firebase
+  try {
+    const docRef = doc(db, COLLECTIONS.CONFIG, "main_settings");
+    await getDoc(docRef); // Ping read
+    updateStatus(undefined, true);
+  } catch (e) {
+    console.error("Firebase Check Failed:", e);
+    updateStatus(undefined, false);
+  }
+  
+  return { turso: isTursoConnected, firebase: isFirebaseConnected };
+};
+
+export const subscribeToConnectionStatus = (callback: (status: { turso: boolean, firebase: boolean }) => void) => {
+  connectionListeners.push(callback);
+  callback({ turso: isTursoConnected, firebase: isFirebaseConnected });
+  
+  // Jika belum terkoneksi, coba konek otomatis saat ada yang subscribe
+  if (!isTursoConnected || !isFirebaseConnected) {
+    forceCheckConnections();
+  }
+
+  return () => {
+    const index = connectionListeners.indexOf(callback);
+    if (index > -1) connectionListeners.splice(index, 1);
+  };
 };
 
 // --- TURSO: MAILS (SQL ARCHIVE) ---
@@ -92,7 +126,8 @@ const fetchMails = async () => {
 export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
   mailListeners.push(onData);
   fetchMails();
-  const interval = setInterval(fetchMails, 15000); 
+  // Polling setiap 10 detik untuk update data SQL
+  const interval = setInterval(fetchMails, 10000); 
   return () => { 
     clearInterval(interval); 
     mailListeners = mailListeners.filter(l => l !== onData); 
@@ -127,28 +162,14 @@ export const deleteMail = async (id: string): Promise<void> => {
 // --- FIREBASE: STAFF & CONFIG (REAL-TIME SYNC) ---
 
 export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
-  // Fallback jika Firebase offline/error
-  let isLoaded = false;
-  const timeout = setTimeout(() => {
-    if (!isLoaded) {
-      console.warn("Firebase Staff timeout - loading empty list");
-      onData([]);
-      isLoaded = true;
-    }
-  }, 3000);
-
   const q = query(collection(db, "staff"), orderBy("orderIndex", "asc"));
   return onSnapshot(q, (snapshot) => {
-    isLoaded = true;
-    clearTimeout(timeout);
     const staff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StaffMember));
     onData(staff);
     updateStatus(undefined, true);
   }, (err) => {
-    isLoaded = true;
-    clearTimeout(timeout);
     console.error("Firebase Staff Error:", err);
-    onData([]); // Return empty list on error to prevent UI block
+    onData([]); 
     updateStatus(undefined, false);
   });
 };
@@ -164,19 +185,7 @@ export const deleteStaff = async (id: string): Promise<void> => {
 export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
   const configRef = doc(db, COLLECTIONS.CONFIG, "main_settings");
   
-  // Timeout safety: Jika koneksi lambat > 2 detik, load default agar UI tidak blank
-  let isLoaded = false;
-  const timeout = setTimeout(() => {
-    if (!isLoaded) {
-      console.warn("Firebase Config timeout - loading defaults");
-      onData(DEFAULT_CONFIG);
-      isLoaded = true;
-    }
-  }, 2500);
-
   return onSnapshot(configRef, (docSnap) => {
-    isLoaded = true;
-    clearTimeout(timeout);
     if (docSnap.exists()) {
       onData(docSnap.data() as SchoolConfig);
     } else {
@@ -185,10 +194,8 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
     }
     updateStatus(undefined, true);
   }, (err) => {
-    isLoaded = true;
-    clearTimeout(timeout);
     console.error("Firebase Config Error:", err);
-    onData(DEFAULT_CONFIG); // PENTING: Load default jika error agar tidak loading selamanya
+    onData(DEFAULT_CONFIG);
     updateStatus(undefined, false);
   });
 };
@@ -201,36 +208,16 @@ export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
 export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => void) => {
   const q = query(collection(db, "letter_templates"), orderBy("createdAt", "asc"));
   
-  // Timeout safety
-  let isLoaded = false;
-  const timeout = setTimeout(() => {
-    if (!isLoaded) {
-      console.warn("Firebase Template timeout - loading defaults");
-      const defaults = LETTER_TEMPLATES.map(t => ({...t, createdAt: new Date().toISOString()})) as LetterTemplate[];
-      onData(defaults);
-      isLoaded = true;
-    }
-  }, 2500);
-
   return onSnapshot(q, (snapshot) => {
-    isLoaded = true;
-    clearTimeout(timeout);
     let templates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LetterTemplate));
-    // Jika data template di Firebase kosong, inisialisasi dari konstanta lokal
     if (templates.length === 0) {
       const defaults = LETTER_TEMPLATES.map(t => ({...t, createdAt: new Date().toISOString()})) as LetterTemplate[];
       templates = defaults;
-      // Coba simpan ke cloud secara background
-      defaults.forEach(t => {
-        saveTemplate(t).catch(() => {});
-      });
+      defaults.forEach(t => saveTemplate(t).catch(() => {}));
     }
     onData(templates);
   }, (err) => {
-    isLoaded = true;
-    clearTimeout(timeout);
     console.error("Firebase Templates Error:", err);
-    // PENTING: Load default jika error agar tidak loading selamanya
     const defaults = LETTER_TEMPLATES.map(t => ({...t, createdAt: new Date().toISOString()})) as LetterTemplate[];
     onData(defaults);
   });
@@ -243,3 +230,6 @@ export const saveTemplate = async (t: LetterTemplate): Promise<void> => {
 export const deleteTemplate = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, "letter_templates", id));
 };
+
+// Initial check on load
+forceCheckConnections();

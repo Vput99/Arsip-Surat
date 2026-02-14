@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, School, Loader2, Info, Building2, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, ListOrdered, FileText, Layout, Type, RefreshCw, Zap } from 'lucide-react';
+import { Save, Upload, School, Loader2, Info, Building2, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, ListOrdered, FileText, Layout, Type, RefreshCw, Zap, ShieldCheck } from 'lucide-react';
 import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember, subscribeToTemplates, saveTemplate, deleteTemplate, LetterTemplate, initializeDefaultData } from '../services/storage';
 import { SchoolConfig } from '../types';
 import { CATEGORIES } from '../constants';
@@ -46,13 +46,15 @@ const Settings: React.FC = () => {
   }, []);
 
   const handleInitDb = async () => {
-    if (!confirm("Inisialisasi akan mengisi database dengan data profil sekolah dan template surat default. Lanjutkan?")) return;
+    if (!confirm("Inisialisasi akan mengisi database dengan data profil sekolah dan seluruh templat surat terbaru dari sistem. Data profil yang ada mungkin akan tertimpa. Lanjutkan?")) return;
     setInitLoading(true);
+    setMessage({ text: '', type: '' });
     try {
       await initializeDefaultData();
-      setMessage({ text: 'Database berhasil diinisialisasi dengan data default.', type: 'success' });
+      setMessage({ text: 'Database berhasil disinkronisasi dengan templat sistem terbaru.', type: 'success' });
+      setTimeout(() => setMessage({ text: '', type: '' }), 5000);
     } catch (err: any) {
-      setMessage({ text: `Gagal inisialisasi: ${err.message}. Pastikan Anda sudah klik 'Publish' di Firebase Rules.`, type: 'error' });
+      setMessage({ text: `Gagal inisialisasi: ${err.message}. Pastikan koneksi internet stabil.`, type: 'error' });
     } finally {
       setInitLoading(false);
     }
@@ -229,77 +231,84 @@ const Settings: React.FC = () => {
           {message.type === 'success' ? <CheckCircle2 size={20} className="mt-0.5 shrink-0" /> : <AlertCircle size={20} className="mt-0.5 shrink-0" />}
           <div className="flex-1">
             <span className="text-sm font-bold block">{message.text}</span>
-            {message.type === 'error' && message.text.includes("permission") && (
-              <p className="text-xs mt-1 opacity-80 font-medium italic">Pastikan Anda sudah menekan tombol "Publish" di konsol Firebase setelah mengganti aturan keamanan.</p>
-            )}
           </div>
-        </div>
-      )}
-
-      {/* Tombol Inisialisasi Jika Firebase Masih Merah atau Kosong */}
-      {!dbStatus.firebase && (
-        <div className="bg-amber-50 border border-amber-100 p-6 rounded-3xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-pulse-soft">
-           <div className="flex items-start gap-4 text-center md:text-left">
-              <div className="bg-amber-100 p-3 rounded-2xl text-amber-600 shrink-0"><Zap size={24}/></div>
-              <div>
-                <h4 className="font-black text-amber-800 uppercase text-xs tracking-widest mb-1">Butuh Sinkronisasi Awal?</h4>
-                <p className="text-amber-700/70 text-sm">Jika Firebase sudah 'Online' tapi data masih kosong, klik tombol inisialisasi untuk mengisi data sekolah Anda.</p>
-              </div>
-           </div>
-           <button onClick={handleInitDb} disabled={initLoading} className="px-6 py-3 bg-amber-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:bg-amber-700 transition-all flex items-center gap-2 shrink-0">
-             {initLoading ? <Loader2 className="animate-spin" size={16}/> : <RefreshCw size={16}/>}
-             Inisialisasi Data Awal
-           </button>
         </div>
       )}
 
       {/* CONTENT: PROFILE TAB */}
       {activeTab === 'profile' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 animate-fade-in">
-           <form onSubmit={handleSubmitProfile} className="space-y-10">
-             <section>
-               <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3"><span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Building2 size={16}/></span>Logo Kop</h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Daerah</span>
-                    <div className="relative group">
-                      <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 border border-slate-200">{config.logoDaerahUrl ? <img src={config.logoDaerahUrl} alt="Logo" className="w-full h-full object-contain" /> : <Building2 className="text-slate-200 w-12 h-12" />}</div>
-                      <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer"><Upload size={24} /><span className="text-[10px] font-bold">Ganti</span><input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoDaerahUrl')} /></label>
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 animate-fade-in">
+             <form onSubmit={handleSubmitProfile} className="space-y-10">
+               <section>
+                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3"><span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Building2 size={16}/></span>Logo Kop</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Daerah</span>
+                      <div className="relative group">
+                        <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 border border-slate-200">{config.logoDaerahUrl ? <img src={config.logoDaerahUrl} alt="Logo" className="w-full h-full object-contain" /> : <Building2 className="text-slate-200 w-12 h-12" />}</div>
+                        <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer"><Upload size={24} /><span className="text-[10px] font-bold">Ganti</span><input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoDaerahUrl')} /></label>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Sekolah</span>
-                    <div className="relative group">
-                      <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 border border-slate-200">{config.logoUrl ? <img src={config.logoUrl} alt="Logo" className="w-full h-full object-contain" /> : <School className="text-slate-200 w-12 h-12" />}</div>
-                      <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer"><Upload size={24} /><span className="text-[10px] font-bold">Ganti</span><input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoUrl')} /></label>
+                    <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo Sekolah</span>
+                      <div className="relative group">
+                        <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center p-3 border border-slate-200">{config.logoUrl ? <img src={config.logoUrl} alt="Logo" className="w-full h-full object-contain" /> : <School className="text-slate-200 w-12 h-12" />}</div>
+                        <label className="absolute inset-0 bg-indigo-600/80 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer"><Upload size={24} /><span className="text-[10px] font-bold">Ganti</span><input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoUrl')} /></label>
+                      </div>
                     </div>
-                  </div>
-               </div>
-             </section>
-             <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-               <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Data Sekolah</h3>
-                  <div className="space-y-4">
-                    <input name="name" value={config.name} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" placeholder="Nama Sekolah" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <input name="npsn" value={config.npsn} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="NPSN" />
-                      <input name="email" value={config.email} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Email" />
+                 </div>
+               </section>
+               <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                 <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Data Sekolah</h3>
+                    <div className="space-y-4">
+                      <input name="name" value={config.name} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" placeholder="Nama Sekolah" />
+                      <div className="grid grid-cols-2 gap-4">
+                        <input name="npsn" value={config.npsn} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="NPSN" />
+                        <input name="email" value={config.email} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Email" />
+                      </div>
+                      <input name="headerLine1" value={config.headerLine1} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 1" />
+                      <input name="headerLine2" value={config.headerLine2} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 2" />
                     </div>
-                    <input name="headerLine1" value={config.headerLine1} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 1" />
-                    <input name="headerLine2" value={config.headerLine2} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 2" />
-                  </div>
-               </div>
-               <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Pejabat</h3>
-                  <div className="space-y-4">
-                    <input name="principalName" value={config.principalName} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Nama Kepala Sekolah" />
-                    <input name="principalNip" value={config.principalNip} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="NIP Kepala Sekolah" />
-                    <textarea name="address" rows={2} value={config.address} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm resize-none" placeholder="Alamat Lengkap" />
-                  </div>
-               </div>
-             </section>
-             <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">{loading ? <Loader2 className="animate-spin" /> : <Save />}Simpan Profil</button>
-           </form>
+                 </div>
+                 <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Pejabat</h3>
+                    <div className="space-y-4">
+                      <input name="principalName" value={config.principalName} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Nama Kepala Sekolah" />
+                      <input name="principalNip" value={config.principalNip} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="NIP Kepala Sekolah" />
+                      <textarea name="address" rows={2} value={config.address} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm resize-none" placeholder="Alamat Lengkap" />
+                    </div>
+                 </div>
+               </section>
+               <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">{loading ? <Loader2 className="animate-spin" /> : <Save />}Simpan Profil</button>
+             </form>
+          </div>
+
+          {/* Bagian Maintenance (Selalu Muncul di Tab Profil) */}
+          <div className="bg-slate-50 border border-slate-200 p-8 rounded-3xl space-y-4">
+             <div className="flex items-center gap-3 mb-2">
+                <div className="bg-slate-900 text-white p-2 rounded-xl"><ShieldCheck size={20}/></div>
+                <div>
+                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Pemeliharaan & Sinkronisasi</h3>
+                   <p className="text-xs text-slate-500 font-medium">Gunakan tombol di bawah untuk memperbarui data templat sistem terbaru ke database Anda.</p>
+                </div>
+             </div>
+             <div className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1">
+                   <h4 className="text-xs font-black text-indigo-600 uppercase mb-1">Update Templat Sistem</h4>
+                   <p className="text-[11px] text-slate-500 leading-relaxed">Menambahkan templat surat dinas baru (seperti SPPD, Undangan Rapat, dll) yang baru saja ditambahkan oleh pengembang ke database cloud Anda.</p>
+                </div>
+                <button 
+                   onClick={handleInitDb} 
+                   disabled={initLoading} 
+                   className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-indigo-600 transition-all shrink-0"
+                >
+                   {initLoading ? <Loader2 className="animate-spin" size={16}/> : <RefreshCw size={16}/>}
+                   Inisialisasi Data Awal
+                </button>
+             </div>
+          </div>
         </div>
       )}
 

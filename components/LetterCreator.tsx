@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check, FileDown, RotateCcw } from 'lucide-react';
+import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check, FileDown, RotateCcw, Sparkles, Wand2 } from 'lucide-react';
 import { subscribeToConfig, subscribeToTemplates, LetterTemplate, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
 import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { format } from 'date-fns';
@@ -9,6 +9,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { generateNotulenContent, generateLaporanSPPDContent } from '../services/geminiService';
 
 const SmartContentRenderer = ({ text }: { text: string }) => {
   if (!text) return null;
@@ -138,6 +139,7 @@ const LetterCreator: React.FC = () => {
   const [staffSearch, setStaffSearch] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
   
   const isInitialized = useRef(false);
   const letterContainerRef = useRef<HTMLDivElement>(null);
@@ -224,6 +226,30 @@ const LetterCreator: React.FC = () => {
         content: template.content, 
         signatureTitle: template.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah' 
       }));
+    }
+  };
+
+  const handleMagicFill = async () => {
+    if (!formData.content || formData.content.length < 5) {
+      alert("Harap isi deskripsi singkat di naskah sebelum menggunakan AI.");
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      let result = "";
+      if (selectedTemplate?.id === 't_notulen') {
+        result = await generateNotulenContent(formData.content);
+      } else if (selectedTemplate?.id === 't_laporan_sppd') {
+        result = await generateLaporanSPPDContent(formData.content);
+      } else {
+        alert("Fitur Magic Fill saat ini khusus untuk Notulen dan Laporan SPPD.");
+        return;
+      }
+      setFormData(prev => ({ ...prev, content: result }));
+    } catch (e) {
+      alert("Gagal memproses AI. Periksa koneksi internet.");
+    } finally {
+      setAiGenerating(false);
     }
   };
 
@@ -408,9 +434,27 @@ const LetterCreator: React.FC = () => {
           <div className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 flex flex-col min-h-[350px] shadow-sm relative">
              <div className="flex justify-between items-center mb-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Isi Naskah</label>
-                <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-all"><Users size={12} /> Personil</button>
+                <div className="flex gap-2">
+                   {(selectedTemplate?.id === 't_notulen' || selectedTemplate?.id === 't_laporan_sppd') && (
+                      <button 
+                        onClick={handleMagicFill} 
+                        disabled={aiGenerating}
+                        className={`text-[9px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all ${aiGenerating ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'}`}
+                      >
+                        {aiGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} 
+                        {aiGenerating ? 'Processing...' : 'Magic Fill AI'}
+                      </button>
+                   )}
+                   <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-all"><Users size={12} /> Personil</button>
+                </div>
              </div>
-             <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] leading-relaxed resize-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+             <textarea 
+               name="content" 
+               value={formData.content} 
+               onChange={handleInputChange} 
+               className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] leading-relaxed resize-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+               placeholder={selectedTemplate?.id === 't_notulen' ? 'Tulis poin-poin rapat di sini, lalu klik Magic Fill AI untuk merapikan...' : 'Tulis ringkasan hasil kegiatan di sini...'}
+             />
           </div>
         </div>
 

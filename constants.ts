@@ -36,6 +36,49 @@ Dengan ini menyatakan dengan sebenarnya bahwa :
 Demikian pernyataan ini kami buat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.`
   },
   {
+    id: 't_notulen',
+    name: 'Notulen Rapat',
+    subject: 'NOTULEN RAPAT',
+    category: 'Dinas',
+    layout: 'standard',
+    content: `Hari / Tanggal : [HARI_TANGGAL]
+Waktu : [WAKTU]
+Tempat : [TEMPAT_RAPAT]
+Acara : [ACARA_RAPAT]
+Pemimpin Rapat : [PEMIMPIN_RAPAT]
+Notulis : [NAMA_NOTULIS]
+
+HASIL RAPAT / PEMBAHASAN :
+
+1. Pembukaan oleh pemimpin rapat.
+2. Pembahasan mengenai : [ISI_PEMBAHASAN]
+3. Masukan dan saran : [MASUKAN_SARAN]
+4. Kesimpulan rapat : [KESIMPULAN]
+
+Demikian notulen rapat ini dibuat sebagai laporan pertanggungjawaban kegiatan.`
+  },
+  {
+    id: 't_laporan_sppd',
+    name: 'Laporan SPPD',
+    subject: 'LAPORAN HASIL PERJALANAN DINAS',
+    category: 'Dinas',
+    layout: 'standard',
+    content: `Kepada Yth.
+Kepala SDN [NAMA_SEKOLAH]
+di Tempat
+
+1. Dasar Pelaksanaan : Surat Perintah Tugas (SPT) Nomor [NOMOR_SPT] Tanggal [TANGGAL_SPT].
+2. Maksud / Tujuan : Dalam rangka [TUJUAN_KEGIATAN].
+3. Waktu Pelaksanaan : Tanggal [WAKTU_PELAKSANAAN].
+4. Tempat Tujuan : [LOKASI_TUJUAN].
+
+HASIL KEGIATAN :
+
+[URAIAN_KEGIATAN_SECARA_RINGKAS]
+
+Demikian laporan perjalanan dinas ini kami sampaikan sebagai laporan pertanggungjawaban dan bahan pemeriksaan lebih lanjut.`
+  },
+  {
     id: 't_spt',
     name: 'Surat Perintah Tugas (SPT)',
     subject: 'SURAT PERINTAH TUGAS',

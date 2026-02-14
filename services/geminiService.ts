@@ -2,9 +2,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, UrgencyLevel } from "../types";
 
-export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
   try {
     const parts: any[] = [
       {
@@ -58,16 +58,79 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
 
     const result = JSON.parse(response.text || "{}");
     return result as AIAnalysisResult;
-
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
     return null;
   }
 };
 
-export const generateSPTContent = async (invitationMail: any): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+export const generateNotulenContent = async (rawInput: string): Promise<string> => {
+  try {
+    const prompt = `Anda adalah Notulis Rapat profesional di sekolah. 
+    Buatkan draf NOTULEN RAPAT yang lengkap dan rapi berdasarkan poin singkat berikut: "${rawInput}"
+    
+    FORMAT OUTPUT (Gunakan Label ini):
+    Hari / Tanggal : [Hari, Tanggal]
+    Waktu : [Jam]
+    Tempat : [Tempat]
+    Acara : [Nama Rapat]
+    Pemimpin Rapat : [Nama]
+    Notulis : [Nama]
 
+    HASIL RAPAT / PEMBAHASAN :
+
+    1. Pembukaan oleh pemimpin rapat.
+    2. [Gunakan bahasa dinas untuk menjelaskan poin pembahasan 1]
+    3. [Gunakan bahasa dinas untuk menjelaskan poin pembahasan 2]
+    4. Masukan dan saran : [Tambahkan saran normatif yang relevan]
+    5. Kesimpulan rapat : [Tuliskan kesimpulan yang kuat]
+
+    Jangan gunakan Markdown (** atau #). Pisahkan label dengan titik dua (:).`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt
+    });
+    return (response.text || "").trim();
+  } catch (e) {
+    return "Gagal generate notulen.";
+  }
+};
+
+export const generateLaporanSPPDContent = async (sptContext: string): Promise<string> => {
+  try {
+    const prompt = `Anda adalah staf tata usaha sekolah. 
+    Buatlah LAPORAN HASIL PERJALANAN DINAS berdasarkan konteks tugas berikut: "${sptContext}"
+    
+    FORMAT OUTPUT:
+    Kepada Yth.
+    Kepala SDN [NAMA_SEKOLAH]
+    di Tempat
+
+    1. Dasar Pelaksanaan : Surat Perintah Tugas (SPT) Nomor [NOMOR] Tanggal [TANGGAL].
+    2. Maksud / Tujuan : [EKSTRAK TUJUAN]
+    3. Waktu Pelaksanaan : [EKSTRAK WAKTU]
+    4. Tempat Tujuan : [EKSTRAK TEMPAT]
+
+    HASIL KEGIATAN :
+
+    [Tulis narasi minimal 3 paragraf pendek yang menjelaskan proses kegiatan, materi yang didapat, dan tindak lanjut bagi sekolah dengan bahasa formal]
+
+    Demikian laporan perjalanan dinas ini kami sampaikan sebagai laporan pertanggungjawaban.
+
+    Jangan gunakan Markdown (** atau #).`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt
+    });
+    return (response.text || "").trim();
+  } catch (e) {
+    return "Gagal generate laporan SPPD.";
+  }
+};
+
+export const generateSPTContent = async (invitationMail: any): Promise<string> => {
   try {
     const prompt = `Anda adalah sekretaris administrasi sekolah dasar yang sangat teliti. 
     Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data Surat Masuk berikut:
@@ -78,9 +141,8 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     - Perihal: ${invitationMail.subject}
     - Isi: ${invitationMail.description}
     
-    ATURAN FORMAT (WAJIB SAMA PERSIS DENGAN CONTOH DI BAWAH):
-    
-    Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} tentang ${invitationMail.subject} pada satuan pendidikan tingkat Dasar dan Menengah.
+    ATURAN FORMAT:
+    Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} tentang ${invitationMail.subject}.
     Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
 
     MEMERINTAHKAN :
@@ -91,79 +153,35 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     Jabatan : [JABATAN_PETUGAS]
 
     Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :
-    tanggal : [Hasil Ekstraksi Hari & Tanggal dari isi surat]
-    Tempat : [Hasil Ekstraksi Tempat dari isi surat]
+    tanggal : [Hasil Ekstraksi]
+    Tempat : [Hasil Ekstraksi]
 
-    Berikut surat tugas yang akan dilaksanakan dengan sebaik-baiknya.
-
-    CATATAN: 
-    - Gunakan titik dua (:) untuk memisahkan Label dan Isi.
-    - Baris "Nama tersebut akan di beri tugas..." JANGAN diberi label "Untuk :", biarkan polos atau awali langsung dengan teks tersebut.
-    - Jangan gunakan Markdown (seperti ** atau #).`;
+    Berikut surat tugas yang akan dilaksanakan dengan sebaik-baiknya.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: prompt
     });
-
-    let text = response.text || "";
-    // Bersihkan intro AI jika masih ada
-    text = text.replace(/^(Berikut|Ini|Naskah|Draft).*:(\n)?/i, '').trim();
-    return text;
+    return (response.text || "").trim();
   } catch (error) {
-    console.error("Gemini SPT Error:", error);
-    return `Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\n\nNama tersebut akan di beri tugas untuk menghadiri kegiatan tersebut pada :\ntanggal : [Tanggal]\nTempat : [Tempat]`;
+    return "Gagal generate SPT.";
   }
 };
 
 export const generateSPPDContent = async (sptMail: any): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
   try {
-    const prompt = `Anda adalah sekretaris administrasi sekolah. 
-    Buatkan naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) berdasarkan data Surat Perintah Tugas (SPT) berikut:
-    
-    DATA SPT:
-    - Nomor SPT: ${sptMail.referenceNumber}
-    - Perihal/Tugas: ${sptMail.subject}
-    - Isi SPT: ${sptMail.description}
-    
-    INSTRUKSI FORMAT SPPD (Gunakan Label ini):
-    Pejabat Pemberi Perintah : Kepala Sekolah
-    Nama Pegawai yang diperintah : [AMBIL NAMA DARI SPT]
-    NIP : [AMBIL NIP DARI SPT]
-    Pangkat dan Golongan : [AMBIL JABATAN DARI SPT]
-    Jabatan : Guru / Pegawai
-    Maksud Perjalanan Dinas : ${sptMail.subject}
-    Alat Angkut yang dipergunakan : Kendaraan Pribadi
-    Tempat Berangkat : SDN [NAMA_SEKOLAH]
-    Tempat Tujuan : [EKSTRAK TEMPAT TUJUAN DARI SPT]
-    Lamanya Perjalanan Dinas : 1 (Satu) Hari
-    Tanggal Berangkat : [EKSTRAK TANGGAL DARI SPT]
-    Tanggal Kembali : [SAMA DENGAN TANGGAL BERANGKAT]
-    Dasar Perintah : SPT Nomor ${sptMail.referenceNumber} Tanggal ${sptMail.date}
-    Instansi / Akun : Dana BOS / Sekolah
-    Keterangan Lain-lain : -
-    
-    CATATAN: 
-    - Gunakan titik dua (:) sebagai pemisah.
-    - Jangan gunakan Markdown.
-    - Pastikan ekstraksi tanggal dan tempat dari SPT akurat.`;
-
+    const prompt = `Buatkan draf SPPD berdasarkan SPT Nomor ${sptMail.referenceNumber} perihal ${sptMail.subject}. Gunakan format resmi sekolah.`;
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: prompt
     });
-
     return (response.text || "").trim();
   } catch (error) {
-    console.error("Gemini SPPD Error:", error);
-    return `Pejabat Pemberi Perintah : Kepala Sekolah\nNama Pegawai : [NAMA_PETUGAS]\nMaksud : Menghadiri ${sptMail.subject}\nDasar Perintah : SPT Nomor ${sptMail.referenceNumber}`;
+    return "Gagal generate SPPD.";
   }
 };
 
 export const suggestReply = async (incomingMailText: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",

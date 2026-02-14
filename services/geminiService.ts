@@ -78,18 +78,10 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     - Perihal: ${invitationMail.subject}
     - Isi: ${invitationMail.description}
     
-    INSTRUKSI FORMAT KHUSUS (WAJIB DIIKUTI):
-    1. Bagian 'Dasar' baris pertama harus berbunyi: "Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} tentang ${invitationMail.subject} pada satuan pendidikan tingkat Dasar dan Menengah."
-    2. Tambahkan Dasar baris kedua: "Program Kerja Sekolah Tahun Pelajaran 2024/2025."
-    3. Setelah bagian 'Kepada', buat bagian 'Untuk' dengan kalimat pengantar: "Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :"
-    4. Di bawah kalimat pengantar tersebut, berikan rincian berikut (ambil dari isi surat):
-       tanggal : [Hari], [Tanggal Bulan Tahun]
-       Tempat : [Lokasi/Tempat Kegiatan]
-    5. Tambahkan kalimat penutup di akhir: "Berikut surat tugas yang akan dilaksanakan dengan sebaik-baiknya."
+    ATURAN FORMAT (WAJIB SAMA PERSIS DENGAN CONTOH DI BAWAH):
     
-    OUTPUT HARUS BERUPA TEKS POLOS DENGAN FORMAT BERIKUT (Gunakan Titik Dua):
-    Dasar : [Isi Dasar 1]
-    Dasar : [Isi Dasar 2]
+    Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} tentang ${invitationMail.subject} pada satuan pendidikan tingkat Dasar dan Menengah.
+    Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
 
     MEMERINTAHKAN :
 
@@ -98,11 +90,16 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     NIP : [NIP_PETUGAS]
     Jabatan : [JABATAN_PETUGAS]
 
-    Untuk : Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :
-    tanggal : [Hasil Ekstraksi]
-    Tempat : [Hasil Ekstraksi]
+    Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :
+    tanggal : [Hasil Ekstraksi Hari & Tanggal dari isi surat]
+    Tempat : [Hasil Ekstraksi Tempat dari isi surat]
 
-    Berikut surat tugas yang akan dilaksanakan dengan sebaik-baiknya.`;
+    Berikut surat tugas yang akan dilaksanakan dengan sebaik-baiknya.
+
+    CATATAN: 
+    - Gunakan titik dua (:) untuk memisahkan Label dan Isi.
+    - Baris "Nama tersebut akan di beri tugas..." JANGAN diberi label "Untuk :", biarkan polos atau awali langsung dengan teks tersebut.
+    - Jangan gunakan Markdown (seperti ** atau #).`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -110,11 +107,12 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     });
 
     let text = response.text || "";
+    // Bersihkan intro AI jika masih ada
     text = text.replace(/^(Berikut|Ini|Naskah|Draft).*:(\n)?/i, '').trim();
     return text;
   } catch (error) {
     console.error("Gemini SPT Error:", error);
-    return `Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\n\nUntuk : Menghadiri kegiatan ${invitationMail.subject}.`;
+    return `Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\n\nNama tersebut akan di beri tugas untuk menghadiri kegiatan tersebut pada :\ntanggal : [Tanggal]\nTempat : [Tempat]`;
   }
 };
 
@@ -122,39 +120,8 @@ export const generateSPPDContent = async (sptMail: any): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    const prompt = `Anda adalah sekretaris administrasi sekolah dasar. 
-    Buatkan naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) berdasarkan data Surat Perintah Tugas (SPT) berikut:
-    
-    DATA SPT:
-    - Nomor SPT: ${sptMail.referenceNumber}
-    - Perihal/Tugas: ${sptMail.subject}
-    - Isi SPT: ${sptMail.description}
-    
-    INSTRUKSI FORMAT SPPD:
-    1. Pejabat Pemberi Perintah : Kepala SDN [NAMA_SEKOLAH]
-    2. Nama Pegawai yang diperintah : [AMBIL DARI SPT JIKA ADA, ATAU [NAMA_PETUGAS]]
-    3. Maksud Perjalanan Dinas : Menghadiri ${sptMail.subject}
-    4. Alat Angkut : Kendaraan Pribadi / Umum
-    5. Tempat Berangkat : SDN [NAMA_SEKOLAH]
-    6. Tempat Tujuan : [EKSTRAK DARI SPT]
-    7. Lamanya Perjalanan Dinas : 1 (Satu) Hari
-    8. Tanggal Berangkat : [EKSTRAK TANGGAL DARI SPT]
-    9. Tanggal Kembali : [SAMA DENGAN TANGGAL BERANGKAT]
-    10. Dasar Perintah : SPT Nomor ${sptMail.referenceNumber} Tanggal ${sptMail.date}
-    
-    OUTPUT HARUS BERUPA TEKS POLOS DENGAN FORMAT KEY-VALUE TITIK DUA:
-    Pejabat pemberi perintah : Kepala Sekolah
-    Nama pegawai yang diperintah : [NAMA_PETUGAS]
-    NIP : [NIP_PETUGAS]
-    Pangkat dan Golongan : [JABATAN_PETUGAS]
-    Maksud Perjalanan Dinas : ${sptMail.subject}
-    Alat angkut yang dipergunakan : Kendaraan Pribadi
-    Tempat berangkat : SDN [NAMA_SEKOLAH]
-    Tempat tujuan : [Ekstrak Tempat]
-    Lamanya perjalanan dinas : 1 (Satu) Hari
-    Tanggal berangkat : [Ekstrak Tanggal]
-    Tanggal kembali : [Ekstrak Tanggal]
-    Dasar Perintah : SPT Nomor ${sptMail.referenceNumber} Tanggal ${sptMail.date}`;
+    const prompt = `Buatkan naskah SPPD berdasarkan SPT Nomor ${sptMail.referenceNumber}.
+    Gunakan format key-value standar SPPD.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -163,25 +130,19 @@ export const generateSPPDContent = async (sptMail: any): Promise<string> => {
 
     return (response.text || "").trim();
   } catch (error) {
-    console.error("Gemini SPPD Error:", error);
-    return `Pejabat pemberi perintah : Kepala Sekolah\nNama pegawai : [NAMA_PETUGAS]\nMaksud : Menghadiri ${sptMail.subject}\nDasar : SPT Nomor ${sptMail.referenceNumber}`;
+    return `Dasar Perintah : SPT Nomor ${sptMail.referenceNumber}`;
   }
 };
 
 export const suggestReply = async (incomingMailText: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `Buatkan draf surat balasan resmi untuk sekolah dasar berdasarkan surat masuk berikut. Gunakan bahasa Indonesia yang sopan dan format surat dinas yang benar.
-      
-      Surat Masuk:
-      "${incomingMailText}"`
+      contents: `Buatkan draf surat balasan untuk: "${incomingMailText}"`
     });
-    return response.text || "Tidak ada respons dari AI.";
+    return response.text || "";
   } catch (error) {
-    console.error("Gemini Reply Error:", error);
-    return "Terjadi kesalahan saat membuat balasan.";
+    return "";
   }
 };

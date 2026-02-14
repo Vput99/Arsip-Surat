@@ -97,28 +97,20 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       let label = line.substring(0, firstColonIdx).trim();
       let value = line.substring(firstColonIdx + 1).trim();
       
-      const isIntroSentence = label.length > 40 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa');
+      const isIntroSentence = label.length > 40 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa') || label.toLowerCase().includes('akan di beri tugas');
       
       // Deteksi kunci yang harus disejajarkan
       const alignedKeys = ['dasar', 'kepada', 'nama', 'nip', 'jabatan', 'untuk', 'hari', 'tanggal', 'tempat', 'waktu'];
       const isAlignedKey = alignedKeys.includes(label.toLowerCase().replace(/\s/g, '')) || label.toLowerCase().startsWith('untuk');
 
-      // Penanganan khusus untuk intro kalimat panjang dalam baris 'Untuk'
-      if (label.toLowerCase() === 'untuk' && value.length > 40) {
-          renderedBlocks.push(
-            <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.6]">
-              <span className="w-[120px] shrink-0 font-medium">{label}</span>
-              <span className="w-[20px] text-center shrink-0">:</span>
-              <span className="flex-1 text-justify">{value}</span>
-            </div>
-          );
-      } else if (isIntroSentence) {
+      if (isIntroSentence) {
          renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
       } else {
          // Form isian standard (Label : Value)
          renderedBlocks.push(
             <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.6]">
-              <span className={`shrink-0 ${isAlignedKey ? 'w-[120px]' : 'w-[170px]'}`}>{label}</span>
+              {/* Gunakan width yang konsisten agar titik dua sejajar secara vertikal */}
+              <span className="w-[120px] shrink-0">{label}</span>
               <span className="w-[20px] text-center shrink-0">:</span>
               <span className="flex-1 text-justify">{value}</span>
             </div>
@@ -135,7 +127,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
         </div>
       );
     }
-    // Paragraph Standard
+    // Paragraph Standard (Contoh kalimat pengantar di tengah naskah)
     else {
       renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
     }

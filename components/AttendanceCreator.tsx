@@ -542,30 +542,34 @@ const AttendanceCreator: React.FC = () => {
         }
 
         @media print {
-          /* 1. Sembunyikan SEMUA elemen secara default */
-          body * {
-            visibility: hidden !important;
+          /* Sembunyikan semua elemen UI non-cetak */
+          header, aside, .print\:hidden, .attendance-main-container > div:first-child, .xl\:col-span-1 {
+            display: none !important;
           }
 
-          /* 2. Hanya tampilkan naskah absensi dan semua isinya */
-          .attendance-paper-landscape, 
-          .attendance-paper-landscape * {
-            visibility: visible !important;
+          /* Reset layout kontainer agar tidak membatasi ukuran cetak */
+          html, body, #root, .attendance-main-container, .attendance-scroll-area {
+            height: auto !important;
+            width: auto !important;
+            overflow: visible !important;
+            display: block !important;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
-          /* 3. Atur posisi naskah agar menempati seluruh layar cetak */
+          /* Atur naskah sebagai elemen utama cetak */
           .attendance-paper-landscape {
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 330mm !important;
-            height: 215mm !important;
+            display: block !important;
+            visibility: visible !important;
+            position: relative !important;
+            transform: none !important; /* MATIKAN ZOOM EDITOR SAAT CETAK */
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            transform: scale(1) !important; /* Reset skala pratinjau ke 1:1 */
-            background: white !important;
-            z-index: 9999 !important;
+            width: 330mm !important;
+            height: 215mm !important;
+            page-break-after: always;
           }
 
           @page { 
@@ -573,15 +577,7 @@ const AttendanceCreator: React.FC = () => {
             margin: 0; 
           }
           
-          /* Hilangkan elemen layout luar */
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: visible !important;
-            background: white !important;
-          }
-
-          /* Pastikan warna tetap muncul saat cetak */
+          /* Pastikan warna latar belakang (merah/biru) muncul di cetakan */
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;

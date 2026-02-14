@@ -34,7 +34,6 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
       });
     }
 
-    // Upgrade to gemini-3-pro-preview for complex information extraction and structured data reasoning.
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: { parts },
@@ -70,20 +69,23 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    const prompt = `Buatkan isi naskah Surat Perintah Tugas (SPT) sekolah yang sangat formal berdasarkan undangan berikut.
-    DATA SURAT MASUK:
-    Nomor Surat: ${invitationMail.referenceNumber}
-    Pengirim: ${invitationMail.sender}
-    Perihal: ${invitationMail.subject}
-    Isi: ${invitationMail.description}
+    // Prompt yang sangat spesifik untuk mengambil Nomor Surat Masuk sebagai Dasar
+    const prompt = `Anda adalah sekretaris sekolah. Buatkan naskah Surat Perintah Tugas (SPT) berdasarkan data Surat Masuk berikut.
     
-    ATURAN FORMAT (WAJIB IKUTI PERSIS):
-    1. JANGAN gunakan markdown (**bold** dll).
-    2. JANGAN sertakan kalimat pembuka seperti "Berikut draf surat...". Langsung mulai dari konten.
-    3. Gunakan format baris baru dan titik dua ( : ) agar rapi.
+    DATA SURAT MASUK (SUMBER):
+    - Nomor Surat: ${invitationMail.referenceNumber}
+    - Pengirim: ${invitationMail.sender}
+    - Perihal: ${invitationMail.subject}
+    - Isi Ringkas: ${invitationMail.description}
+    - Ringkasan AI: ${invitationMail.aiSummary || '-'}
     
-    STRUKTUR NASKAH (Gunakan Tepat Seperti Ini):
-    Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}
+    INSTRUKSI KHUSUS:
+    1. Bagian 'Dasar' WAJIB menyebutkan "Surat Undangan dari [Pengirim] Nomor [Nomor Surat] tanggal [Tanggal Surat]".
+    2. Bagian 'Untuk' WAJIB mendeteksi nama kegiatan, hari/tanggal pelaksanaan, dan tempat dari isi surat.
+    3. Format harus rapi menggunakan Key : Value.
+    
+    CONTOH FORMAT OUTPUT (Ikuti persis struktur ini):
+    Dasar : Surat ${invitationMail.category || 'Undangan'} dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.
     Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
 
     MEMERINTAHKAN :
@@ -93,24 +95,28 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     NIP : [NIP_PETUGAS]
     Jabatan : [JABATAN_PETUGAS]
 
-    Untuk : 1. Menghadiri ${invitationMail.subject} pada tanggal ... (sesuaikan dari isi).
+    Untuk : 1. Menghadiri kegiatan ${invitationMail.subject} yang akan dilaksanakan pada ... (lengkapi tanggal/waktu/tempat dari isi surat).
     Untuk : 2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah.
 
     Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.`;
 
-    // Upgrade to gemini-3-pro-preview for formal legal document generation based on complex reasoning rules.
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: prompt
     });
 
-    // Menghilangkan redundansi jika AI still provides prefixes
     let text = response.text || "";
-    text = text.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini|Berikut draf).*(:|surat|naskah|berikut):?/i, '');
-    return text.replace(/\*\*/g, '').trim();
+    // Bersihkan markdown atau prefix yang tidak perlu
+    text = text.replace(/^(Berikut|Ini|Naskah|Draft).*:(\n)?/i, '')
+               .replace(/\*\*/g, '')
+               .replace(/```/g, '')
+               .trim();
+               
+    return text;
   } catch (error) {
     console.error("Gemini SPT Error:", error);
-    return "Dasar : Surat Undangan.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\nNIP : [NIP_PETUGAS]\n\nUntuk : Menghadiri kegiatan dinas.";
+    // Fallback manual jika AI gagal
+    return `Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.\nDasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\nNIP : [NIP_PETUGAS]\n\nUntuk : 1. Menghadiri kegiatan ${invitationMail.subject}.\nUntuk : 2. Melaporkan hasil pelaksanaan tugas.`;
   }
 };
 
@@ -118,7 +124,6 @@ export const suggestReply = async (incomingMailText: string): Promise<string> =>
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    // Upgrade to gemini-3-pro-preview for drafting professional and formal responses.
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: `Buatkan draf surat balasan resmi untuk sekolah dasar berdasarkan surat masuk berikut. Gunakan bahasa Indonesia yang sopan dan format surat dinas yang benar.

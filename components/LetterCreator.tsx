@@ -65,7 +65,6 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     const trimmed = line.trim();
     if (trimmed === '') {
       flushTable();
-      // Jarak antar paragraf
       renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
       return;
     }
@@ -88,34 +87,35 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     flushTable();
 
-    // Judul Tengah (Uppercase pendek, bukan Key-Value)
+    // Judul Tengah
     if (trimmed === trimmed.toUpperCase() && trimmed.length < 80 && !trimmed.includes(':') && trimmed.length > 4) {
       renderedBlocks.push(<div key={`title-${index}`} className="mt-4 mb-3 font-bold text-center uppercase tracking-wide underline underline-offset-4">{trimmed}</div>);
     } 
     // Key-Value Pair (Titik Dua)
     else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
       const firstColonIdx = line.indexOf(':');
-      const label = line.substring(0, firstColonIdx).trim();
-      const value = line.substring(firstColonIdx + 1).trim();
+      let label = line.substring(0, firstColonIdx).trim();
+      let value = line.substring(firstColonIdx + 1).trim();
       
       const isIntroSentence = label.length > 40 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa');
+      const isDasarOrUntuk = label.toLowerCase() === 'dasar' || label.toLowerCase() === 'untuk' || label.toLowerCase().startsWith('untuk');
 
       if (isIntroSentence) {
-         // Kalimat pembuka dengan indentasi
          renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
       } else {
          // Form isian (Label : Value)
+         // Jika "Dasar" atau "Untuk", gunakan alignment khusus agar rapi jika teks panjang
          renderedBlocks.push(
             <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.6]">
               {/* Label Column fixed width ~4.5cm */}
-              <span className="w-[170px] shrink-0">{label}</span>
+              <span className="w-[120px] shrink-0 font-medium">{label}</span>
               <span className="w-[20px] text-center shrink-0">:</span>
               <span className="flex-1 text-justify">{value}</span>
             </div>
          );
       }
     } 
-    // Numbered List (1. ...)
+    // Numbered List
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
@@ -180,26 +180,23 @@ const LetterCreator: React.FC = () => {
       setTemplates(data);
       if (isInitialized.current) return;
 
-      // PRIORITAS 1: Jika ada konten hasil generate AI (dari MailList/Inbox)
-      // Kita pakai konten ini MESKIPUN template ID 't_spt' mungkin belum ada di database
+      // PRIORITAS 1: Konten dari AI (MailList)
       if (location.state && location.state.content) {
-        // Cari template yang diminta, atau fallback ke template pertama sebagai cangkang
         const targetTemplate = data.find(t => t.id === location.state.templateId) || data[0];
-        
         if (targetTemplate) {
           setSelectedTemplate(targetTemplate);
           setFormData(prev => ({
             ...prev,
             subject: location.state.subject || 'SURAT PERINTAH TUGAS',
-            content: location.state.content, // PAKSA GUNAKAN KONTEN DARI STATE
+            content: location.state.content, 
             signatureTitle: 'Kepala Sekolah,'
           }));
           isInitialized.current = true;
         }
-        return; // Keluar agar tidak tertimpa logika default
+        return;
       }
 
-      // PRIORITAS 2: Navigasi normal ke template tertentu (tanpa konten custom)
+      // PRIORITAS 2: Navigasi manual ke template
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
@@ -214,7 +211,7 @@ const LetterCreator: React.FC = () => {
           isInitialized.current = true;
         }
       } 
-      // PRIORITAS 3: Default load (jika tidak ada state apa-apa)
+      // PRIORITAS 3: Default
       else if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
@@ -259,7 +256,6 @@ const LetterCreator: React.FC = () => {
     if (!letterContainerRef.current) return null;
     setPdfGenerating(true);
     try {
-      // SETTING PORTRAIT UNTUK PDF
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [215, 330] });
       const pages = letterContainerRef.current.querySelectorAll('.letter-paper');
       

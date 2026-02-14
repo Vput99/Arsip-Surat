@@ -2,9 +2,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, UrgencyLevel, Mail } from "../types";
 
+// Inisialisasi AI dengan API Key dari environment
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Fungsi utama analisis surat masuk
+/**
+ * Analisis Surat Masuk (Gunakan Pro untuk ekstraksi data yang kompleks)
+ */
 export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
   try {
     const parts: any[] = [{
@@ -12,9 +15,9 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
       1. referenceNumber (Nomor Surat)
       2. sender (Pengirim)
       3. subject (Perihal)
-      4. date (Tanggal Surat YYYY-MM-DD)
+      4. date (Tanggal Surat format YYYY-MM-DD)
       5. summary (Ringkasan singkat)
-      6. category (Undangan, Dinas, dll)
+      6. category (Undangan, Dinas, Pemberitahuan, Permohonan, dll)
       7. urgency (Biasa, Penting, Segera)
       Input: "${text}"`
     }];
@@ -26,10 +29,10 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
     }
 
     const response = await ai.models.generateContent({
-      // Complex text task: using gemini-3-pro-preview
       model: "gemini-3-pro-preview",
       contents: { parts },
       config: {
+        thinkingConfig: { thinkingBudget: 4000 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -43,7 +46,7 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
             subject: { type: Type.STRING },
             date: { type: Type.STRING }
           },
-          required: ["summary", "category", "urgency", "sentiment", "referenceNumber", "sender", "subject", "date"]
+          required: ["summary", "category", "urgency", "referenceNumber", "sender", "subject", "date"]
         }
       }
     });
@@ -55,15 +58,19 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
   }
 };
 
-// CHAIN 1: Surat Masuk -> SPT
+/**
+ * Pembuatan SPT (Gunakan Flash untuk kecepatan dan stabilitas)
+ */
 export const generateSPTFromInvitation = async (invitation: Mail): Promise<string> => {
   try {
-    const prompt = `Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan Surat Masuk dari ${invitation.sender} dengan perihal "${invitation.subject}".
-    Isi Surat Masuk: "${invitation.description}"
+    const prompt = `Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data berikut:
+    Pengirim: ${invitation.sender}
+    Nomor Surat Masuk: ${invitation.referenceNumber}
+    Perihal: ${invitation.subject}
+    Isi: ${invitation.description}
     
-    Ekstrak tanggal dan tempat kegiatan dari isi tersebut. 
-    FORMAT OUTPUT:
-    Dasar : Surat dari ${invitation.sender} Nomor : ${invitation.referenceNumber} Tanggal ${invitation.date} perihal ${invitation.subject}.
+    Buat draf resmi dengan format:
+    Dasar : Surat dari [PENGIRIM] Nomor [NOMOR] Tanggal [TANGGAL] perihal [PERIHAL].
     Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
 
     MEMERINTAHKAN :
@@ -72,76 +79,79 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
     NIP : [NIP_PETUGAS]
     Jabatan : [JABATAN_PETUGAS]
 
-    Nama tersebut akan di beri tugas untuk menghadiri kegiatan tersebut pada :
-    tanggal : [Hasil Ekstraksi Tanggal]
-    Tempat : [Hasil Ekstraksi Tempat]
-
-    Berikut surat tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya.`;
+    Untuk menghadiri kegiatan tersebut pada :
+    Tanggal : [Ekstrak tanggal dari isi surat]
+    Tempat : [Ekstrak tempat dari isi surat]`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt
+      model: "gemini-3-flash-preview",
+      contents: { parts: [{ text: prompt }] }
     });
-    return response.text || "";
-  } catch (e) { return "Gagal generate SPT."; }
+    
+    return response.text || "Gagal menghasilkan teks.";
+  } catch (e) {
+    console.error("SPT Gen Error:", e);
+    return "Gagal generate SPT secara otomatis. Silakan isi manual.";
+  }
 };
 
-// CHAIN 2: SPT -> SPPD
+/**
+ * Pembuatan SPPD
+ */
 export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
   try {
     const prompt = `Berdasarkan SPT Nomor ${spt.referenceNumber} perihal "${spt.subject}", buatkan naskah SPPD resmi. 
-    Isi SPT: "${spt.description}"
-    
-    Tampilkan data dalam format label titik dua yang rapi. Sertakan detail perjalanan dari SDN Tempurejo 1 ke lokasi tujuan yang disebutkan di SPT.`;
+    Detail: "${spt.description}"
+    Format harus rapi menggunakan label titik dua.`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt
+      model: "gemini-3-flash-preview",
+      contents: { parts: [{ text: prompt }] }
     });
-    return response.text || "";
-  } catch (e) { return "Gagal generate SPPD."; }
+    return response.text || "Gagal menghasilkan teks.";
+  } catch (e) {
+    return "Gagal generate SPPD secara otomatis.";
+  }
 };
 
-// CHAIN 3: SPT/SPPD -> LAPORAN & NOTULEN
+/**
+ * Pembuatan Laporan/Notulen
+ */
 export const generateLaporanDanNotulen = async (mailContext: Mail, type: 'LAPORAN' | 'NOTULEN'): Promise<string> => {
   try {
     const prompt = type === 'LAPORAN' 
-      ? `Buatkan narasi LAPORAN HASIL PERJALANAN DINAS yang profesional dan formal untuk tugas: "${mailContext.subject}". Konteks: "${mailContext.description}". Tulis dalam 3-4 paragraf yang menjelaskan urutan kegiatan dan kesimpulan.`
-      : `Buatkan naskah NOTULEN RAPAT berdasarkan kegiatan: "${mailContext.subject}". Konteks: "${mailContext.description}". Tulis poin-poin pembahasan rapat yang sinkron dengan perihal tersebut agar sah sebagai bukti Dana BOS.`;
+      ? `Buatkan narasi LAPORAN HASIL PERJALANAN DINAS yang formal. Perihal: "${mailContext.subject}". Deskripsi awal: "${mailContext.description}". Tulis 3 paragraf.`
+      : `Buatkan naskah NOTULEN RAPAT. Perihal: "${mailContext.subject}". Pembahasan: "${mailContext.description}". Tulis dalam poin-poin profesional.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt
+      model: "gemini-3-flash-preview",
+      contents: { parts: [{ text: prompt }] }
     });
-    return response.text || "";
-  } catch (e) { return `Gagal generate ${type}.`; }
+    return response.text || "Gagal menghasilkan teks.";
+  } catch (e) {
+    return `Gagal generate ${type}.`;
+  }
 };
 
-// Fungsi khusus untuk Magic Fill di LetterCreator (Input: string)
+/**
+ * Magic Fill untuk Editor
+ */
 export const generateNotulenContent = async (context: string): Promise<string> => {
   try {
-    const prompt = `Rapikan poin-poin berikut menjadi naskah NOTULEN RAPAT yang formal dan sinkron untuk pelaporan Dana BOS. 
-    Konteks: "${context}"
-    Tuliskan isi pembahasan rapat dalam poin-poin yang jelas dan profesional.`;
-
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt
+      model: "gemini-3-flash-preview",
+      contents: { parts: [{ text: `Rapikan catatan rapat berikut menjadi notulen resmi Dana BOS: "${context}"` }] }
     });
     return response.text || "";
-  } catch (e) { return "Gagal generate notulen."; }
+  } catch (e) { return "Gagal merapikan notulen."; }
 };
 
-// Fungsi khusus untuk Magic Fill di LetterCreator (Input: string)
 export const generateLaporanSPPDContent = async (context: string): Promise<string> => {
   try {
-    const prompt = `Buatkan narasi LAPORAN HASIL PERJALANAN DINAS yang profesional dan formal berdasarkan poin-poin berikut: "${context}". 
-    Tulis dalam 3-4 paragraf yang menjelaskan urutan kegiatan dan kesimpulan.`;
-
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt
+      model: "gemini-3-flash-preview",
+      contents: { parts: [{ text: `Buat narasi laporan perjalanan dinas dari poin-poin ini: "${context}"` }] }
     });
     return response.text || "";
-  } catch (e) { return "Gagal generate laporan."; }
+  } catch (e) { return "Gagal merapikan laporan."; }
 };

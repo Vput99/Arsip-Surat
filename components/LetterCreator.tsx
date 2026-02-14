@@ -4,10 +4,10 @@ import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users
 import { subscribeToConfig, subscribeToTemplates, LetterTemplate, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
 import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+// Fix: Import Indonesian locale from the specific subpath to avoid index export issues
+import { id } from 'date-fns/locale/id';
 import { QRCodeSVG } from 'qrcode.react';
-/* Import useHistory and useLocation for React Router v5 */
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { generateNotulenContent, generateLaporanSPPDContent } from '../services/geminiService';
@@ -130,9 +130,9 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 };
 
 const LetterCreator: React.FC = () => {
-  const location = useLocation<any>();
-  /* Use useHistory for React Router v5 instead of useNavigate */
-  const history = useHistory();
+  const location = useLocation();
+  const state = location.state as any;
+  const navigate = useNavigate();
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<LetterTemplate | null>(null);
@@ -175,14 +175,14 @@ const LetterCreator: React.FC = () => {
       setTemplates(data);
       if (isInitialized.current) return;
 
-      if (location.state && location.state.content) {
-        const targetTemplate = data.find(t => t.id === location.state.templateId) || data[0];
+      if (state && state.content) {
+        const targetTemplate = data.find(t => t.id === state.templateId) || data[0];
         if (targetTemplate) {
           setSelectedTemplate(targetTemplate);
           setFormData(prev => ({
             ...prev,
-            subject: location.state.subject || targetTemplate.subject,
-            content: location.state.content, 
+            subject: state.subject || targetTemplate.subject,
+            content: state.content, 
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
           isInitialized.current = true;
@@ -190,8 +190,8 @@ const LetterCreator: React.FC = () => {
         return;
       }
 
-      if (location.state && location.state.templateId) {
-        const targetTemplate = data.find(t => t.id === location.state.templateId);
+      if (state && state.templateId) {
+        const targetTemplate = data.find(t => t.id === state.templateId);
         if (targetTemplate) {
           setSelectedTemplate(targetTemplate);
           setFormData(prev => ({
@@ -216,7 +216,7 @@ const LetterCreator: React.FC = () => {
     });
 
     return () => { unsubscribeConfig(); unsubscribeTemplates(); unsubscribeStaff(); };
-  }, [location.state]);
+  }, [state]);
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const template = templates.find(t => t.id === e.target.value);
@@ -296,12 +296,10 @@ const LetterCreator: React.FC = () => {
   };
 
   const handleSaveToOutbox = async () => {
-    if (!confirm('Simpan naskah dan arsipkan ke Surat Keluar (Beserta PDF)?')) return;
+    if (!confirm('Simpan naskah dan arsipkan ke Surat Keluar?')) return;
     setSaveLoading(true);
-    
     try {
       const pdfDataUri = await generatePDFBlob();
-      
       const newMail: Mail = {
         id: Date.now().toString(),
         type: MailType.OUTGOING,
@@ -318,11 +316,9 @@ const LetterCreator: React.FC = () => {
         fileUrl: pdfDataUri || undefined,
         aiSummary: `Dokumen digital dibuat dari template: ${selectedTemplate?.name}`
       };
-
       await saveMail(newMail);
-      alert('Surat berhasil diarsipkan ke menu Surat Keluar.');
-      /* Use history.push for v5 */
-      history.push('/outbox');
+      alert('Surat berhasil diarsipkan.');
+      navigate('/outbox');
     } catch (e: any) {
       alert('Gagal menyimpan: ' + e.message);
     } finally {
@@ -355,46 +351,35 @@ const LetterCreator: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in text-slate-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm print:hidden">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-200"><FileText size={20} /></div>
+          <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg"><FileText size={20} /></div>
           <div>
             <h2 className="text-xl font-black text-slate-800">Editor Surat Digital</h2>
             <p className="text-slate-500 text-xs font-medium">Naskah otomatis tersimpan ke arsip Keluar.</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={handleSaveToOutbox} 
-            disabled={saveLoading || pdfGenerating} 
-            className={`px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/30 font-bold text-sm flex items-center gap-2 ${(saveLoading || pdfGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
+          <button onClick={handleSaveToOutbox} disabled={saveLoading || pdfGenerating} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm flex items-center gap-2">
             {saveLoading || pdfGenerating ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
-            {pdfGenerating ? 'Proses PDF...' : 'Simpan ke Arsip'}
+            Simpan ke Arsip
           </button>
-          <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm flex items-center gap-2">
-            <Printer size={18} /> Cetak Langsung
+          <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2">
+            <Printer size={18} /> Cetak
           </button>
         </div>
       </div>
-
       <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
         <div className="w-full lg:w-[400px] flex flex-col gap-4 overflow-y-auto pr-2 print:hidden shrink-0">
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 space-y-5 shadow-sm">
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 space-y-5">
              <div>
                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Templat Surat</label>
-               <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700 transition-all" onChange={handleTemplateChange} value={selectedTemplate?.id}>
+               <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" onChange={handleTemplateChange} value={selectedTemplate?.id}>
                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                </select>
              </div>
-             
              <div className="space-y-3">
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Perihal Surat</label>
-                    <button onClick={handleResetSubject} className="text-[9px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors">
-                      <RotateCcw size={10} /> Reset
-                    </button>
-                  </div>
-                  <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black uppercase text-indigo-900 outline-none" placeholder="Isi perihal..." />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Perihal Surat</label>
+                  <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black uppercase text-indigo-900" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                    <div className="space-y-1">
@@ -407,134 +392,84 @@ const LetterCreator: React.FC = () => {
                    </div>
                 </div>
              </div>
-
              <div className="pt-4 border-t border-slate-100 space-y-4">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Penandatangan</label>
-                  <button onClick={() => setUseQRCode(!useQRCode)} className={`flex items-center gap-2 px-2 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${useQRCode ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                  <button onClick={() => setUseQRCode(!useQRCode)} className={`flex items-center gap-2 px-2 py-1 rounded-lg text-[10px] font-black uppercase ${useQRCode ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                     <QrCode size={14} /> {useQRCode ? 'QR Aktif' : 'QR Mati'}
                   </button>
                 </div>
                 <div className="space-y-3">
-                  <div>
-                    <label className="text-[9px] text-slate-400 block mb-1">Nama Kepala Sekolah</label>
-                    <input name="signerName" value={formData.signerName} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <label className="text-[9px] text-slate-400 block mb-1">NIP</label>
-                        <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-                    </div>
-                     <div>
-                        <label className="text-[9px] text-slate-400 block mb-1">Jabatan</label>
-                        <input name="signatureTitle" value={formData.signatureTitle} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-                    </div>
-                  </div>
+                  <input name="signerName" value={formData.signerName} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 rounded-xl text-xs font-bold" placeholder="Nama" />
+                  <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 rounded-xl text-xs" placeholder="NIP" />
+                  <input name="signatureTitle" value={formData.signatureTitle} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 rounded-xl text-xs" placeholder="Jabatan" />
                 </div>
              </div>
           </div>
-          
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 flex flex-col min-h-[350px] shadow-sm relative">
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 flex flex-col min-h-[350px]">
              <div className="flex justify-between items-center mb-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Isi Naskah</label>
-                <div className="flex gap-2">
-                   {(selectedTemplate?.id === 't_notulen' || selectedTemplate?.id === 't_laporan_sppd') && (
-                      <button 
-                        onClick={handleMagicFill} 
-                        disabled={aiGenerating}
-                        className={`text-[9px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all ${aiGenerating ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'}`}
-                      >
-                        {aiGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} 
-                        {aiGenerating ? 'Processing...' : 'Magic Fill AI'}
-                      </button>
-                   )}
-                   <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-all"><Users size={12} /> Personil</button>
-                </div>
+                <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5"><Users size={12} /> Personil</button>
              </div>
-             <textarea 
-               name="content" 
-               value={formData.content} 
-               onChange={handleInputChange} 
-               className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] leading-relaxed resize-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-               placeholder={selectedTemplate?.id === 't_notulen' ? 'Tulis poin-poin rapat di sini, lalu klik Magic Fill AI untuk merapikan...' : 'Tulis ringkasan hasil kegiatan di sini...'}
-             />
+             <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] resize-none" />
           </div>
         </div>
-
-        <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
+        <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:bg-white print:block">
            {contentParts.map((part, pIdx) => (
-             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black mb-10 print:mb-0">
+             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none flex flex-col text-black mb-10 print:mb-0">
                 {pIdx === 0 && (
                   <div className="border-b-[3px] border-double border-black pb-2 mb-6 grid grid-cols-[24mm_1fr_24mm] items-center text-black">
                      <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-full h-auto object-contain" />}</div>
                      <div className="text-center w-full px-2">
-                        <h3 className="text-[14pt] uppercase leading-tight tracking-wide">{config.headerLine1}</h3>
-                        <h3 className="text-[14pt] font-bold uppercase leading-tight tracking-wide">{config.headerLine2}</h3>
-                        <h1 className="text-[18pt] font-black uppercase my-1 leading-none tracking-tight">{config.name}</h1>
+                        <h3 className="text-[14pt] uppercase tracking-wide">{config.headerLine1}</h3>
+                        <h3 className="text-[14pt] font-bold uppercase tracking-wide">{config.headerLine2}</h3>
+                        <h1 className="text-[18pt] font-black uppercase my-1 tracking-tight">{config.name}</h1>
                         <p className="text-[10pt] leading-tight">{config.address}</p>
-                        <p className="text-[10pt] leading-tight">Email: {config.email}</p>
                      </div>
                      <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-full h-auto object-contain" />}</div>
                   </div>
                 )}
-                
                 <div className="flex-1 flex flex-col pt-2">
                    {pIdx === 0 && (
                      <div className="text-center mb-8">
-                       <h2 className="text-[12pt] font-bold uppercase underline underline-offset-4 decoration-2 tracking-wide leading-tight">{formData.subject}</h2>
+                       <h2 className="text-[12pt] font-bold uppercase underline decoration-2">{formData.subject}</h2>
                        <p className="text-[12pt] mt-1">Nomor: {formData.refNumber}</p>
                      </div>
                    )}
-                   
                    <div className="flex-1">
                      <SmartContentRenderer text={part} />
                    </div>
-
                    {pIdx === contentParts.length - 1 && (
-                     <div className="mt-8 break-inside-avoid ml-auto w-[350px] flex flex-col text-center">
+                     <div className="mt-8 ml-auto w-[350px] flex flex-col text-center">
                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
                         <p className="font-bold">{formData.signatureTitle}</p>
                         <div className="h-28 flex items-center justify-center my-1">
-                          {useQRCode && (
-                            <QRCodeSVG 
-                              value={qrValue} 
-                              size={90} 
-                              level="H" 
-                              imageSettings={{
-                                src: config.logoDaerahUrl,
-                                height: 20,
-                                width: 20,
-                                excavate: true,
-                              }}
-                            />
-                          )}
+                          {useQRCode && <QRCodeSVG value={qrValue} size={90} level="H" />}
                         </div>
-                        <p className="font-bold underline underline-offset-4 decoration-1 uppercase tracking-wide">{formData.signerName}</p>
+                        <p className="font-bold underline uppercase">{formData.signerName}</p>
                         <p className="">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
                      </div>
                    )}
                 </div>
-                <div className="absolute top-4 right-6 text-[9px] font-black text-slate-200 tracking-[0.5em] uppercase pointer-events-none print:hidden">Pratinjau F4 Portrait 215x330mm</div>
              </div>
            ))}
         </div>
       </div>
-      
       {showStaffPicker && (
          <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
            <div className="bg-white rounded-[2rem] w-full max-w-md p-6 shadow-2xl flex flex-col h-[70vh]">
               <div className="flex justify-between items-center mb-6">
                  <h4 className="text-lg font-black text-slate-800">Pilih Personil</h4>
-                 <button onClick={() => setShowStaffPicker(false)} className="text-slate-400 hover:text-rose-500 font-bold uppercase text-xs">Tutup</button>
+                 <button onClick={() => setShowStaffPicker(false)} className="text-slate-400 font-bold text-xs">Tutup</button>
               </div>
               <div className="relative mb-4">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input type="text" placeholder="Cari nama..." value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                <input type="text" placeholder="Cari nama..." value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl outline-none" />
               </div>
               <div className="flex-1 overflow-y-auto space-y-2">
                 {staff.filter(s => s.name.toLowerCase().includes(staffSearch.toLowerCase())).map(member => (
-                  <button key={member.id} onClick={() => handleSelectStaff(member)} className="w-full p-4 bg-slate-50 rounded-xl text-left hover:bg-indigo-50 transition-all border border-transparent hover:border-indigo-100 group">
-                    <p className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{member.name}</p>
+                  <button key={member.id} onClick={() => handleSelectStaff(member)} className="w-full p-4 bg-slate-50 rounded-xl text-left hover:bg-indigo-50 border border-transparent hover:border-indigo-100">
+                    <p className="font-bold text-slate-800">{member.name}</p>
                     <p className="text-[10px] text-slate-400 uppercase tracking-widest">{member.rank}</p>
                   </button>
                 ))}
@@ -555,17 +490,7 @@ const LetterCreator: React.FC = () => {
           @page { size: 215mm 330mm portrait; margin: 0; } 
           body * { visibility: hidden; } 
           .letter-paper, .letter-paper * { visibility: visible !important; } 
-          .letter-paper { 
-            position: absolute !important; 
-            left: 0 !important; 
-            top: 0 !important; 
-            width: 100% !important; 
-            height: 330mm !important; 
-            margin: 0 !important; 
-            padding: 20mm 25mm 20mm 25mm !important; 
-            display: flex !important; 
-            flex-direction: column !important; 
-          } 
+          .letter-paper { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 20mm 25mm 20mm 25mm !important; display: flex !important; flex-direction: column !important; } 
         }
       `}</style>
     </div>

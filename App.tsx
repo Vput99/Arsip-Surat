@@ -1,7 +1,6 @@
 
 import React from 'react';
-/* Import Switch and Redirect instead of Routes and Navigate for React Router v5 */
-import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import MailList from './components/MailList';
@@ -15,26 +14,22 @@ const App: React.FC = () => {
   return (
     <Router>
       <Layout>
-        {/* Use Switch instead of Routes for v5 */}
-        <Switch>
-          {/* Use component prop and exact for root path in v5 */}
-          <Route exact path="/" component={Dashboard} />
-          {/* Use render prop to pass parameters in v5 */}
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
           <Route 
             path="/inbox" 
-            render={() => <MailList type={MailType.INCOMING} />} 
+            element={<MailList type={MailType.INCOMING} />} 
           />
           <Route 
             path="/outbox" 
-            render={() => <MailList type={MailType.OUTGOING} />} 
+            element={<MailList type={MailType.OUTGOING} />} 
           />
-          <Route path="/create" component={LetterCreator} />
-          <Route path="/attendance" component={AttendanceCreator} />
-          <Route path="/honor" component={HonorManager} />
-          <Route path="/settings" component={Settings} />
-          {/* Use Redirect instead of Navigate for catch-all in v5 */}
-          <Redirect to="/" />
-        </Switch>
+          <Route path="/create" element={<LetterCreator />} />
+          <Route path="/attendance" element={<AttendanceCreator />} />
+          <Route path="/honor" element={<HonorManager />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </Layout>
     </Router>
   );

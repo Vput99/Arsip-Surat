@@ -6,7 +6,8 @@ import { subscribeToMails, subscribeToConfig } from '../services/storage';
 import { SchoolConfig, Mail as MailType, MailType as MType } from '../types';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+// Fix: Import Indonesian locale from the specific subpath to avoid index export issues
+import { id } from 'date-fns/locale/id';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({ total: 0, incoming: 0, outgoing: 0, urgent: 0 });

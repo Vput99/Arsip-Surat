@@ -444,7 +444,19 @@ const LetterCreator: React.FC = () => {
                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
                         <p className="font-bold">{formData.signatureTitle}</p>
                         <div className="h-28 flex items-center justify-center my-1">
-                          {useQRCode && <QRCodeSVG value={qrValue} size={90} level="H" />}
+                          {useQRCode && (
+                            <QRCodeSVG 
+                              value={qrValue} 
+                              size={90} 
+                              level="H" 
+                              imageSettings={{
+                                src: config.logoDaerahUrl,
+                                height: 20,
+                                width: 20,
+                                excavate: true,
+                              }}
+                            />
+                          )}
                         </div>
                         <p className="font-bold underline uppercase">{formData.signerName}</p>
                         <p className="">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>

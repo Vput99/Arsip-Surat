@@ -542,7 +542,32 @@ const AttendanceCreator: React.FC = () => {
         }
 
         @media print {
-          /* Paksa setting kertas ke landscape F4/A3/Legal */
+          /* 1. Sembunyikan SEMUA elemen secara default */
+          body * {
+            visibility: hidden !important;
+          }
+
+          /* 2. Hanya tampilkan naskah absensi dan semua isinya */
+          .attendance-paper-landscape, 
+          .attendance-paper-landscape * {
+            visibility: visible !important;
+          }
+
+          /* 3. Atur posisi naskah agar menempati seluruh layar cetak */
+          .attendance-paper-landscape {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 330mm !important;
+            height: 215mm !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            transform: scale(1) !important; /* Reset skala pratinjau ke 1:1 */
+            background: white !important;
+            z-index: 9999 !important;
+          }
+
           @page { 
             size: 330mm 215mm landscape; 
             margin: 0; 
@@ -554,53 +579,6 @@ const AttendanceCreator: React.FC = () => {
             padding: 0 !important;
             overflow: visible !important;
             background: white !important;
-          }
-
-          /* Hilangkan semua UI aplikasi */
-          #root > div > aside,
-          #root > div > header,
-          aside, header, 
-          .print\:hidden,
-          .attendance-main-container > div:not(.attendance-scroll-area),
-          .attendance-scroll-area > div:not(.attendance-paper-landscape) {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-          }
-
-          /* Pastikan container utama tidak membatasi konten */
-          #root, #root > div, main, .max-w-7xl, .attendance-main-container, .attendance-scroll-area {
-            display: block !important;
-            overflow: visible !important;
-            position: static !important;
-            width: auto !important;
-            height: auto !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            border: none !important;
-            background: transparent !important;
-          }
-
-          /* Paksa naskah menjadi elemen tunggal yang terlihat */
-          .attendance-paper-landscape { 
-            display: flex !important;
-            position: absolute !important; 
-            top: 0 !important;
-            left: 0 !important;
-            width: 330mm !important; 
-            height: 215mm !important;
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            transform: scale(1) !important; /* Reset skala zoom UI ke 1:1 */
-            background: white !important;
-            page-break-after: always;
-            z-index: 9999;
-          }
-
-          .paper-padding {
-            padding: 10mm 15mm !important;
           }
 
           /* Pastikan warna tetap muncul saat cetak */

@@ -31,13 +31,13 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       );
       
       renderedBlocks.push(
-        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-6 break-inside-avoid px-0 w-full overflow-x-auto">
-          <table className="w-full border-collapse border-[1.5pt] border-black text-[10.5pt] text-black font-serif">
+        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-4 break-inside-avoid px-0 w-full overflow-x-auto">
+          <table className="w-full border-collapse border-[1px] border-black text-[12pt] text-black font-['Times_New_Roman']">
             <thead>
               {hasHeader && (
-                <tr className="bg-slate-50 print:bg-transparent">
+                <tr className="bg-transparent">
                   {tableRows[0].map((cell, idx) => (
-                    <th key={idx} className="border border-black p-2 text-center font-bold uppercase font-serif align-middle bg-slate-50/50 print:bg-transparent">{cell.trim()}</th>
+                    <th key={idx} className="border border-black p-1 text-center font-bold font-['Times_New_Roman'] align-middle">{cell.trim()}</th>
                   ))}
                 </tr>
               )}
@@ -46,7 +46,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
               {tableRows.slice(hasHeader ? 1 : 0).map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className={`border border-black px-2 py-1.5 font-serif align-top ${cellIdx === 0 ? 'text-center w-10' : ''} ${cellIdx === 2 && row.length > 4 ? 'text-center w-16' : ''}`}>
+                    <td key={cellIdx} className={`border border-black px-2 py-1 font-['Times_New_Roman'] align-top ${cellIdx === 0 ? 'text-center w-10' : ''} ${cellIdx === 2 && row.length > 4 ? 'text-center w-16' : ''}`}>
                       {cell.trim() || ' '}
                     </td>
                   ))}
@@ -65,7 +65,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     const trimmed = line.trim();
     if (trimmed === '') {
       flushTable();
-      renderedBlocks.push(<div className="h-2" key={`br-${index}`}></div>);
+      renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
       return;
     }
 
@@ -87,38 +87,42 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     flushTable();
 
-    if (trimmed === trimmed.toUpperCase() && trimmed.length < 50 && !trimmed.includes(':') && trimmed.length > 4) {
-      renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-4 font-bold text-center text-black font-serif uppercase tracking-[0.1em]">{trimmed}</div>);
+    // Judul Tengah (Uppercase pendek)
+    if (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && !trimmed.includes(':') && trimmed.length > 4) {
+      renderedBlocks.push(<div key={`title-${index}`} className="mt-4 mb-2 font-bold text-center text-black font-['Times_New_Roman'] uppercase tracking-wide text-[12pt]">{trimmed}</div>);
     } 
+    // Key-Value Pair (Titik Dua)
     else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
       const firstColonIdx = line.indexOf(':');
       const label = line.substring(0, firstColonIdx).trim();
       const value = line.substring(firstColonIdx + 1).trim();
       
       renderedBlocks.push(
-        <div key={`info-${index}`} className="flex mb-2 break-inside-avoid text-[11pt] font-serif text-black leading-relaxed">
-          <span className="w-[85px] shrink-0 font-bold">{label}</span>
+        <div key={`info-${index}`} className="flex mb-1 break-inside-avoid text-[12pt] font-['Times_New_Roman'] text-black leading-relaxed">
+          <span className="w-[100px] shrink-0">{label}</span>
           <span className="w-[20px] text-center shrink-0">:</span>
           <span className="flex-1 text-justify">{value}</span>
         </div>
       );
     } 
+    // Numbered List
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
-        <div key={`list-${index}`} className="flex mb-2 pl-[105px] font-serif text-[11pt] text-black leading-relaxed">
-          <span className="w-8 shrink-0">{match ? match[1] : ''}</span>
+        <div key={`list-${index}`} className="flex mb-1 pl-[110px] font-['Times_New_Roman'] text-[12pt] text-black leading-relaxed">
+          <span className="w-8 shrink-0 -ml-8">{match ? match[1] : ''}</span>
           <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
         </div>
       );
     }
+    // Standard Paragraph
     else {
-      renderedBlocks.push(<p key={`p-${index}`} className="mb-4 text-justify font-serif text-[11pt] text-black leading-[1.6] indent-10">{trimmed}</p>);
+      renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify font-['Times_New_Roman'] text-[12pt] text-black leading-[1.5] indent-10">{trimmed}</p>);
     }
   });
   
   flushTable();
-  return <div className="font-serif text-black leading-relaxed">{renderedBlocks}</div>;
+  return <div className="font-['Times_New_Roman'] text-black leading-relaxed">{renderedBlocks}</div>;
 };
 
 const LetterCreator: React.FC = () => {
@@ -368,9 +372,21 @@ const LetterCreator: React.FC = () => {
                     <QrCode size={14} /> {useQRCode ? 'QR Aktif' : 'QR Mati'}
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <input name="signerName" value={formData.signerName} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
-                  <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[9px] text-slate-400 block mb-1">Nama Kepala Sekolah (Sertakan Gelar)</label>
+                    <input name="signerName" value={formData.signerName} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className="text-[9px] text-slate-400 block mb-1">NIP</label>
+                        <input name="signerNip" value={formData.signerNip} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
+                    </div>
+                     <div>
+                        <label className="text-[9px] text-slate-400 block mb-1">Jabatan</label>
+                        <input name="signatureTitle" value={formData.signatureTitle} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
+                    </div>
+                  </div>
                 </div>
              </div>
           </div>
@@ -386,26 +402,26 @@ const LetterCreator: React.FC = () => {
 
         <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
            {contentParts.map((part, pIdx) => (
-             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-serif mb-10 print:mb-0">
+             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-['Times_New_Roman'] mb-10 print:mb-0">
                 {pIdx === 0 && (
-                  <div className="border-b-[4.5pt] border-double border-black pb-3 mb-2 grid grid-cols-[90px_1fr_90px] items-center text-black">
-                     <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[22mm] h-auto" />}</div>
-                     <div className="text-center w-full px-4">
-                        <h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine1}</h3>
-                        <h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine2}</h3>
-                        <h1 className="text-[18pt] font-black uppercase my-1 leading-none tracking-tight">{config.name}</h1>
-                        <p className="text-[9pt] italic font-medium">{config.address}</p>
-                        <p className="text-[9pt] font-bold">NPSN: {config.npsn} | Email: {config.email}</p>
+                  <div className="border-b-[3px] border-double border-black pb-2 mb-4 grid grid-cols-[90px_1fr_90px] items-center text-black">
+                     <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[24mm] h-auto" />}</div>
+                     <div className="text-center w-full px-2">
+                        <h3 className="text-[14pt] font-['Times_New_Roman'] uppercase leading-tight">{config.headerLine1}</h3>
+                        <h3 className="text-[14pt] font-bold font-['Times_New_Roman'] uppercase leading-tight">{config.headerLine2}</h3>
+                        <h1 className="text-[18pt] font-black font-['Times_New_Roman'] uppercase my-1 leading-none tracking-tight">{config.name}</h1>
+                        <p className="text-[10pt] font-['Times_New_Roman']">{config.address}</p>
+                        <p className="text-[10pt] font-['Times_New_Roman']">Email: {config.email}</p>
                      </div>
-                     <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-[22mm] h-auto" />}</div>
+                     <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-[24mm] h-auto" />}</div>
                   </div>
                 )}
                 
-                <div className="flex-1 flex flex-col pt-5">
+                <div className="flex-1 flex flex-col pt-2">
                    {pIdx === 0 && (
-                     <div className="text-center mb-8">
-                       <h2 className="text-[13pt] font-bold uppercase underline underline-offset-4 decoration-2 tracking-wide leading-tight">{formData.subject}</h2>
-                       <p className="text-[11pt] mt-1 font-bold">Nomor: {formData.refNumber}</p>
+                     <div className="text-center mb-6">
+                       <h2 className="text-[12pt] font-bold uppercase underline underline-offset-4 decoration-2 tracking-wide leading-tight">{formData.subject}</h2>
+                       <p className="text-[12pt] mt-1">Nomor: {formData.refNumber}</p>
                      </div>
                    )}
                    
@@ -414,14 +430,14 @@ const LetterCreator: React.FC = () => {
                    </div>
 
                    {pIdx === contentParts.length - 1 && (
-                     <div className="mt-10 break-inside-avoid ml-auto w-[320px] flex flex-col items-center text-center">
+                     <div className="mt-8 break-inside-avoid ml-auto w-[350px] flex flex-col text-center font-['Times_New_Roman'] text-[12pt]">
                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
-                        <p className="font-bold">{formData.signatureTitle}</p>
-                        <div className="h-28 flex items-center justify-center">
+                        <p className="font-bold mb-4">{formData.signatureTitle}</p>
+                        <div className="h-24 flex items-center justify-center">
                           {useQRCode && <QRCodeSVG value={qrValue} size={85} level="H" />}
                         </div>
-                        <p className="font-bold underline underline-offset-4 decoration-2 uppercase tracking-wide">{formData.signerName}</p>
-                        <p className="font-bold">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
+                        <p className="font-bold underline underline-offset-4 decoration-1 uppercase tracking-wide mt-2">{formData.signerName}</p>
+                        <p className="">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
                      </div>
                    )}
                 </div>
@@ -452,7 +468,30 @@ const LetterCreator: React.FC = () => {
            </div>
          </div>
       )}
-      <style>{`.letter-paper { width: 215mm; min-height: 297mm; padding: 5mm 20mm 20mm 30mm; } @media print { @page { size: 215mm 330mm portrait; margin: 0; } body * { visibility: hidden; } .letter-paper, .letter-paper * { visibility: visible !important; } .letter-paper { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 5mm 20mm 20mm 30mm !important; display: flex !important; flex-direction: column !important; } }`}</style>
+      <style>{`
+        .letter-paper { 
+          width: 215mm; 
+          min-height: 330mm; 
+          padding: 10mm 25mm 20mm 25mm; 
+          font-family: 'Times New Roman', serif;
+        } 
+        @media print { 
+          @page { size: 215mm 330mm portrait; margin: 0; } 
+          body * { visibility: hidden; } 
+          .letter-paper, .letter-paper * { visibility: visible !important; } 
+          .letter-paper { 
+            position: absolute !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 100% !important; 
+            height: 330mm !important; 
+            margin: 0 !important; 
+            padding: 10mm 25mm 20mm 25mm !important; 
+            display: flex !important; 
+            flex-direction: column !important; 
+          } 
+        }
+      `}</style>
     </div>
   );
 };

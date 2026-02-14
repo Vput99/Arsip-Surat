@@ -87,37 +87,28 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     flushTable();
 
-    // Judul Tengah (Contoh: MEMERINTAHKAN)
     if (trimmed === trimmed.toUpperCase() && trimmed.length < 80 && !trimmed.includes(':') && trimmed.length > 4) {
       renderedBlocks.push(<div key={`title-${index}`} className="mt-4 mb-3 font-bold text-center uppercase tracking-wide underline underline-offset-4">{trimmed}</div>);
     } 
-    // Key-Value Pair (Titik Dua)
     else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
       const firstColonIdx = line.indexOf(':');
       let label = line.substring(0, firstColonIdx).trim();
       let value = line.substring(firstColonIdx + 1).trim();
       
-      const isIntroSentence = label.length > 40 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa') || label.toLowerCase().includes('akan di beri tugas');
+      const isIntroSentence = label.length > 45 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa') || label.toLowerCase().includes('akan di beri tugas');
       
-      // Deteksi kunci yang harus disejajarkan
-      const alignedKeys = ['dasar', 'kepada', 'nama', 'nip', 'jabatan', 'untuk', 'hari', 'tanggal', 'tempat', 'waktu'];
-      const isAlignedKey = alignedKeys.includes(label.toLowerCase().replace(/\s/g, '')) || label.toLowerCase().startsWith('untuk');
-
       if (isIntroSentence) {
          renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
       } else {
-         // Form isian standard (Label : Value)
          renderedBlocks.push(
             <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.6]">
-              {/* Gunakan width yang konsisten agar titik dua sejajar secara vertikal */}
-              <span className="w-[120px] shrink-0">{label}</span>
+              <span className="w-[125px] shrink-0">{label}</span>
               <span className="w-[20px] text-center shrink-0">:</span>
               <span className="flex-1 text-justify">{value}</span>
             </div>
          );
       }
     } 
-    // Numbered List
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
@@ -127,7 +118,6 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
         </div>
       );
     }
-    // Paragraph Standard (Contoh kalimat pengantar di tengah naskah)
     else {
       renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
     }
@@ -160,7 +150,6 @@ const LetterCreator: React.FC = () => {
     signatureTitle: 'Kepala Sekolah',
     signerName: '',
     signerNip: '',
-    signerNamePihak2: '( ........................................... )',
     subject: '',
     content: ''
   });
@@ -188,9 +177,9 @@ const LetterCreator: React.FC = () => {
           setSelectedTemplate(targetTemplate);
           setFormData(prev => ({
             ...prev,
-            subject: location.state.subject || 'SURAT PERINTAH TUGAS',
+            subject: location.state.subject || targetTemplate.subject,
             content: location.state.content, 
-            signatureTitle: 'Kepala Sekolah,'
+            signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
           isInitialized.current = true;
         }
@@ -201,11 +190,10 @@ const LetterCreator: React.FC = () => {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
           setSelectedTemplate(targetTemplate);
-          const isSPT = targetTemplate.id === 't_spt' || targetTemplate.name.includes('SPT');
           setFormData(prev => ({
             ...prev,
-            subject: isSPT ? 'SURAT PERINTAH TUGAS' : targetTemplate.subject,
-            content: targetTemplate.content.replace(/\*\*/g, '').trim(),
+            subject: targetTemplate.subject,
+            content: targetTemplate.content.trim(),
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
           isInitialized.current = true;
@@ -230,11 +218,10 @@ const LetterCreator: React.FC = () => {
     const template = templates.find(t => t.id === e.target.value);
     if (template) {
       setSelectedTemplate(template);
-      const isSPT = template.id === 't_spt' || template.name.includes('SPT');
       setFormData(prev => ({ 
         ...prev, 
-        subject: isSPT ? 'SURAT PERINTAH TUGAS' : template.subject, 
-        content: template.content.replace(/\*\*/g, ''), 
+        subject: template.subject, 
+        content: template.content, 
         signatureTitle: template.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah' 
       }));
     }
@@ -242,8 +229,7 @@ const LetterCreator: React.FC = () => {
 
   const handleResetSubject = () => {
     if (selectedTemplate) {
-      const isSPT = selectedTemplate.id === 't_spt' || selectedTemplate.name.includes('SPT');
-      setFormData(prev => ({ ...prev, subject: isSPT ? 'SURAT PERINTAH TUGAS' : selectedTemplate.subject }));
+      setFormData(prev => ({ ...prev, subject: selectedTemplate.subject }));
     }
   };
 
@@ -282,7 +268,7 @@ const LetterCreator: React.FC = () => {
   };
 
   const handleSaveToOutbox = async () => {
-    if (!confirm('Simpan naskah dan generate PDF ke arsip Surat Keluar?')) return;
+    if (!confirm('Simpan naskah dan arsipkan ke Surat Keluar (Beserta PDF)?')) return;
     setSaveLoading(true);
     
     try {
@@ -295,18 +281,18 @@ const LetterCreator: React.FC = () => {
         date: formData.date,
         receivedDate: formData.date,
         createdAt: new Date().toISOString(),
-        sender: formData.recipient || 'Internal / Dinas',
+        sender: formData.recipient || 'Internal Sekolah',
         subject: formData.subject,
         description: formData.content.split('\n').slice(0, 3).join(' '),
-        category: selectedTemplate?.category || 'Lainnya',
+        category: selectedTemplate?.category || 'Dinas',
         urgency: UrgencyLevel.LOW,
         status: MailStatus.ARCHIVED,
         fileUrl: pdfDataUri || undefined,
-        aiSummary: `Dokumen digital (PDF) dibuat dari template: ${selectedTemplate?.name}`
+        aiSummary: `Dokumen digital dibuat dari template: ${selectedTemplate?.name}`
       };
 
       await saveMail(newMail);
-      alert('Surat dan file PDF berhasil diarsipkan.');
+      alert('Surat berhasil diarsipkan ke menu Surat Keluar.');
       navigate('/outbox');
     } catch (e: any) {
       alert('Gagal menyimpan: ' + e.message);
@@ -322,6 +308,7 @@ const LetterCreator: React.FC = () => {
         newContent = newContent.replace('[NAMA_PETUGAS]', member.name);
         newContent = newContent.replace('[NIP_PETUGAS]', member.nip ? `NIP. ${member.nip}` : '-');
         newContent = newContent.replace('[JABATAN_PETUGAS]', member.rank || '-');
+        newContent = newContent.replace('[PANGKAT_GOL]', member.rank || '-');
       } else {
         newContent += `\nNama : ${member.name}\nNIP : ${member.nip || '-'}\nJabatan : ${member.rank || '-'}\n`;
       }
@@ -342,7 +329,7 @@ const LetterCreator: React.FC = () => {
           <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-200"><FileText size={20} /></div>
           <div>
             <h2 className="text-xl font-black text-slate-800">Editor Surat Digital</h2>
-            <p className="text-slate-500 text-xs font-medium">Data aman dari sinkronisasi otomatis.</p>
+            <p className="text-slate-500 text-xs font-medium">Naskah otomatis tersimpan ke arsip Keluar.</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -351,7 +338,7 @@ const LetterCreator: React.FC = () => {
             disabled={saveLoading || pdfGenerating} 
             className={`px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/30 font-bold text-sm flex items-center gap-2 ${(saveLoading || pdfGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {saveLoading ? <Loader2 size={18} className="animate-spin" /> : (pdfGenerating ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />)} 
+            {saveLoading || pdfGenerating ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
             {pdfGenerating ? 'Proses PDF...' : 'Simpan ke Arsip'}
           </button>
           <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 font-bold text-sm flex items-center gap-2">
@@ -364,7 +351,7 @@ const LetterCreator: React.FC = () => {
         <div className="w-full lg:w-[400px] flex flex-col gap-4 overflow-y-auto pr-2 print:hidden shrink-0">
           <div className="bg-white p-5 rounded-3xl border border-slate-200 space-y-5 shadow-sm">
              <div>
-               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Templat & Judul (Terkunci)</label>
+               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Templat Surat</label>
                <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700 transition-all" onChange={handleTemplateChange} value={selectedTemplate?.id}>
                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                </select>
@@ -375,7 +362,7 @@ const LetterCreator: React.FC = () => {
                   <div className="flex justify-between items-center mb-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Perihal Surat</label>
                     <button onClick={handleResetSubject} className="text-[9px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors">
-                      <RotateCcw size={10} /> Reset Ke Template
+                      <RotateCcw size={10} /> Reset
                     </button>
                   </div>
                   <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black uppercase text-indigo-900 outline-none" placeholder="Isi perihal..." />
@@ -401,7 +388,7 @@ const LetterCreator: React.FC = () => {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[9px] text-slate-400 block mb-1">Nama Kepala Sekolah (Sertakan Gelar)</label>
+                    <label className="text-[9px] text-slate-400 block mb-1">Nama Kepala Sekolah</label>
                     <input name="signerName" value={formData.signerName} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">

@@ -69,23 +69,22 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    // Prompt yang sangat spesifik untuk mengambil Nomor Surat Masuk sebagai Dasar
-    const prompt = `Anda adalah sekretaris sekolah. Buatkan naskah Surat Perintah Tugas (SPT) berdasarkan data Surat Masuk berikut.
+    const prompt = `Anda adalah sekretaris administrasi sekolah dasar yang sangat teliti. 
+    Buatkan draf naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data Surat Masuk berikut:
     
-    DATA SURAT MASUK (SUMBER):
-    - Nomor Surat: ${invitationMail.referenceNumber}
-    - Pengirim: ${invitationMail.sender}
+    SUMBER DATA:
+    - Nomor Surat Masuk: ${invitationMail.referenceNumber}
+    - Dari Instansi: ${invitationMail.sender}
     - Perihal: ${invitationMail.subject}
-    - Isi Ringkas: ${invitationMail.description}
-    - Ringkasan AI: ${invitationMail.aiSummary || '-'}
+    - Isi Lengkap: ${invitationMail.description}
     
-    INSTRUKSI KHUSUS:
-    1. Bagian 'Dasar' WAJIB menyebutkan "Surat Undangan dari [Pengirim] Nomor [Nomor Surat] tanggal [Tanggal Surat]".
-    2. Bagian 'Untuk' WAJIB mendeteksi nama kegiatan, hari/tanggal pelaksanaan, dan tempat dari isi surat.
-    3. Format harus rapi menggunakan Key : Value.
+    ATURAN FORMAT PENULISAN (IKUTI PERSIS):
+    1. Bagian 'Dasar' WAJIB menyebutkan: "Surat ${invitationMail.category || 'Undangan'} dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Mengenai ${invitationMail.subject}."
+    2. Sertakan Dasar kedua: "Program Kerja Sekolah Tahun Pelajaran 2024/2025."
+    3. Bagian 'Untuk' harus memuat tugas spesifik diikuti rincian jadwal yang diekstrak dari isi surat (Hari, Tanggal, Waktu, Tempat).
     
-    CONTOH FORMAT OUTPUT (Ikuti persis struktur ini):
-    Dasar : Surat ${invitationMail.category || 'Undangan'} dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.
+    STRUKTUR OUTPUT (TANPA MARKDOWN, GUNAKAN TITIK DUA UNTUK ALIGNMENT):
+    Dasar : Surat ${invitationMail.category || 'Undangan'} dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Mengenai ${invitationMail.subject}.
     Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
 
     MEMERINTAHKAN :
@@ -95,8 +94,10 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     NIP : [NIP_PETUGAS]
     Jabatan : [JABATAN_PETUGAS]
 
-    Untuk : 1. Menghadiri kegiatan ${invitationMail.subject} yang akan dilaksanakan pada ... (lengkapi tanggal/waktu/tempat dari isi surat).
-    Untuk : 2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah.
+    Untuk : Melaksanakan tugas menghadiri kegiatan ${invitationMail.subject} yang akan dilaksanakan pada:
+    Hari : [Ekstrak Nama Hari dari isi surat]
+    Tanggal : [Ekstrak Tanggal Lengkap dari isi surat]
+    Tempat : [Ekstrak Lokasi/Tempat dari isi surat]
 
     Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.`;
 
@@ -106,17 +107,12 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     });
 
     let text = response.text || "";
-    // Bersihkan markdown atau prefix yang tidak perlu
-    text = text.replace(/^(Berikut|Ini|Naskah|Draft).*:(\n)?/i, '')
-               .replace(/\*\*/g, '')
-               .replace(/```/g, '')
-               .trim();
-               
+    // Bersihkan dari intro teks AI
+    text = text.replace(/^(Berikut|Ini|Naskah|Draft).*:(\n)?/i, '').trim();
     return text;
   } catch (error) {
     console.error("Gemini SPT Error:", error);
-    // Fallback manual jika AI gagal
-    return `Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.\nDasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\nNIP : [NIP_PETUGAS]\n\nUntuk : 1. Menghadiri kegiatan ${invitationMail.subject}.\nUntuk : 2. Melaporkan hasil pelaksanaan tugas.`;
+    return `Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\n\nUntuk : Menghadiri kegiatan ${invitationMail.subject}.`;
   }
 };
 

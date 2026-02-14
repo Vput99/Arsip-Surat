@@ -98,24 +98,22 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       let value = line.substring(firstColonIdx + 1).trim();
       
       const isIntroSentence = label.length > 40 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa');
-      const isDasarOrUntuk = label.toLowerCase() === 'dasar' || label.toLowerCase() === 'untuk' || label.toLowerCase().startsWith('untuk');
+      
+      const alignedKeys = ['dasar', 'kepada', 'nama', 'nip', 'jabatan', 'untuk', 'hari', 'tanggal', 'tempat', 'waktu'];
+      const isAlignedKey = alignedKeys.includes(label.toLowerCase().replace(/\s/g, '')) || label.toLowerCase().startsWith('untuk');
 
       if (isIntroSentence) {
          renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
       } else {
-         // Form isian (Label : Value)
-         // Jika "Dasar" atau "Untuk", gunakan alignment khusus agar rapi jika teks panjang
          renderedBlocks.push(
             <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.6]">
-              {/* Label Column fixed width ~4.5cm */}
-              <span className="w-[120px] shrink-0 font-medium">{label}</span>
+              <span className={`shrink-0 ${isAlignedKey ? 'w-[120px]' : 'w-[170px]'}`}>{label}</span>
               <span className="w-[20px] text-center shrink-0">:</span>
               <span className="flex-1 text-justify">{value}</span>
             </div>
          );
       }
     } 
-    // Numbered List
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
@@ -125,7 +123,6 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
         </div>
       );
     }
-    // Standard Paragraph
     else {
       renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
     }
@@ -180,7 +177,6 @@ const LetterCreator: React.FC = () => {
       setTemplates(data);
       if (isInitialized.current) return;
 
-      // PRIORITAS 1: Konten dari AI (MailList)
       if (location.state && location.state.content) {
         const targetTemplate = data.find(t => t.id === location.state.templateId) || data[0];
         if (targetTemplate) {
@@ -196,7 +192,6 @@ const LetterCreator: React.FC = () => {
         return;
       }
 
-      // PRIORITAS 2: Navigasi manual ke template
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
@@ -211,7 +206,6 @@ const LetterCreator: React.FC = () => {
           isInitialized.current = true;
         }
       } 
-      // PRIORITAS 3: Default
       else if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
@@ -462,7 +456,19 @@ const LetterCreator: React.FC = () => {
                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
                         <p className="font-bold">{formData.signatureTitle}</p>
                         <div className="h-28 flex items-center justify-center my-1">
-                          {useQRCode && <QRCodeSVG value={qrValue} size={90} level="H" />}
+                          {useQRCode && (
+                            <QRCodeSVG 
+                              value={qrValue} 
+                              size={90} 
+                              level="H" 
+                              imageSettings={{
+                                src: config.logoDaerahUrl,
+                                height: 20,
+                                width: 20,
+                                excavate: true,
+                              }}
+                            />
+                          )}
                         </div>
                         <p className="font-bold underline underline-offset-4 decoration-1 uppercase tracking-wide">{formData.signerName}</p>
                         <p className="">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>

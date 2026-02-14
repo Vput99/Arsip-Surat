@@ -5,7 +5,7 @@ import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail } from '../s
 import { SchoolConfig, Mail, MailType, MailStatus, UrgencyLevel } from '../types';
 import { format, getDaysInMonth, isSunday, isSaturday } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -39,7 +39,6 @@ const AttendanceCreator: React.FC = () => {
     };
   }, []);
 
-  // Load Draft from Local Storage
   useEffect(() => {
     const key = `attendance_draft_${activeCategory}_${month}_${year}`;
     const saved = localStorage.getItem(key);
@@ -55,7 +54,6 @@ const AttendanceCreator: React.FC = () => {
     }
   }, [activeCategory, month, year]);
 
-  // Save Draft to Local Storage
   useEffect(() => {
     if (Object.keys(attendance).length > 0 || holidays.length > 0) {
       const key = `attendance_draft_${activeCategory}_${month}_${year}`;
@@ -166,7 +164,6 @@ const AttendanceCreator: React.FC = () => {
     
     setSaveLoading(true);
     try {
-      // 1. Generate PDF
       const canvas = await html2canvas(paperRef.current, {
         scale: 2,
         useCORS: true,
@@ -178,12 +175,11 @@ const AttendanceCreator: React.FC = () => {
       pdf.addImage(imgData, 'JPEG', 0, 0, 330, 215);
       const pdfDataUri = pdf.output('datauristring');
 
-      // 2. Simpan ke Database
       const period = format(new Date(year, month, 1), 'MMMM yyyy', { locale: id });
       const newMail: Mail = {
         id: Date.now().toString(),
         type: MailType.OUTGOING,
-        referenceNumber: `ABS/${month+1}/${year}`, // Nomor dummy
+        referenceNumber: `ABS/${month+1}/${year}`,
         date: new Date().toISOString().split('T')[0],
         receivedDate: new Date().toISOString().split('T')[0],
         createdAt: new Date().toISOString(),
@@ -200,8 +196,6 @@ const AttendanceCreator: React.FC = () => {
       await saveMail(newMail);
       alert('Laporan berhasil disimpan ke Arsip Surat Keluar.');
       navigate('/outbox');
-      
-      // Clear draft after success save? No, user might want to edit later.
     } catch (e: any) {
       alert('Gagal menyimpan: ' + e.message);
     } finally {
@@ -260,7 +254,7 @@ const AttendanceCreator: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-20 h-screen overflow-hidden">
+    <div className="flex flex-col gap-6 animate-fade-in pb-20 h-screen overflow-hidden attendance-main-container">
       {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 print:hidden shrink-0">
          <div className="flex items-center gap-4">
@@ -360,16 +354,11 @@ const AttendanceCreator: React.FC = () => {
                   </div>
                 ))}
              </div>
-             <div className="pt-1 flex items-start gap-1.5 text-[9px] text-white/40 italic leading-relaxed">
-               <MousePointer2 size={10} className="shrink-0 mt-0.5" />
-               Klik sel pada kertas untuk mengubah status kehadiran. Data tersimpan otomatis di browser (Draft).
-             </div>
           </div>
         </div>
 
         {/* Preview Area Container */}
         <div className="xl:col-span-3 flex flex-col h-full bg-slate-200/50 rounded-[2.5rem] border border-slate-300 relative overflow-hidden group">
-           {/* Header Controls inside preview */}
            <div className="absolute top-6 left-6 z-20 flex gap-2">
               {(['reg', 'pppk', 'extra', 'tukang'] as const).map(cat => (
                 <button 
@@ -382,7 +371,6 @@ const AttendanceCreator: React.FC = () => {
               ))}
            </div>
            
-           {/* Zoom Controls */}
            <div className="absolute bottom-6 right-6 z-20 flex gap-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl shadow-xl border border-slate-200">
               <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"><ZoomOut size={16}/></button>
               <div className="w-12 flex items-center justify-center font-black text-xs text-slate-700">{Math.round(scale * 100)}%</div>
@@ -390,16 +378,13 @@ const AttendanceCreator: React.FC = () => {
               <button onClick={() => setScale(0.85)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors border-l border-slate-200 ml-1"><Maximize size={14}/></button>
            </div>
 
-           {/* Scrollable Paper Container */}
-           <div className="flex-1 overflow-auto flex items-start justify-center p-12 print:p-0 print:block">
+           <div className="flex-1 overflow-auto flex items-start justify-center p-12 print:p-0 print:block attendance-scroll-area">
              <div 
                 ref={paperRef}
                 className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col text-black font-['Times_New_Roman'] transition-transform duration-200 origin-top"
                 style={{ transform: `scale(${scale})` }}
              >
-               
                <div className="paper-padding flex flex-col items-center">
-                 {/* KOP SURAT (Konsisten dengan LetterCreator) */}
                  <div className="w-full border-b-[3px] border-double border-black pb-2 mb-4 grid grid-cols-[90px_1fr_90px] items-center text-black font-['Times_New_Roman']">
                     <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[24mm] h-auto" />}</div>
                     <div className="text-center w-full px-2">
@@ -412,7 +397,6 @@ const AttendanceCreator: React.FC = () => {
                     <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-[24mm] h-auto" />}</div>
                  </div>
 
-                 {/* JUDUL */}
                  <div className="judul-laporan text-center mb-6 text-black w-full">
                    <h2 className="text-[14pt] font-bold underline underline-offset-4 decoration-2 uppercase text-black mb-1">{view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}</h2>
                    <p className="text-[11pt] uppercase text-black font-bold tracking-[0.2em]">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
@@ -420,7 +404,6 @@ const AttendanceCreator: React.FC = () => {
 
                  <div className="w-full">
                    {view === 'recap' ? (
-                      /* TABEL REKAP */
                       <table className="recap-table w-full border-collapse text-[10pt] text-black border-black font-['Times_New_Roman']">
                         <thead>
                           <tr className="bg-slate-50/50 print:bg-transparent">
@@ -463,7 +446,6 @@ const AttendanceCreator: React.FC = () => {
                         </tbody>
                       </table>
                    ) : (
-                      /* TABEL PRESENSI UTAMA */
                       <table className="attendance-table w-full border-collapse text-[8.5pt] table-fixed text-black border-black border-[1.5pt] font-['Times_New_Roman']">
                        <thead>
                          <tr className="bg-slate-50/50 print:bg-transparent">
@@ -524,7 +506,6 @@ const AttendanceCreator: React.FC = () => {
                    )}
                  </div>
 
-                 {/* TANDA TANGAN */}
                  <div className="mt-8 flex justify-end font-['Times_New_Roman'] text-[11pt] break-inside-avoid text-black w-full pr-[15mm]">
                    <div className="flex flex-col text-center w-[350px]">
                      <p className="mb-1">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
@@ -566,29 +547,56 @@ const AttendanceCreator: React.FC = () => {
             margin: 0; 
           }
           
-          body { 
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
             overflow: visible !important;
+            background: white !important;
           }
 
-          body * { visibility: hidden; }
-          .attendance-paper-landscape, .attendance-paper-landscape * { visibility: visible !important; }
-          
+          /* Sembunyikan semua UI aplikasi kecuali container naskah */
+          #root > div > aside,
+          #root > div > header,
+          .print\:hidden,
+          .attendance-main-container > div:not(.attendance-scroll-area),
+          .attendance-scroll-area > div:not(.attendance-paper-landscape) {
+            display: none !important;
+          }
+
+          /* Pastikan parent container tidak membatasi konten */
+          #root, #root > div, main, .attendance-main-container, .attendance-scroll-area {
+            display: block !important;
+            overflow: visible !important;
+            position: static !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
           .attendance-paper-landscape { 
-            position: absolute !important; 
-            left: 0 !important; 
-            top: 0 !important; 
+            position: static !important; 
             width: 330mm !important; 
             height: 215mm !important;
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            transform: none !important;
+            transform: scale(1) !important; /* Paksa skala normal saat cetak */
+            page-break-after: always;
           }
 
-          .bg-red-600 { background-color: #dc2626 !important; }
-          .bg-red-500 { background-color: #ef4444 !important; }
+          .paper-padding {
+            padding: 10mm 15mm !important;
+          }
+
+          /* Pastikan warna muncul di hasil cetak */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          .bg-red-600 { background-color: #dc2626 !important; color: white !important; }
+          .bg-red-500 { background-color: #ef4444 !important; color: white !important; }
           table { border: 1.5pt solid black !important; }
           th, td { border: 1pt solid black !important; }
         }

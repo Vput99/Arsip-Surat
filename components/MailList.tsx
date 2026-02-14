@@ -8,7 +8,8 @@ import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Cal
 import MailForm from './MailForm';
 import { analyzeLetter, generateSPTFromInvitation, generateSPPDFromSPT, generateLaporanDanNotulen } from '../services/geminiService';
 import { SchoolConfig } from '../types';
-import { useNavigate } from 'react-router-dom';
+/* Import useHistory for React Router v5 instead of useNavigate */
+import { useHistory } from 'react-router-dom';
 
 interface MailListProps {
   type: MailType;
@@ -27,7 +28,8 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const [dispositionNote, setDispositionNote] = useState('');
   const [isSavingDisposition, setIsSavingDisposition] = useState(false);
   
-  const navigate = useNavigate();
+  /* Use useHistory hook for v5 */
+  const history = useHistory();
 
   useEffect(() => {
     const unsubscribeMails = subscribeToMails((allMails) => {
@@ -74,22 +76,19 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       if (mail.type === MailType.INCOMING) {
         // Step 1: Invitation -> SPT
         const sptContent = await generateSPTFromInvitation(mail);
-        navigate('/create', { 
-          state: { 
-            templateId: 't_spt',
-            subject: 'SURAT PERINTAH TUGAS',
-            content: sptContent
-          } 
+        /* Use history.push for v5 with location state as second argument */
+        history.push('/create', { 
+          templateId: 't_spt',
+          subject: 'SURAT PERINTAH TUGAS',
+          content: sptContent
         });
       } else {
         // Step 2: SPT -> SPPD
         const sppdContent = await generateSPPDFromSPT(mail);
-        navigate('/create', { 
-          state: { 
-            templateId: 't_sppd',
-            subject: 'SURAT PERINTAH PERJALANAN DINAS',
-            content: sppdContent
-          } 
+        history.push('/create', { 
+          templateId: 't_sppd',
+          subject: 'SURAT PERINTAH PERJALANAN DINAS',
+          content: sppdContent
         });
       }
     } catch (e) {
@@ -103,12 +102,10 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     setProcessingAI(true);
     try {
       const content = await generateLaporanDanNotulen(mail, docType);
-      navigate('/create', {
-        state: {
-          templateId: docType === 'LAPORAN' ? 't_laporan_sppd' : 't_notulen',
-          subject: docType === 'LAPORAN' ? 'LAPORAN HASIL PERJALANAN DINAS' : 'NOTULEN RAPAT',
-          content: content
-        }
+      history.push('/create', {
+        templateId: docType === 'LAPORAN' ? 't_laporan_sppd' : 't_notulen',
+        subject: docType === 'LAPORAN' ? 'LAPORAN HASIL PERJALANAN DINAS' : 'NOTULEN RAPAT',
+        content: content
       });
     } catch (e) {
       alert("Gagal membuat dokumen akhir.");

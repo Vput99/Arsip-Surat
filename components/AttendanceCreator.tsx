@@ -5,7 +5,8 @@ import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail } from '../s
 import { SchoolConfig, Mail, MailType, MailStatus, UrgencyLevel } from '../types';
 import { format, getDaysInMonth, isSunday, isSaturday } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
+/* Import useHistory for v5 */
+import { useHistory } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -13,7 +14,8 @@ type AttendanceCategory = 'reg' | 'pppk' | 'extra' | 'tukang';
 type ViewMode = 'menu' | 'editor' | 'recap';
 
 const AttendanceCreator: React.FC = () => {
-  const navigate = useNavigate();
+  /* Use history hook for v5 */
+  const history = useHistory();
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [view, setView] = useState<ViewMode>('menu');
   const [activeCategory, setActiveCategory] = useState<AttendanceCategory>('reg');
@@ -195,7 +197,7 @@ const AttendanceCreator: React.FC = () => {
 
       await saveMail(newMail);
       alert('Laporan berhasil disimpan ke Arsip Surat Keluar.');
-      navigate('/outbox');
+      history.push('/outbox');
     } catch (e: any) {
       alert('Gagal menyimpan: ' + e.message);
     } finally {

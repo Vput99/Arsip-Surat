@@ -6,7 +6,8 @@ import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { QRCodeSVG } from 'qrcode.react';
-import { useLocation, useNavigate } from 'react-router-dom';
+/* Import useHistory and useLocation for React Router v5 */
+import { useLocation, useHistory } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { generateNotulenContent, generateLaporanSPPDContent } from '../services/geminiService';
@@ -129,8 +130,9 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 };
 
 const LetterCreator: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location = useLocation<any>();
+  /* Use useHistory for React Router v5 instead of useNavigate */
+  const history = useHistory();
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [templates, setTemplates] = useState<LetterTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<LetterTemplate | null>(null);
@@ -280,7 +282,7 @@ const LetterCreator: React.FC = () => {
           windowWidth: 1200
         });
         
-        const imgData = canvas.toDataURL('image/jpeg', 0.8);
+        const imgData = canvas.toDataURL('image/jpeg', 0.80);
         if (i > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, 0, 215, 330);
       }
@@ -319,7 +321,8 @@ const LetterCreator: React.FC = () => {
 
       await saveMail(newMail);
       alert('Surat berhasil diarsipkan ke menu Surat Keluar.');
-      navigate('/outbox');
+      /* Use history.push for v5 */
+      history.push('/outbox');
     } catch (e: any) {
       alert('Gagal menyimpan: ' + e.message);
     } finally {

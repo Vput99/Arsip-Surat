@@ -18,6 +18,51 @@ export const CATEGORIES = [
 
 export const LETTER_TEMPLATES = [
   {
+    id: 't_mou_ekskul',
+    name: 'MOU Pengajar Ekskul',
+    subject: 'PERJANJIAN KERJA SAMA TENAGA PENGAJAR EKSTRAKURIKULER',
+    category: 'Kerjasama',
+    layout: 'standard',
+    content: `Yang bertanda tangan di bawah ini :
+
+Nama : [NAMA_KEPSEK]
+Jabatan : Kepala SDN Tempurejo 1
+Pihak Pertama
+
+Nama : [NAMA_PENGAJAR]
+Alamat : [ALAMAT_PENGAJAR]
+Pihak Kedua
+
+Kedua belah pihak sepakat melakukan kerja sama pembinaan ekstrakurikuler [NAMA_EKSKUL] dengan ketentuan:
+1. Pihak Kedua melaksanakan pembinaan sesuai jadwal yang ditetapkan.
+2. Pihak Pertama memberikan honorarium sebesar Rp. [NOMINAL] per pertemuan.
+3. Perjanjian ini berlaku sejak [TANGGAL_MULAI] sampai [TANGGAL_SELESAI].
+
+Demikian perjanjian ini dibuat untuk ditaati.`
+  },
+  {
+    id: 't_spk_tukang',
+    name: 'SPK Tenaga Tukang',
+    subject: 'SURAT PERJANJIAN KERJA (SPK) PEMELIHARAAN SARPRAS',
+    category: 'Kerjasama',
+    layout: 'standard',
+    content: `Pada hari ini [HARI], Tanggal [TANGGAL_SEKARANG], telah disepakati kerja sama antara:
+
+Jabatan : Kepala SDN Tempurejo 1 (Pihak Pertama)
+Nama Pekerja : [NAMA_TUKANG] (Pihak Kedua)
+
+Pihak Pertama memberikan tugas kepada Pihak Kedua untuk melaksanakan pekerjaan:
+Pekerjaan : [JENIS_PERBAIKAN]
+Lokasi : SDN Tempurejo 1
+
+Ketentuan Pembayaran:
+- Upah harian disepakati sebesar Rp. [UPAH_HARIAN].
+- Pembayaran dilakukan setelah pekerjaan selesai/sesuai progres.
+- Durasi pekerjaan diperkirakan selama [DURASI_HARI] hari.
+
+Surat perintah kerja ini diberikan untuk dilaksanakan dengan penuh tanggung jawab.`
+  },
+  {
     id: 't_sptjm_uang_makan',
     name: 'SPTJM Uang Makan (PNS)',
     subject: 'SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK',

@@ -1,7 +1,8 @@
 
 import React, { useRef, useState, useEffect } from 'react';
+/* Link and useLocation are standard exports in react-router-dom v5 and v6 */
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, AlertCircle, RefreshCw, CalendarCheck, Cloud, Server } from 'lucide-react';
+import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, AlertCircle, RefreshCw, CalendarCheck, Cloud, Server, HandCoins } from 'lucide-react';
 import { subscribeToConnectionStatus, forceCheckConnections } from '../services/storage';
 
 interface LayoutProps {
@@ -23,15 +24,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleRefreshConnection = async () => {
     setIsChecking(true);
     const result = await forceCheckConnections();
-    
-    // Feedback visual sederhana
-    if (result.turso) {
-      // Koneksi sukses - opsional: bisa tambah toast notification
-      console.log("Turso Connected");
-    } else {
-      alert("Gagal terhubung ke Database Arsip (Turso). Periksa koneksi internet atau token database Anda.");
-    }
-    
     setTimeout(() => setIsChecking(false), 1000);
   };
 
@@ -41,6 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/outbox', label: 'Arsip Keluar', icon: <Send size={20} /> },
     { path: '/create', label: 'Input Naskah', icon: <PenTool size={20} /> },
     { path: '/attendance', label: 'Input Absensi', icon: <CalendarCheck size={20} /> },
+    { path: '/honor', label: 'Penerimaan Honor', icon: <HandCoins size={20} /> },
     { path: '/settings', label: 'Konfigurasi', icon: <Settings size={20} /> },
   ];
 
@@ -77,7 +70,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           })}
         </nav>
 
-        {/* Status Indicators (Hybrid Display) */}
         <div className="px-6 py-6 space-y-3 bg-slate-800/20 border-t border-white/5 relative group">
            <button 
              onClick={handleRefreshConnection}

@@ -524,6 +524,58 @@ const AttendanceCreator: React.FC = () => {
       </div>
 
       <style>{`
+        /* 1. Sembunyikan SEMUA elemen secara default saat cetak */
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+
+          /* 2. Hanya tampilkan naskah absensi dan semua isinya */
+          .attendance-paper-landscape, 
+          .attendance-paper-landscape * {
+            visibility: visible !important;
+          }
+
+          /* 3. Atur posisi naskah agar menempati seluruh layar cetak secara absolut */
+          .attendance-paper-landscape {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 330mm !important;
+            height: 215mm !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            transform: scale(1) !important; /* Reset skala editor ke 100% */
+            background: white !important;
+            z-index: 9999 !important;
+          }
+
+          @page { 
+            size: 330mm 215mm landscape; 
+            margin: 0; 
+          }
+          
+          /* Hilangkan elemen layout browser yang mungkin mengganggu */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: white !important;
+          }
+
+          /* Pastikan warna tetap muncul saat cetak */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          .bg-red-600 { background-color: #dc2626 !important; color: white !important; }
+          .bg-red-500 { background-color: #ef4444 !important; color: white !important; }
+          table { border: 1.5pt solid black !important; border-collapse: collapse !important; }
+          th, td { border: 1pt solid black !important; }
+        }
+
         .attendance-paper-landscape {
            width: 330mm;
            min-width: 330mm;
@@ -539,54 +591,6 @@ const AttendanceCreator: React.FC = () => {
         .paper-padding {
            width: 100%;
            padding: 10mm 15mm; 
-        }
-
-        @media print {
-          /* Sembunyikan semua elemen UI non-cetak */
-          header, aside, .print\:hidden, .attendance-main-container > div:first-child, .xl\:col-span-1 {
-            display: none !important;
-          }
-
-          /* Reset layout kontainer agar tidak membatasi ukuran cetak */
-          html, body, #root, .attendance-main-container, .attendance-scroll-area {
-            height: auto !important;
-            width: auto !important;
-            overflow: visible !important;
-            display: block !important;
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          /* Atur naskah sebagai elemen utama cetak */
-          .attendance-paper-landscape {
-            display: block !important;
-            visibility: visible !important;
-            position: relative !important;
-            transform: none !important; /* MATIKAN ZOOM EDITOR SAAT CETAK */
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            width: 330mm !important;
-            height: 215mm !important;
-            page-break-after: always;
-          }
-
-          @page { 
-            size: 330mm 215mm landscape; 
-            margin: 0; 
-          }
-          
-          /* Pastikan warna latar belakang (merah/biru) muncul di cetakan */
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          .bg-red-600 { background-color: #dc2626 !important; color: white !important; }
-          .bg-red-500 { background-color: #ef4444 !important; color: white !important; }
-          table { border: 1.5pt solid black !important; border-collapse: collapse !important; }
-          th, td { border: 1pt solid black !important; }
         }
       `}</style>
     </div>

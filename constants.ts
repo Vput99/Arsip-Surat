@@ -32,26 +32,11 @@ Nama : [NAMA_PETUGAS]
 NIP : [NIP_PETUGAS]
 Jabatan : [JABATAN_PETUGAS]
 
-Untuk : 1. Menghadiri kegiatan koordinasi peningkatan mutu pendidikan pada tanggal ... di ...
-Untuk : 2. Melaporkan hasil pelaksanaan tugas secara tertulis kepada Kepala Sekolah.
+Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :
+tanggal : [TANGGAL]
+Tempat : [TEMPAT]
 
-Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.
-
-[PAGE_BREAK]
-
-LAMPIRAN : SURAT PERINTAH TUGAS
-NOMOR : [NOMOR_SURAT]
-TANGGAL : [TANGGAL_SURAT]
-
-DAFTAR PERSONIL PELAKSANA TUGAS :
-
-No : Nama : NIP : Jabatan : Keterangan
-1. : [NAMA_PETUGAS] : [NIP_PETUGAS] : [JABATAN_PETUGAS] : Peserta
-2. : ....................... : ....................... : Guru Kelas : Peserta
-3. : ....................... : ....................... : Staff TU : Pendamping
-
-Ditetapkan di : Kediri
-Pada Tanggal : [TANGGAL_SURAT]`
+Berikut surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.`
   },
   {
     id: 't_sppd',
@@ -59,59 +44,84 @@ Pada Tanggal : [TANGGAL_SURAT]`
     subject: 'SURAT PERINTAH PERJALANAN DINAS',
     category: 'Dinas',
     layout: 'centered',
-    content: `Pejabat pemberi perintah : Kepala Sekolah
-Nama pegawai yang diperintah : [NAMA_PETUGAS]
+    content: `Pejabat Pemberi Perintah : Kepala Sekolah
+Nama Pegawai yang diperintah : [NAMA_PETUGAS]
 NIP : [NIP_PETUGAS]
 Pangkat dan Golongan : [JABATAN_PETUGAS]
+Jabatan : Guru / Pegawai
 Maksud Perjalanan Dinas : Menghadiri ...
-Alat angkut yang dipergunakan : Kendaraan Pribadi
-Tempat berangkat : SDN [NAMA_SEKOLAH]
-Tempat tujuan : ...
-Lamanya perjalanan dinas : 1 (Satu) Hari
-Tanggal berangkat : ...
-Tanggal kembali : ...
-Dasar Perintah : SPT Nomor ... Tanggal ...`
+Alat Angkut yang dipergunakan : Kendaraan Pribadi / Dinas
+Tempat Berangkat : SDN [NAMA_SEKOLAH]
+Tempat Tujuan : ...
+Lamanya Perjalanan Dinas : 1 (Satu) Hari
+Tanggal Berangkat : ...
+Tanggal Kembali : ...
+Dasar Perintah : SPT Nomor ... Tanggal ...
+Instansi / Akun : Dana BOS / Sekolah
+Keterangan Lain-lain : -`
   },
   {
-    id: 't_pip_aktivasi',
-    name: 'Surat Keterangan Aktivasi PIP',
-    subject: 'SURAT KETERANGAN AKTIVASI REKENING SIMPEL PIP',
-    category: 'Dinas',
-    layout: 'centered',
-    content: `Yang bertanda tangan di bawah ini :
-
-Nama : [NAMA_KEPSEK]
-NIP : [NIP_KEPSEK]
-Jabatan : Kepala Sekolah
-Satuan Pendidikan : SDN [NAMA_SEKOLAH]
-
-Dengan ini menerangkan bahwa nama-nama tersebut di bawah ini adalah benar Peserta Didik SDN [NAMA_SEKOLAH] dan yang bersangkutan sebagai Penerima Dana PIP Tahun Anggaran 2024/2025:
-
-NO : NAMA PESERTA DIDIK (SESUAI SK) : KELAS : NOMOR REKENING : PIP ID / VIRTUAL ACCOUNT
-1. : ................................................... : ....... : ........................................... : ...........................................
-2. : ................................................... : ....... : ........................................... : ...........................................
-3. : ................................................... : ....... : ........................................... : ...........................................
-
-Demikian surat keterangan ini dibuat untuk digunakan sebagai salah satu persyaratan melakukan aktivasi rekening SimPel PIP pada Bank Penyalur (BRI/BNI).`
-  },
-  {
-    id: 't_panggilan_ortu',
-    name: 'Surat Panggilan Orang Tua',
-    subject: 'UNDANGAN PANGGILAN ORANG TUA / WALI MURID',
+    id: 't_undangan_rapat',
+    name: 'Undangan Rapat Dinas/Komite',
+    subject: 'UNDANGAN RAPAT KOORDINASI SEKOLAH',
     category: 'Undangan',
     layout: 'standard',
-    content: `Dengan hormat,
+    content: `Kepada Yth.
+Bapak/Ibu Dewan Guru dan Staf Karyawan
+SDN [NAMA_SEKOLAH]
+di Tempat
 
-Sehubungan dengan adanya hal penting terkait perkembangan pendidikan putra/putri Bapak/Ibu, kami mengharap kehadiran Bapak/Ibu Wali Murid pada:
+Dengan hormat,
+
+Mengharap kehadiran Bapak/Ibu dalam acara Rapat Koordinasi yang akan dilaksanakan pada:
 
 Hari / Tanggal : ...................................................
 Waktu : ...................................................
-Tempat : Ruang Kepala Sekolah / Ruang Guru
-Keperluan : Koordinasi Pembinaan dan Evaluasi Belajar Peserta Didik
+Tempat : Ruang Pertemuan / Guru
+Acara : ...................................................
 
-Mengingat pentingnya acara tersebut, kami mengharap kehadiran Bapak/Ibu tepat pada waktunya dan tidak diwakilkan.
+Demikian undangan ini kami sampaikan, mengingat pentingnya acara tersebut kami mohon kehadiran Bapak/Ibu tepat pada waktunya. Atas perhatiannya kami ucapkan terima kasih.`
+  },
+  {
+    id: 't_suket_siswa',
+    name: 'Surat Keterangan Berkelakuan Baik',
+    subject: 'SURAT KETERANGAN BERKELAKUAN BAIK',
+    category: 'Dinas',
+    layout: 'centered',
+    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH] menerangkan bahwa :
 
-Demikian undangan ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.`
+Nama : ...................................................
+Tempat / Tgl Lahir : ...................................................
+Nomor Induk Siswa : ...................................................
+NISN : ...................................................
+Jenis Kelamin : ...................................................
+Pekerjaan : Siswa / Pelajar
+
+Berdasarkan data sekolah, nama tersebut di atas benar-benar siswa kami yang memiliki catatan kelakuan baik selama mengikuti kegiatan belajar mengajar di sekolah.
+
+Surat keterangan ini diberikan kepada yang bersangkutan untuk dipergunakan sebagai syarat : ...................................................
+
+Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.`
+  },
+  {
+    id: 't_surat_pengantar',
+    name: 'Surat Pengantar Dokumen',
+    subject: 'SURAT PENGANTAR',
+    category: 'Dinas',
+    layout: 'centered',
+    content: `Kepada Yth.
+Kepala Dinas Pendidikan Kota Kediri
+U.p. Bidang Pembinaan Pendidikan Dasar
+di Kediri
+
+No : Jenis Dokumen yang dikirim : Banyaknya : Keterangan
+1. : Laporan Realisasi Dana BOS Tahap ... : 3 (Tiga) Bendel : Dikirim dengan hormat untuk mendapatkan penyelesaian lebih lanjut.
+2. : ........................................... : ....... : ...........................................
+
+Demikian surat pengantar ini dibuat untuk digunakan sebagaimana mestinya.
+
+Diterima Tanggal : ...................
+Penerima : ...................`
   },
   {
     id: 't_sk_panitia',
@@ -155,26 +165,26 @@ Ditetapkan di : Kediri
 Pada Tanggal : [TANGGAL_SURAT]`
   },
   {
-    id: 't_mutasi_keluar',
-    name: 'Surat Keterangan Pindah (Mutasi)',
-    subject: 'SURAT KETERANGAN PINDAH SEKOLAH',
-    category: 'Mutasi',
-    layout: 'centered',
-    content: `Yang bertanda tangan di bawah ini Kepala Sekolah Dasar Negeri [NAMA_SEKOLAH] menerangkan bahwa :
+    id: 't_permohonan_narsum',
+    name: 'Surat Permohonan Narasumber',
+    subject: 'PERMOHONAN MENJADI NARASUMBER',
+    category: 'Permohonan',
+    layout: 'standard',
+    content: `Kepada Yth.
+...........................................
+di Tempat
 
-Nama Siswa : ...................................................
-Tempat / Tgl Lahir : ...................................................
-Nomor Induk / NISN : ...................................................
-Jenis Kelamin : ...................................................
-Siswa Kelas : ...................................................
+Dengan hormat,
 
-Telah mengajukan pindah sekolah atas permintaan orang tua ke :
+Dalam rangka meningkatkan kompetensi guru di lingkungan SDN [NAMA_SEKOLAH], kami bermaksud mengadakan kegiatan workshop dengan tema "...........................................".
 
-Nama Sekolah Tujuan : ...................................................
-Alamat Sekolah Tujuan : ...................................................
-Alasan Pindah : ...................................................
+Sehubungan dengan hal tersebut, kami memohon kesediaan Bapak/Ibu untuk menjadi Narasumber dalam kegiatan yang akan dilaksanakan pada:
 
-Bersama ini kami lampirkan buku laporan pendidikan (Raport) siswa yang bersangkutan. Demikian surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.`
+Hari / Tanggal : ...................................................
+Waktu : ...................................................
+Tempat : Aula SDN [NAMA_SEKOLAH]
+
+Demikian permohonan ini kami sampaikan. Besar harapan kami Bapak/Ibu dapat memenuhi permohonan ini. Atas perhatian dan kesediaannya kami ucapkan terima kasih.`
   }
 ];
 

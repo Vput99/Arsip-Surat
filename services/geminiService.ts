@@ -120,8 +120,35 @@ export const generateSPPDContent = async (sptMail: any): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    const prompt = `Buatkan naskah SPPD berdasarkan SPT Nomor ${sptMail.referenceNumber}.
-    Gunakan format key-value standar SPPD.`;
+    const prompt = `Anda adalah sekretaris administrasi sekolah. 
+    Buatkan naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) berdasarkan data Surat Perintah Tugas (SPT) berikut:
+    
+    DATA SPT:
+    - Nomor SPT: ${sptMail.referenceNumber}
+    - Perihal/Tugas: ${sptMail.subject}
+    - Isi SPT: ${sptMail.description}
+    
+    INSTRUKSI FORMAT SPPD (Gunakan Label ini):
+    Pejabat Pemberi Perintah : Kepala Sekolah
+    Nama Pegawai yang diperintah : [AMBIL NAMA DARI SPT]
+    NIP : [AMBIL NIP DARI SPT]
+    Pangkat dan Golongan : [AMBIL JABATAN DARI SPT]
+    Jabatan : Guru / Pegawai
+    Maksud Perjalanan Dinas : ${sptMail.subject}
+    Alat Angkut yang dipergunakan : Kendaraan Pribadi
+    Tempat Berangkat : SDN [NAMA_SEKOLAH]
+    Tempat Tujuan : [EKSTRAK TEMPAT TUJUAN DARI SPT]
+    Lamanya Perjalanan Dinas : 1 (Satu) Hari
+    Tanggal Berangkat : [EKSTRAK TANGGAL DARI SPT]
+    Tanggal Kembali : [SAMA DENGAN TANGGAL BERANGKAT]
+    Dasar Perintah : SPT Nomor ${sptMail.referenceNumber} Tanggal ${sptMail.date}
+    Instansi / Akun : Dana BOS / Sekolah
+    Keterangan Lain-lain : -
+    
+    CATATAN: 
+    - Gunakan titik dua (:) sebagai pemisah.
+    - Jangan gunakan Markdown.
+    - Pastikan ekstraksi tanggal dan tempat dari SPT akurat.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -130,7 +157,8 @@ export const generateSPPDContent = async (sptMail: any): Promise<string> => {
 
     return (response.text || "").trim();
   } catch (error) {
-    return `Dasar Perintah : SPT Nomor ${sptMail.referenceNumber}`;
+    console.error("Gemini SPPD Error:", error);
+    return `Pejabat Pemberi Perintah : Kepala Sekolah\nNama Pegawai : [NAMA_PETUGAS]\nMaksud : Menghadiri ${sptMail.subject}\nDasar Perintah : SPT Nomor ${sptMail.referenceNumber}`;
   }
 };
 

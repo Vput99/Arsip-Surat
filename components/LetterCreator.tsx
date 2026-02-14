@@ -27,17 +27,17 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     if (tableRows.length > 0) {
       const firstRow = tableRows[0];
       const hasHeader = firstRow.some(cell => 
-        ['nama', 'jabatan', 'no', 'kelas', 'rekening', 'id', 'virtual', 'peserta'].some(k => cell.toLowerCase().includes(k))
+        ['nama', 'jabatan', 'no', 'kelas', 'rekening', 'id', 'virtual', 'peserta', 'keterangan'].some(k => cell.toLowerCase().includes(k))
       );
       
       renderedBlocks.push(
         <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-4 break-inside-avoid px-0 w-full overflow-x-auto">
-          <table className="w-full border-collapse border-[1px] border-black text-[12pt] text-black font-['Times_New_Roman']">
+          <table className="w-full border-collapse border border-black text-[11pt]">
             <thead>
               {hasHeader && (
                 <tr className="bg-transparent">
                   {tableRows[0].map((cell, idx) => (
-                    <th key={idx} className="border border-black p-1 text-center font-bold font-['Times_New_Roman'] align-middle">{cell.trim()}</th>
+                    <th key={idx} className="border border-black p-1.5 text-center font-bold align-middle">{cell.trim()}</th>
                   ))}
                 </tr>
               )}
@@ -46,7 +46,7 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
               {tableRows.slice(hasHeader ? 1 : 0).map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className={`border border-black px-2 py-1 font-['Times_New_Roman'] align-top ${cellIdx === 0 ? 'text-center w-10' : ''} ${cellIdx === 2 && row.length > 4 ? 'text-center w-16' : ''}`}>
+                    <td key={cellIdx} className={`border border-black px-2 py-1.5 align-top leading-snug ${cellIdx === 0 ? 'text-center w-12' : ''}`}>
                       {cell.trim() || ' '}
                     </td>
                   ))}
@@ -65,13 +65,14 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
     const trimmed = line.trim();
     if (trimmed === '') {
       flushTable();
+      // Jarak antar paragraf
       renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
       return;
     }
 
     if (trimmed === '[PAGE_BREAK]') {
       flushTable();
-      renderedBlocks.push(<div key={`pb-${index}`} className="page-breaker print:break-after-page h-0 my-1 relative border-t border-dashed border-slate-300 print:border-none print:my-0"></div>);
+      renderedBlocks.push(<div key={`pb-${index}`} className="page-breaker print:break-after-page h-0 my-4 relative border-t border-dashed border-slate-300 print:border-none print:my-0"></div>);
       return;
     }
 
@@ -87,9 +88,9 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
 
     flushTable();
 
-    // Judul Tengah (Uppercase pendek)
-    if (trimmed === trimmed.toUpperCase() && trimmed.length < 60 && !trimmed.includes(':') && trimmed.length > 4) {
-      renderedBlocks.push(<div key={`title-${index}`} className="mt-4 mb-2 font-bold text-center text-black font-['Times_New_Roman'] uppercase tracking-wide text-[12pt]">{trimmed}</div>);
+    // Judul Tengah (Uppercase pendek, bukan Key-Value)
+    if (trimmed === trimmed.toUpperCase() && trimmed.length < 80 && !trimmed.includes(':') && trimmed.length > 4) {
+      renderedBlocks.push(<div key={`title-${index}`} className="mt-4 mb-3 font-bold text-center uppercase tracking-wide underline underline-offset-4">{trimmed}</div>);
     } 
     // Key-Value Pair (Titik Dua)
     else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
@@ -97,32 +98,41 @@ const SmartContentRenderer = ({ text }: { text: string }) => {
       const label = line.substring(0, firstColonIdx).trim();
       const value = line.substring(firstColonIdx + 1).trim();
       
-      renderedBlocks.push(
-        <div key={`info-${index}`} className="flex mb-1 break-inside-avoid text-[12pt] font-['Times_New_Roman'] text-black leading-relaxed">
-          <span className="w-[100px] shrink-0">{label}</span>
-          <span className="w-[20px] text-center shrink-0">:</span>
-          <span className="flex-1 text-justify">{value}</span>
-        </div>
-      );
+      const isIntroSentence = label.length > 40 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa');
+
+      if (isIntroSentence) {
+         // Kalimat pembuka dengan indentasi
+         renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
+      } else {
+         // Form isian (Label : Value)
+         renderedBlocks.push(
+            <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.6]">
+              {/* Label Column fixed width ~4.5cm */}
+              <span className="w-[170px] shrink-0">{label}</span>
+              <span className="w-[20px] text-center shrink-0">:</span>
+              <span className="flex-1 text-justify">{value}</span>
+            </div>
+         );
+      }
     } 
-    // Numbered List
+    // Numbered List (1. ...)
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
-        <div key={`list-${index}`} className="flex mb-1 pl-[110px] font-['Times_New_Roman'] text-[12pt] text-black leading-relaxed">
-          <span className="w-8 shrink-0 -ml-8">{match ? match[1] : ''}</span>
+        <div key={`list-${index}`} className="flex mb-1.5 pl-[3rem] leading-[1.6] relative">
+          <span className="absolute left-[0.5rem] w-8 text-right pr-2">{match ? match[1] : ''}</span>
           <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
         </div>
       );
     }
     // Standard Paragraph
     else {
-      renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify font-['Times_New_Roman'] text-[12pt] text-black leading-[1.5] indent-10">{trimmed}</p>);
+      renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
     }
   });
   
   flushTable();
-  return <div className="font-['Times_New_Roman'] text-black leading-relaxed">{renderedBlocks}</div>;
+  return <div className="text-[12pt]">{renderedBlocks}</div>;
 };
 
 const LetterCreator: React.FC = () => {
@@ -170,6 +180,26 @@ const LetterCreator: React.FC = () => {
       setTemplates(data);
       if (isInitialized.current) return;
 
+      // PRIORITAS 1: Jika ada konten hasil generate AI (dari MailList/Inbox)
+      // Kita pakai konten ini MESKIPUN template ID 't_spt' mungkin belum ada di database
+      if (location.state && location.state.content) {
+        // Cari template yang diminta, atau fallback ke template pertama sebagai cangkang
+        const targetTemplate = data.find(t => t.id === location.state.templateId) || data[0];
+        
+        if (targetTemplate) {
+          setSelectedTemplate(targetTemplate);
+          setFormData(prev => ({
+            ...prev,
+            subject: location.state.subject || 'SURAT PERINTAH TUGAS',
+            content: location.state.content, // PAKSA GUNAKAN KONTEN DARI STATE
+            signatureTitle: 'Kepala Sekolah,'
+          }));
+          isInitialized.current = true;
+        }
+        return; // Keluar agar tidak tertimpa logika default
+      }
+
+      // PRIORITAS 2: Navigasi normal ke template tertentu (tanpa konten custom)
       if (location.state && location.state.templateId) {
         const targetTemplate = data.find(t => t.id === location.state.templateId);
         if (targetTemplate) {
@@ -177,13 +207,14 @@ const LetterCreator: React.FC = () => {
           const isSPT = targetTemplate.id === 't_spt' || targetTemplate.name.includes('SPT');
           setFormData(prev => ({
             ...prev,
-            subject: isSPT ? 'SURAT PERINTAH TUGAS' : (location.state.subject || targetTemplate.subject),
-            content: (location.state.content || targetTemplate.content).replace(/\*\*/g, '').trim(),
+            subject: isSPT ? 'SURAT PERINTAH TUGAS' : targetTemplate.subject,
+            content: targetTemplate.content.replace(/\*\*/g, '').trim(),
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
           isInitialized.current = true;
         }
       } 
+      // PRIORITAS 3: Default load (jika tidak ada state apa-apa)
       else if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
@@ -403,24 +434,24 @@ const LetterCreator: React.FC = () => {
 
         <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl border border-slate-200 overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:m-0 print:bg-white print:block">
            {contentParts.map((part, pIdx) => (
-             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black font-['Times_New_Roman'] mb-10 print:mb-0">
+             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none print:w-full print:min-h-0 flex flex-col text-black mb-10 print:mb-0">
                 {pIdx === 0 && (
-                  <div className="border-b-[3px] border-double border-black pb-2 mb-4 grid grid-cols-[90px_1fr_90px] items-center text-black">
-                     <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[24mm] h-auto" />}</div>
+                  <div className="border-b-[3px] border-double border-black pb-2 mb-6 grid grid-cols-[24mm_1fr_24mm] items-center text-black">
+                     <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-full h-auto object-contain" />}</div>
                      <div className="text-center w-full px-2">
-                        <h3 className="text-[14pt] font-['Times_New_Roman'] uppercase leading-tight">{config.headerLine1}</h3>
-                        <h3 className="text-[14pt] font-bold font-['Times_New_Roman'] uppercase leading-tight">{config.headerLine2}</h3>
-                        <h1 className="text-[18pt] font-black font-['Times_New_Roman'] uppercase my-1 leading-none tracking-tight">{config.name}</h1>
-                        <p className="text-[10pt] font-['Times_New_Roman']">{config.address}</p>
-                        <p className="text-[10pt] font-['Times_New_Roman']">Email: {config.email}</p>
+                        <h3 className="text-[14pt] uppercase leading-tight tracking-wide">{config.headerLine1}</h3>
+                        <h3 className="text-[14pt] font-bold uppercase leading-tight tracking-wide">{config.headerLine2}</h3>
+                        <h1 className="text-[18pt] font-black uppercase my-1 leading-none tracking-tight">{config.name}</h1>
+                        <p className="text-[10pt] leading-tight">{config.address}</p>
+                        <p className="text-[10pt] leading-tight">Email: {config.email}</p>
                      </div>
-                     <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-[24mm] h-auto" />}</div>
+                     <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-full h-auto object-contain" />}</div>
                   </div>
                 )}
                 
                 <div className="flex-1 flex flex-col pt-2">
                    {pIdx === 0 && (
-                     <div className="text-center mb-6">
+                     <div className="text-center mb-8">
                        <h2 className="text-[12pt] font-bold uppercase underline underline-offset-4 decoration-2 tracking-wide leading-tight">{formData.subject}</h2>
                        <p className="text-[12pt] mt-1">Nomor: {formData.refNumber}</p>
                      </div>
@@ -431,13 +462,13 @@ const LetterCreator: React.FC = () => {
                    </div>
 
                    {pIdx === contentParts.length - 1 && (
-                     <div className="mt-8 break-inside-avoid ml-auto w-[350px] flex flex-col text-center font-['Times_New_Roman'] text-[12pt]">
+                     <div className="mt-8 break-inside-avoid ml-auto w-[350px] flex flex-col text-center">
                         <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
-                        <p className="font-bold mb-4">{formData.signatureTitle}</p>
-                        <div className="h-24 flex items-center justify-center">
-                          {useQRCode && <QRCodeSVG value={qrValue} size={85} level="H" />}
+                        <p className="font-bold">{formData.signatureTitle}</p>
+                        <div className="h-28 flex items-center justify-center my-1">
+                          {useQRCode && <QRCodeSVG value={qrValue} size={90} level="H" />}
                         </div>
-                        <p className="font-bold underline underline-offset-4 decoration-1 uppercase tracking-wide mt-2">{formData.signerName}</p>
+                        <p className="font-bold underline underline-offset-4 decoration-1 uppercase tracking-wide">{formData.signerName}</p>
                         <p className="">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
                      </div>
                    )}
@@ -474,8 +505,10 @@ const LetterCreator: React.FC = () => {
         .letter-paper { 
           width: 215mm; 
           min-height: 330mm; 
-          padding: 20mm 25mm 20mm 25mm; /* Top Right Bottom Left */
-          font-family: 'Times New Roman', serif;
+          padding: 20mm 25mm 20mm 25mm; 
+          font-family: 'Times New Roman', Times, serif;
+          font-size: 12pt;
+          line-height: 1.5;
         } 
         @media print { 
           @page { size: 215mm 330mm portrait; margin: 0; } 

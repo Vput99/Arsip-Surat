@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, UrgencyLevel } from "../types";
 
@@ -69,25 +70,33 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    const prompt = `Buatkan isi naskah Surat Perintah Tugas (SPT) sekolah yang sangat formal.
-    DATA SURAT REFERENSI:
+    const prompt = `Buatkan isi naskah Surat Perintah Tugas (SPT) sekolah yang sangat formal berdasarkan undangan berikut.
+    DATA SURAT MASUK:
     Nomor Surat: ${invitationMail.referenceNumber}
     Pengirim: ${invitationMail.sender}
     Perihal: ${invitationMail.subject}
     Isi: ${invitationMail.description}
     
-    ATURAN OUTPUT (WAJIB TAATI):
-    1. JANGAN sertakan Judul "SURAT PERINTAH TUGAS" atau "Nomor: ...".
-    2. JANGAN sertakan kalimat pembuka seperti "Berikut adalah...".
-    3. JANGAN gunakan tanda bintang (**) atau markdown.
-    4. MULAI LANGSUNG dari kata "Dasar :".
-    5. Format Dasar (Wajib Satu Baris): "Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Tentang ${invitationMail.subject}."
-    6. Tambahkan poin Dasar kedua: "2. Program Kerja dan Anggaran Sekolah Tahun Pelajaran 2024/2025."
-    7. Tulis "MEMERINTAHKAN :" di baris baru setelah Dasar.
-    8. Tulis "Kepada :" di baris baru, diikuti list personil dengan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], [JABATAN_PETUGAS].
-    9. Format Untuk: "Untuk : 1. Menghadiri ${invitationMail.subject} yang diselenggarakan oleh ${invitationMail.sender} pada tanggal ... (ambil dari isi naskah)."
-    10. Tambahkan poin Untuk kedua: "2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah."
-    11. Gunakan spasi setelah tanda titik dua ( : ).`;
+    ATURAN FORMAT (WAJIB IKUTI PERSIS):
+    1. JANGAN gunakan markdown (**bold** dll).
+    2. JANGAN sertakan kalimat pembuka seperti "Berikut draf surat...". Langsung mulai dari konten.
+    3. Gunakan format baris baru dan titik dua ( : ) agar rapi.
+    
+    STRUKTUR NASKAH (Gunakan Tepat Seperti Ini):
+    Dasar : Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber}
+    Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
+
+    MEMERINTAHKAN :
+
+    Kepada :
+    Nama : [NAMA_PETUGAS]
+    NIP : [NIP_PETUGAS]
+    Jabatan : [JABATAN_PETUGAS]
+
+    Untuk : 1. Menghadiri ${invitationMail.subject} pada tanggal ... (sesuaikan dari isi).
+    Untuk : 2. Melaporkan hasil pelaksanaan tugas kepada Kepala Sekolah.
+
+    Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.`;
 
     // Upgrade to gemini-3-pro-preview for formal legal document generation based on complex reasoning rules.
     const response = await ai.models.generateContent({
@@ -97,11 +106,11 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
 
     // Menghilangkan redundansi jika AI still provides prefixes
     let text = response.text || "";
-    text = text.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '');
+    text = text.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini|Berikut draf).*(:|surat|naskah|berikut):?/i, '');
     return text.replace(/\*\*/g, '').trim();
   } catch (error) {
     console.error("Gemini SPT Error:", error);
-    return "Gagal menyusun naskah SPT otomatis.";
+    return "Dasar : Surat Undangan.\n\nMEMERINTAHKAN :\n\nKepada :\nNama : [NAMA_PETUGAS]\nNIP : [NIP_PETUGAS]\n\nUntuk : Menghadiri kegiatan dinas.";
   }
 };
 

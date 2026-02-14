@@ -228,7 +228,8 @@ const LetterCreator: React.FC = () => {
     if (!letterContainerRef.current) return null;
     setPdfGenerating(true);
     try {
-      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [215, 330] });
+      // SETTING PORTRAIT UNTUK PDF
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [215, 330] });
       const pages = letterContainerRef.current.querySelectorAll('.letter-paper');
       
       for (let i = 0; i < pages.length; i++) {
@@ -441,6 +442,7 @@ const LetterCreator: React.FC = () => {
                      </div>
                    )}
                 </div>
+                <div className="absolute top-4 right-6 text-[9px] font-black text-slate-200 tracking-[0.5em] uppercase pointer-events-none print:hidden">Pratinjau F4 Portrait 215x330mm</div>
              </div>
            ))}
         </div>
@@ -472,7 +474,7 @@ const LetterCreator: React.FC = () => {
         .letter-paper { 
           width: 215mm; 
           min-height: 330mm; 
-          padding: 10mm 25mm 20mm 25mm; 
+          padding: 20mm 25mm 20mm 25mm; /* Top Right Bottom Left */
           font-family: 'Times New Roman', serif;
         } 
         @media print { 
@@ -486,7 +488,7 @@ const LetterCreator: React.FC = () => {
             width: 100% !important; 
             height: 330mm !important; 
             margin: 0 !important; 
-            padding: 10mm 25mm 20mm 25mm !important; 
+            padding: 20mm 25mm 20mm 25mm !important; 
             display: flex !important; 
             flex-direction: column !important; 
           } 

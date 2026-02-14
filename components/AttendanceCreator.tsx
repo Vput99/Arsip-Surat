@@ -1,16 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
-import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, Info, MousePointer2, ClipboardList, CheckSquare, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
-import { subscribeToConfig, subscribeToStaff, StaffMember } from '../services/storage';
-import { SchoolConfig } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLeft, ArrowRight, CalendarOff, Settings, Info, MousePointer2, ClipboardList, CheckSquare, ZoomIn, ZoomOut, Maximize, Save, Trash2, RotateCcw } from 'lucide-react';
+import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
+import { SchoolConfig, Mail, MailType, MailStatus, UrgencyLevel } from '../types';
 import { format, getDaysInMonth, isSunday, isSaturday } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 type AttendanceCategory = 'reg' | 'pppk' | 'extra' | 'tukang';
 type ViewMode = 'menu' | 'editor' | 'recap';
 
 const AttendanceCreator: React.FC = () => {
+  const navigate = useNavigate();
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [view, setView] = useState<ViewMode>('menu');
   const [activeCategory, setActiveCategory] = useState<AttendanceCategory>('reg');
@@ -21,7 +24,9 @@ const AttendanceCreator: React.FC = () => {
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
-  const [scale, setScale] = useState(0.9); // Default scale agar pas di layar laptop
+  const [scale, setScale] = useState(0.85);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const paperRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig(setConfig);
@@ -33,6 +38,30 @@ const AttendanceCreator: React.FC = () => {
       unsubscribeStaff();
     };
   }, []);
+
+  // Load Draft from Local Storage
+  useEffect(() => {
+    const key = `attendance_draft_${activeCategory}_${month}_${year}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        const { attendance: savedAtt, holidays: savedHols } = JSON.parse(saved);
+        setAttendance(savedAtt || {});
+        setHolidays(savedHols || []);
+      } catch (e) { console.error("Failed to load draft"); }
+    } else {
+        setAttendance({});
+        setHolidays([]);
+    }
+  }, [activeCategory, month, year]);
+
+  // Save Draft to Local Storage
+  useEffect(() => {
+    if (Object.keys(attendance).length > 0 || holidays.length > 0) {
+      const key = `attendance_draft_${activeCategory}_${month}_${year}`;
+      localStorage.setItem(key, JSON.stringify({ attendance, holidays }));
+    }
+  }, [attendance, holidays, activeCategory, month, year]);
 
   const currentStaffList = allStaff.filter(s => s.category === activeCategory);
   const daysInMonth = getDaysInMonth(new Date(year, month));
@@ -63,6 +92,13 @@ const AttendanceCreator: React.FC = () => {
       });
     });
     setAttendance(newAttendance);
+  };
+
+  const handleReset = () => {
+    if (!confirm('Reset semua data kehadiran bulan ini? Draft akan dihapus.')) return;
+    setAttendance({});
+    const key = `attendance_draft_${activeCategory}_${month}_${year}`;
+    localStorage.removeItem(key);
   };
 
   const getCategoryTitle = (cat: AttendanceCategory) => {
@@ -113,7 +149,6 @@ const AttendanceCreator: React.FC = () => {
         const statusOut = attendance[`${staffId}-${day}-out`];
         const dailyStatus = [statusIn, statusOut];
         
-        // Logika hitung: Jika salah satu sesi ada S/I/A/C/DL, dihitung 1 hari kejadian
         if (dailyStatus.includes('S')) s++;
         else if (dailyStatus.includes('I')) i++;
         else if (dailyStatus.includes('A')) a++;
@@ -121,10 +156,57 @@ const AttendanceCreator: React.FC = () => {
         else if (dailyStatus.includes('DL')) dl++;
       }
     });
-    // Kehadiran = Hari Kerja - (Total Tidak Hadir)
-    // Asumsi: Hadir (P) atau kosong dianggap hadir jika tidak ada keterangan lain
     const presence = workingDays - (s + i + a + c); 
     return { s, i, a, c, dl, presence, workingDays };
+  };
+
+  const handleSaveToArchive = async () => {
+    if (!paperRef.current) return;
+    if (!confirm('Generate PDF dan simpan ke Arsip Surat Keluar?')) return;
+    
+    setSaveLoading(true);
+    try {
+      // 1. Generate PDF
+      const canvas = await html2canvas(paperRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [330, 215] });
+      pdf.addImage(imgData, 'JPEG', 0, 0, 330, 215);
+      const pdfDataUri = pdf.output('datauristring');
+
+      // 2. Simpan ke Database
+      const period = format(new Date(year, month, 1), 'MMMM yyyy', { locale: id });
+      const newMail: Mail = {
+        id: Date.now().toString(),
+        type: MailType.OUTGOING,
+        referenceNumber: `ABS/${month+1}/${year}`, // Nomor dummy
+        date: new Date().toISOString().split('T')[0],
+        receivedDate: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+        sender: 'Kepala Sekolah',
+        subject: `Laporan Absensi ${activeCategory === 'reg' ? 'Guru/Pegawai' : activeCategory.toUpperCase()} - ${period}`,
+        description: `Laporan kehadiran otomatis bulan ${period}. Generated by System.`,
+        category: 'Dinas',
+        urgency: UrgencyLevel.LOW,
+        status: MailStatus.ARCHIVED,
+        fileUrl: pdfDataUri,
+        aiSummary: 'Dokumen absensi bulanan digital.'
+      };
+
+      await saveMail(newMail);
+      alert('Laporan berhasil disimpan ke Arsip Surat Keluar.');
+      navigate('/outbox');
+      
+      // Clear draft after success save? No, user might want to edit later.
+    } catch (e: any) {
+      alert('Gagal menyimpan: ' + e.message);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   if (!config) return <div className="flex justify-center items-center h-screen bg-white"><Loader2 className="animate-spin text-indigo-600" size={40}/></div>;
@@ -191,14 +273,22 @@ const AttendanceCreator: React.FC = () => {
             </div>
          </div>
          <div className="flex gap-2">
-            <button onClick={markAllPresent} className="px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-emerald-100 transition-all shadow-sm">
+            <button onClick={handleReset} className="px-3 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-black hover:bg-rose-100 transition-all shadow-sm" title="Reset Draft">
+              <RotateCcw size={16} />
+            </button>
+            <button onClick={markAllPresent} className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
               <CheckSquare size={16} /> Hadirkan Semua
             </button>
-            <Link to="/settings" className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
-              <Settings size={16} /> Data Personil
-            </Link>
-            <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 hover:bg-indigo-700 transition-all">
-              <Printer size={18} /> Cetak F4 Landscape
+            <button 
+              onClick={handleSaveToArchive} 
+              disabled={saveLoading}
+              className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-black text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:bg-emerald-700 transition-all"
+            >
+              {saveLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+              Simpan ke Arsip
+            </button>
+            <button onClick={() => window.print()} className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 hover:bg-indigo-700 transition-all">
+              <Printer size={18} /> Cetak
             </button>
          </div>
       </div>
@@ -272,7 +362,7 @@ const AttendanceCreator: React.FC = () => {
              </div>
              <div className="pt-1 flex items-start gap-1.5 text-[9px] text-white/40 italic leading-relaxed">
                <MousePointer2 size={10} className="shrink-0 mt-0.5" />
-               Klik sel pada kertas untuk mengubah status kehadiran.
+               Klik sel pada kertas untuk mengubah status kehadiran. Data tersimpan otomatis di browser (Draft).
              </div>
           </div>
         </div>
@@ -297,44 +387,41 @@ const AttendanceCreator: React.FC = () => {
               <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"><ZoomOut size={16}/></button>
               <div className="w-12 flex items-center justify-center font-black text-xs text-slate-700">{Math.round(scale * 100)}%</div>
               <button onClick={() => setScale(s => Math.min(1.5, s + 0.1))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"><ZoomIn size={16}/></button>
-              <button onClick={() => setScale(0.9)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors border-l border-slate-200 ml-1"><Maximize size={14}/></button>
+              <button onClick={() => setScale(0.85)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors border-l border-slate-200 ml-1"><Maximize size={14}/></button>
            </div>
 
            {/* Scrollable Paper Container */}
            <div className="flex-1 overflow-auto flex items-start justify-center p-12 print:p-0 print:block">
              <div 
-                className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col text-black font-serif transition-transform duration-200 origin-top"
+                ref={paperRef}
+                className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col text-black font-['Times_New_Roman'] transition-transform duration-200 origin-top"
                 style={{ transform: `scale(${scale})` }}
              >
                
                <div className="paper-padding flex flex-col items-center">
-                 {/* KOP SURAT */}
-                 <div className="kop-surat border-b-[3.5pt] border-double border-black pb-3 mb-6 pt-2 grid grid-cols-[110px_1fr_110px] items-center text-black w-full">
-                    <div className="flex justify-center">
-                      {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[20mm] h-auto" alt="Logo Daerah"/>}
+                 {/* KOP SURAT (Konsisten dengan LetterCreator) */}
+                 <div className="w-full border-b-[3px] border-double border-black pb-2 mb-4 grid grid-cols-[90px_1fr_90px] items-center text-black font-['Times_New_Roman']">
+                    <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-[24mm] h-auto" />}</div>
+                    <div className="text-center w-full px-2">
+                       <h3 className="text-[14pt] font-['Times_New_Roman'] uppercase leading-tight">{config.headerLine1}</h3>
+                       <h3 className="text-[14pt] font-bold font-['Times_New_Roman'] uppercase leading-tight">{config.headerLine2}</h3>
+                       <h1 className="text-[18pt] font-black font-['Times_New_Roman'] uppercase my-1 leading-none tracking-tight">{config.name}</h1>
+                       <p className="text-[10pt] font-['Times_New_Roman']">{config.address}</p>
+                       <p className="text-[10pt] font-['Times_New_Roman']">Email: {config.email}</p>
                     </div>
-                    <div className="text-center w-full px-6">
-                       <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide">{config.headerLine1}</h3>
-                       <h3 className="text-[12pt] font-bold uppercase leading-tight tracking-wide">{config.headerLine2}</h3>
-                       <h1 className="text-[19pt] font-black uppercase my-1 leading-none tracking-tight">{config.name}</h1>
-                       <p className="text-[10pt] leading-tight italic font-medium">{config.address}</p>
-                       <p className="text-[9pt] leading-tight font-bold italic">NPSN: {config.npsn} | Email: {config.email}</p>
-                    </div>
-                    <div className="flex justify-center">
-                      {config.logoUrl && <img src={config.logoUrl} className="w-[20mm] h-auto" alt="Logo Sekolah"/>}
-                    </div>
+                    <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-[24mm] h-auto" />}</div>
                  </div>
 
                  {/* JUDUL */}
                  <div className="judul-laporan text-center mb-6 text-black w-full">
                    <h2 className="text-[14pt] font-bold underline underline-offset-4 decoration-2 uppercase text-black mb-1">{view === 'recap' ? 'REKAPITULASI KEHADIRAN GURU DAN PEGAWAI' : getCategoryTitle(activeCategory)}</h2>
-                   <p className="text-[11pt] font-serif uppercase text-black font-bold tracking-[0.2em]">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
+                   <p className="text-[11pt] uppercase text-black font-bold tracking-[0.2em]">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
                  </div>
 
                  <div className="w-full">
                    {view === 'recap' ? (
                       /* TABEL REKAP */
-                      <table className="recap-table w-full border-collapse text-[10pt] font-serif text-black border-black">
+                      <table className="recap-table w-full border-collapse text-[10pt] text-black border-black font-['Times_New_Roman']">
                         <thead>
                           <tr className="bg-slate-50/50 print:bg-transparent">
                             <th rowSpan={2} className="border-[1.5pt] border-black p-2 w-10 text-center font-bold">NO</th>
@@ -377,7 +464,7 @@ const AttendanceCreator: React.FC = () => {
                       </table>
                    ) : (
                       /* TABEL PRESENSI UTAMA */
-                      <table className="attendance-table w-full border-collapse text-[8.5pt] font-serif table-fixed text-black border-black border-[1.5pt]">
+                      <table className="attendance-table w-full border-collapse text-[8.5pt] table-fixed text-black border-black border-[1.5pt] font-['Times_New_Roman']">
                        <thead>
                          <tr className="bg-slate-50/50 print:bg-transparent">
                            <th rowSpan={2} className="border border-black p-1 text-black font-bold text-center w-8">NO</th>
@@ -438,12 +525,12 @@ const AttendanceCreator: React.FC = () => {
                  </div>
 
                  {/* TANDA TANGAN */}
-                 <div className="mt-12 flex justify-end font-serif text-[11pt] break-inside-avoid text-black w-full pr-[15mm]">
+                 <div className="mt-8 flex justify-end font-['Times_New_Roman'] text-[11pt] break-inside-avoid text-black w-full pr-[15mm]">
                    <div className="flex flex-col text-center w-[350px]">
                      <p className="mb-1">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
-                     <p className="font-bold leading-tight">Kepala Sekolah Dasar Negeri {config.name.replace('SD NEGERI ', '')},</p>
-                     <div className="h-28"></div>
-                     <p className="font-bold underline underline-offset-4 decoration-2 text-[12pt] uppercase tracking-wider">{config.principalName}</p>
+                     <p className="font-bold leading-tight">Kepala Sekolah,</p>
+                     <div className="h-24"></div>
+                     <p className="font-bold underline underline-offset-4 decoration-1 uppercase tracking-wide">{config.principalName}</p>
                      <p className="font-bold">NIP. {config.principalNip}</p>
                    </div>
                  </div>
@@ -497,7 +584,7 @@ const AttendanceCreator: React.FC = () => {
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            transform: none !important; /* Reset zoom for print */
+            transform: none !important;
           }
 
           .bg-red-600 { background-color: #dc2626 !important; }

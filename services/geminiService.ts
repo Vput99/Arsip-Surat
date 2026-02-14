@@ -70,22 +70,26 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
 
   try {
     const prompt = `Anda adalah sekretaris administrasi sekolah dasar yang sangat teliti. 
-    Buatkan draf naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data Surat Masuk berikut:
+    Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data Surat Masuk berikut:
     
-    SUMBER DATA:
-    - Nomor Surat Masuk: ${invitationMail.referenceNumber}
-    - Dari Instansi: ${invitationMail.sender}
+    DATA SURAT MASUK:
+    - Nomor: ${invitationMail.referenceNumber}
+    - Dari: ${invitationMail.sender}
     - Perihal: ${invitationMail.subject}
-    - Isi Lengkap: ${invitationMail.description}
+    - Isi: ${invitationMail.description}
     
-    ATURAN FORMAT PENULISAN (IKUTI PERSIS):
-    1. Bagian 'Dasar' WAJIB menyebutkan: "Surat ${invitationMail.category || 'Undangan'} dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Mengenai ${invitationMail.subject}."
-    2. Sertakan Dasar kedua: "Program Kerja Sekolah Tahun Pelajaran 2024/2025."
-    3. Bagian 'Untuk' harus memuat tugas spesifik diikuti rincian jadwal yang diekstrak dari isi surat (Hari, Tanggal, Waktu, Tempat).
+    INSTRUKSI FORMAT KHUSUS (WAJIB DIIKUTI):
+    1. Bagian 'Dasar' baris pertama harus berbunyi: "Surat dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} tentang ${invitationMail.subject} pada satuan pendidikan tingkat Dasar dan Menengah."
+    2. Tambahkan Dasar baris kedua: "Program Kerja Sekolah Tahun Pelajaran 2024/2025."
+    3. Setelah bagian 'Kepada', buat bagian 'Untuk' dengan kalimat pengantar: "Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :"
+    4. Di bawah kalimat pengantar tersebut, berikan rincian berikut (ambil dari isi surat):
+       tanggal : [Hari], [Tanggal Bulan Tahun]
+       Tempat : [Lokasi/Tempat Kegiatan]
+    5. Tambahkan kalimat penutup di akhir: "Berikut surat tugas yang akan dilaksanakan dengan sebaik-baiknya."
     
-    STRUKTUR OUTPUT (TANPA MARKDOWN, GUNAKAN TITIK DUA UNTUK ALIGNMENT):
-    Dasar : Surat ${invitationMail.category || 'Undangan'} dari ${invitationMail.sender} Nomor : ${invitationMail.referenceNumber} Mengenai ${invitationMail.subject}.
-    Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
+    OUTPUT HARUS BERUPA TEKS POLOS DENGAN FORMAT BERIKUT (Gunakan Titik Dua):
+    Dasar : [Isi Dasar 1]
+    Dasar : [Isi Dasar 2]
 
     MEMERINTAHKAN :
 
@@ -94,12 +98,11 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     NIP : [NIP_PETUGAS]
     Jabatan : [JABATAN_PETUGAS]
 
-    Untuk : Melaksanakan tugas menghadiri kegiatan ${invitationMail.subject} yang akan dilaksanakan pada:
-    Hari : [Ekstrak Nama Hari dari isi surat]
-    Tanggal : [Ekstrak Tanggal Lengkap dari isi surat]
-    Tempat : [Ekstrak Lokasi/Tempat dari isi surat]
+    Untuk : Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :
+    tanggal : [Hasil Ekstraksi]
+    Tempat : [Hasil Ekstraksi]
 
-    Demikian surat tugas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.`;
+    Berikut surat tugas yang akan dilaksanakan dengan sebaik-baiknya.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -107,7 +110,6 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
     });
 
     let text = response.text || "";
-    // Bersihkan dari intro teks AI
     text = text.replace(/^(Berikut|Ini|Naskah|Draft).*:(\n)?/i, '').trim();
     return text;
   } catch (error) {

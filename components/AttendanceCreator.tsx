@@ -542,11 +542,13 @@ const AttendanceCreator: React.FC = () => {
         }
 
         @media print {
+          /* Paksa setting kertas ke landscape F4/A3/Legal */
           @page { 
             size: 330mm 215mm landscape; 
             margin: 0; 
           }
           
+          /* Hilangkan elemen layout luar */
           body {
             margin: 0 !important;
             padding: 0 !important;
@@ -554,17 +556,21 @@ const AttendanceCreator: React.FC = () => {
             background: white !important;
           }
 
-          /* Sembunyikan semua UI aplikasi kecuali container naskah */
+          /* Hilangkan semua UI aplikasi */
           #root > div > aside,
           #root > div > header,
+          aside, header, 
           .print\:hidden,
           .attendance-main-container > div:not(.attendance-scroll-area),
           .attendance-scroll-area > div:not(.attendance-paper-landscape) {
             display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
           }
 
-          /* Pastikan parent container tidak membatasi konten */
-          #root, #root > div, main, .attendance-main-container, .attendance-scroll-area {
+          /* Pastikan container utama tidak membatasi konten */
+          #root, #root > div, main, .max-w-7xl, .attendance-main-container, .attendance-scroll-area {
             display: block !important;
             overflow: visible !important;
             position: static !important;
@@ -572,24 +578,32 @@ const AttendanceCreator: React.FC = () => {
             height: auto !important;
             padding: 0 !important;
             margin: 0 !important;
+            border: none !important;
+            background: transparent !important;
           }
 
+          /* Paksa naskah menjadi elemen tunggal yang terlihat */
           .attendance-paper-landscape { 
-            position: static !important; 
+            display: flex !important;
+            position: absolute !important; 
+            top: 0 !important;
+            left: 0 !important;
             width: 330mm !important; 
             height: 215mm !important;
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            transform: scale(1) !important; /* Paksa skala normal saat cetak */
+            transform: scale(1) !important; /* Reset skala zoom UI ke 1:1 */
+            background: white !important;
             page-break-after: always;
+            z-index: 9999;
           }
 
           .paper-padding {
             padding: 10mm 15mm !important;
           }
 
-          /* Pastikan warna muncul di hasil cetak */
+          /* Pastikan warna tetap muncul saat cetak */
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -597,7 +611,7 @@ const AttendanceCreator: React.FC = () => {
 
           .bg-red-600 { background-color: #dc2626 !important; color: white !important; }
           .bg-red-500 { background-color: #ef4444 !important; color: white !important; }
-          table { border: 1.5pt solid black !important; }
+          table { border: 1.5pt solid black !important; border-collapse: collapse !important; }
           th, td { border: 1pt solid black !important; }
         }
       `}</style>

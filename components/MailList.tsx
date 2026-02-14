@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
-import { subscribeToMails, deleteMail, subscribeToConfig } from '../services/storage';
+import { subscribeToMails, deleteMail, subscribeToConfig, saveMail } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2 } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply, generateSPTContent } from '../services/geminiService';
 import { SchoolConfig } from '../types';
@@ -17,19 +18,32 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const [mails, setMails] = useState<Mail[]>([]);
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editData, setEditData] = useState<Mail | null>(null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('Semua');
   const [filterMonth, setFilterMonth] = useState('all');
+  
   const [selectedMail, setSelectedMail] = useState<Mail | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  
   const [aiReply, setAiReply] = useState<string>('');
   const [replyLoading, setReplyLoading] = useState(false);
+  
+  // State Disposisi
+  const [dispositionNote, setDispositionNote] = useState('');
+  const [isSavingDisposition, setIsSavingDisposition] = useState(false);
   
   const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribeMails = subscribeToMails((allMails) => {
       setMails(allMails.filter(m => m.type === type));
+      // Update selected mail real-time if selected
+      if (selectedMail) {
+        const updated = allMails.find(m => m.id === selectedMail.id);
+        if (updated) setSelectedMail(updated);
+      }
     });
 
     const unsubscribeConfig = subscribeToConfig((config) => {
@@ -40,14 +54,21 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       unsubscribeMails();
       unsubscribeConfig();
     };
-  }, [type]);
+  }, [type, selectedMail?.id]);
 
   const handleSelectMail = (mail: Mail) => {
     setSelectedMail(mail);
     setAiReply('');
+    setDispositionNote(mail.disposition || ''); // Load existing disposition
     if (window.innerWidth < 1024) {
       setShowDetailModal(true);
     }
+  };
+
+  const handleEdit = (mail: Mail, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditData(mail);
+    setShowForm(true);
   };
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
@@ -60,6 +81,29 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       } catch (e) {
         alert('Gagal menghapus surat.');
       }
+    }
+  };
+
+  const handleSaveDisposition = async () => {
+    if (!selectedMail) return;
+    setIsSavingDisposition(true);
+    try {
+      const updatedMail = { ...selectedMail, disposition: dispositionNote };
+      await saveMail(updatedMail);
+      alert('Disposisi disimpan.');
+    } catch (e) {
+      alert('Gagal menyimpan disposisi.');
+    } finally {
+      setIsSavingDisposition(false);
+    }
+  };
+
+  const handleChangeStatus = async (status: MailStatus) => {
+    if (!selectedMail) return;
+    try {
+      await saveMail({ ...selectedMail, status });
+    } catch (e) {
+      alert('Gagal ubah status');
     }
   };
 
@@ -90,7 +134,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Arsip - ${mail.referenceNumber}</title>
+            <title>Lembar Disposisi - ${mail.referenceNumber}</title>
             <style>
               body { font-family: 'Times New Roman', serif; padding: 40px; }
               .header-container { display: flex; align-items: center; justify-content: center; border-bottom: 3px double black; padding-bottom: 10px; margin-bottom: 20px; }
@@ -99,10 +143,11 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
               .header-text h1 { margin: 0; font-size: 18pt; text-transform: uppercase; line-height: 1.2; }
               .header-text p { margin: 0; font-size: 12pt; }
               .title { text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 20px; font-size: 14pt; }
-              .content-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-              .content-table td { padding: 8px; vertical-align: top; }
-              .label { width: 160px; font-weight: bold; }
-              .box { border: 1px solid black; padding: 15px; margin-top: 20px; min-height: 100px; }
+              .content-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid black; }
+              .content-table td { padding: 8px; vertical-align: top; border: 1px solid black; }
+              .label { width: 160px; font-weight: bold; background-color: #f0f0f0; }
+              .dispo-box { border: 1px solid black; padding: 15px; min-height: 150px; }
+              .meta { font-size: 10pt; margin-bottom: 10px; }
             </style>
           </head>
           <body>
@@ -115,16 +160,31 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
               </div>
             </div>
             <div class="title">LEMBAR ARSIP / DISPOSISI</div>
+            <div class="meta">Dicetak pada: ${new Date().toLocaleString('id-ID')}</div>
             <table class="content-table">
-              <tr><td class="label">Nomor Surat</td><td>: ${mail.referenceNumber}</td></tr>
-              <tr><td class="label">Tanggal Surat</td><td>: ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</td></tr>
-              <tr><td class="label">Pengirim</td><td>: ${mail.sender}</td></tr>
-              <tr><td class="label">Perihal</td><td>: ${mail.subject}</td></tr>
+              <tr><td class="label">Nomor Surat</td><td>${mail.referenceNumber}</td></tr>
+              <tr><td class="label">Tanggal Surat</td><td>${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</td></tr>
+              <tr><td class="label">Diterima Tanggal</td><td>${format(new Date(mail.receivedDate), 'dd MMMM yyyy', { locale: id })}</td></tr>
+              <tr><td class="label">Pengirim</td><td>${mail.sender}</td></tr>
+              <tr><td class="label">Perihal</td><td>${mail.subject}</td></tr>
+              <tr><td class="label">Isi Ringkas</td><td>${mail.description}</td></tr>
             </table>
-            <div style="border: 1px solid #000; padding: 10px;">
-              <strong>Isi Ringkas:</strong><br/><p>${mail.description}</p>
+            
+            <div style="font-weight: bold; margin-bottom: 5px;">INSTRUKSI / DISPOSISI KEPALA SEKOLAH:</div>
+            <div class="dispo-box">
+              ${mail.disposition ? mail.disposition.replace(/\n/g, '<br/>') : '......................................................................................................'}
             </div>
-            <div class="box"><strong>Catatan Disposisi:</strong></div>
+            
+            <table style="width: 100%; margin-top: 30px;">
+              <tr>
+                 <td width="50%"></td>
+                 <td align="center">
+                    Kepala Sekolah,<br/><br/><br/><br/>
+                    <strong>${config.principalName}</strong><br/>
+                    NIP. ${config.principalNip}
+                 </td>
+              </tr>
+            </table>
             <script>window.onload = function() { window.print(); }</script>
           </body>
         </html>
@@ -182,11 +242,23 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
         <div className="flex justify-between items-start relative z-10">
           <div>
             <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-1">{mail.category}</p>
-            <h3 className="font-black text-lg leading-tight">{mail.subject}</h3>
+            <h3 className="font-black text-lg leading-tight mb-2">{mail.subject}</h3>
+            <div className="flex gap-2">
+              {[MailStatus.PENDING, MailStatus.PROCESSED, MailStatus.ARCHIVED].map(s => (
+                <button 
+                  key={s} 
+                  onClick={() => handleChangeStatus(s)}
+                  className={`text-[9px] px-2 py-1 rounded-md uppercase font-black transition-all ${mail.status === s ? 'bg-white text-indigo-700' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => handlePrintDisposition(mail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Lembar Arsip"><Printer size={16}/></button>
-            <button onClick={(e) => handleDelete(mail.id, e)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors" title="Hapus Permanen"><Trash2 size={16}/></button>
+             <button onClick={(e) => handleEdit(mail, e)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Edit Data"><Edit size={16}/></button>
+             <button onClick={() => handlePrintDisposition(mail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Lembar Arsip"><Printer size={16}/></button>
+             <button onClick={(e) => handleDelete(mail.id, e)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors" title="Hapus Permanen"><Trash2 size={16}/></button>
           </div>
         </div>
       </div>
@@ -225,6 +297,26 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
              "{mail.description}"
            </div>
         </div>
+
+        {/* Form Disposisi */}
+        {type === MailType.INCOMING && (
+          <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-black text-amber-700 uppercase flex items-center gap-1.5">
+                <FileText size={12} /> Catatan Disposisi
+              </label>
+              <button onClick={handleSaveDisposition} disabled={isSavingDisposition} className="text-[10px] font-bold text-amber-700 hover:text-amber-900 bg-amber-100 px-2 py-1 rounded-lg">
+                {isSavingDisposition ? 'Menyimpan...' : 'Simpan Disposisi'}
+              </button>
+            </div>
+            <textarea 
+              value={dispositionNote}
+              onChange={(e) => setDispositionNote(e.target.value)}
+              className="w-full bg-white border border-amber-200 rounded-lg p-3 text-xs text-slate-700 min-h-[80px]"
+              placeholder="Tulis instruksi kepala sekolah di sini (misal: Tindak lanjuti, Arsipkan, Wakili saya)..."
+            />
+          </div>
+        )}
 
         {mail.aiSummary && (
           <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
@@ -290,7 +382,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
           <p className="text-slate-500 font-bold text-sm">Arsip digital sekolah. Klik surat untuk detail dan unduhan.</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => { setEditData(null); setShowForm(true); }}
           className="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 font-black text-sm"
         >
           <Plus size={20} className="mr-2" /> TAMBAH DATA
@@ -420,7 +512,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       )}
 
       {showForm && (
-        <MailForm type={type} onClose={() => setShowForm(false)} />
+        <MailForm type={type} onClose={() => { setShowForm(false); setEditData(null); }} initialData={editData} />
       )}
     </div>
   );

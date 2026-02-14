@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { saveMail } from '../services/storage';
 import { analyzeLetter } from '../services/geminiService';
@@ -8,13 +9,15 @@ import { Save, X, Sparkles, Loader2, UploadCloud, FileType, FileImage, AlertTria
 interface MailFormProps {
   type: MailType;
   onClose: () => void;
+  initialData?: Mail | null; // Tambahan untuk mode Edit
 }
 
-const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
+const MailForm: React.FC<MailFormProps> = ({ type, onClose, initialData }) => {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeHighlights, setActiveHighlights] = useState<string[]>([]);
+  
   const [formData, setFormData] = useState<Partial<Mail>>({
     type: type,
     status: MailStatus.PENDING,
@@ -24,6 +27,12 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
     receivedDate: new Date().toISOString().split('T')[0],
     subject: '', description: '', referenceNumber: '', sender: '', fileUrl: '', 
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -114,7 +123,9 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
     
     const mailData: Mail = {
       ...formData,
-      createdAt: new Date().toISOString()
+      // Gunakan ID lama jika edit, atau buat baru jika create
+      id: initialData?.id || Date.now().toString(),
+      createdAt: initialData?.createdAt || new Date().toISOString()
     } as Mail;
 
     try {
@@ -123,7 +134,7 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
       onClose();
     } catch (e: any) {
       setLoading(false);
-      setError("Gagal menyimpan data ke database.");
+      setError("Gagal menyimpan data ke database: " + e.message);
     }
   };
 
@@ -135,7 +146,7 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
           <h2 className="text-xl font-extrabold text-slate-800">
-            {type === MailType.INCOMING ? '📥 Catatan Masuk' : '📤 Catatan Keluar'}
+            {initialData ? '✏️ Edit Data Surat' : (type === MailType.INCOMING ? '📥 Catatan Masuk Baru' : '📤 Catatan Keluar Baru')}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={20} className="text-slate-500"/></button>
         </div>
@@ -208,7 +219,7 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} />
                  {formData.fileUrl ? <FileImage size={16} className="mr-2 text-emerald-500" /> : <UploadCloud size={16} className="mr-2 text-slate-400" />}
                  <span className={`text-[11px] font-bold truncate ${formData.fileUrl ? 'text-emerald-600' : 'text-slate-500'}`}>
-                   {formData.fileUrl ? "Gambar Siap Scan" : "Pilih Dokumen"}
+                   {formData.fileUrl ? "Ganti Dokumen" : "Pilih Dokumen"}
                  </span>
                </label>
              </div>
@@ -218,7 +229,7 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose }) => {
              <button type="button" onClick={onClose} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors">Batal</button>
              <button type="submit" disabled={loading} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 transition-all flex justify-center items-center gap-2">
                {loading ? <Loader2 className="animate-spin"/> : <Save size={18} />}
-               Simpan Data
+               {initialData ? 'Perbarui Data' : 'Simpan Data'}
              </button>
           </div>
         </form>

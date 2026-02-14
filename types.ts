@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export enum MailType {
@@ -33,6 +34,7 @@ export interface Mail {
   urgency: UrgencyLevel;
   status: MailStatus;
   aiSummary?: string; // Ringkasan dari AI
+  disposition?: string; // Catatan Disposisi (Instruksi Kepsek)
 }
 
 export interface StatCardProps {

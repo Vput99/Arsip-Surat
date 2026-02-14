@@ -37,11 +37,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-    { path: '/inbox', label: 'Surat Masuk', icon: <Inbox size={20} /> },
-    { path: '/outbox', label: 'Surat Keluar', icon: <Send size={20} /> },
-    { path: '/create', label: 'Buat Surat', icon: <PenTool size={20} /> },
-    { path: '/attendance', label: 'Buat Absensi', icon: <CalendarCheck size={20} /> },
-    { path: '/settings', label: 'Pengaturan', icon: <Settings size={20} /> },
+    { path: '/inbox', label: 'Arsip Masuk', icon: <Inbox size={20} /> },
+    { path: '/outbox', label: 'Arsip Keluar', icon: <Send size={20} /> },
+    { path: '/create', label: 'Input Naskah', icon: <PenTool size={20} /> },
+    { path: '/attendance', label: 'Input Absensi', icon: <CalendarCheck size={20} /> },
+    { path: '/settings', label: 'Konfigurasi', icon: <Settings size={20} /> },
   ];
 
   return (
@@ -56,20 +56,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <School className="text-white" size={24} />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-white">ArsipSurat</h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Hybrid Cloud SD</p>
+            <h1 className="text-lg font-bold tracking-tight text-white uppercase tracking-wider">Arsip Sekolah</h1>
+            <p className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.3em]">Realtime Cloud</p>
           </div>
         </div>
 
         <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
-          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Menu Utama</p>
+          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Navigasi Utama</p>
           {navItems.map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)} className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40 translate-x-1' : 'text-slate-400 hover:bg-white/5 hover:text-white hover:translate-x-1'}`}>
                 <div className="flex items-center">
                   <span className={`${active ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} mr-3`}>{item.icon}</span>
-                  <span className="font-bold text-sm">{item.label}</span>
+                  <span className="font-bold text-sm tracking-tight">{item.label}</span>
                 </div>
                 {active && <ChevronRight size={14} className="text-indigo-200" />}
               </Link>
@@ -91,14 +91,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <Server size={12} className={status.turso ? 'text-emerald-400' : 'text-rose-400'} />
-                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Archive (SQL)</span>
+                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Main DB (SQL)</span>
               </div>
               <div className={`w-1.5 h-1.5 rounded-full ${status.turso ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-rose-400'}`}></div>
            </div>
            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <Cloud size={12} className={status.firebase ? 'text-emerald-400' : 'text-rose-400'} />
-                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time (Sync)</span>
+                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sync Server</span>
               </div>
               <div className={`w-1.5 h-1.5 rounded-full ${status.firebase ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-rose-400'}`}></div>
            </div>
@@ -109,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30">
           <div className="font-black text-slate-900 text-lg flex items-center">
             <School className="mr-2 text-indigo-600" size={22} />
-            ArsipSurat
+            ArsipSekolah
           </div>
           <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-indigo-600 bg-indigo-50 rounded-2xl">
             <Menu size={22} />

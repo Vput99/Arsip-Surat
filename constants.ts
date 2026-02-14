@@ -6,6 +6,7 @@ export const APP_NAME = "ArsipSurat SD";
 export const CATEGORIES = [
   "Undangan",
   "Dinas",
+  "Absensi",
   "Pemberitahuan",
   "Permohonan",
   "Keputusan",

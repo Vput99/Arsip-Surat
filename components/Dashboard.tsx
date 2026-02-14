@@ -1,22 +1,28 @@
+
 import React, { useEffect, useState } from 'react';
-import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight, Clock, MapPin, ChevronRight, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { subscribeToMails, subscribeToConfig } from '../services/storage';
-import { SchoolConfig } from '../types';
+import { SchoolConfig, Mail as MailType, MailType as MType } from '../types';
 import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({ total: 0, incoming: 0, outgoing: 0, urgent: 0 });
+  const [latestMails, setLatestMails] = useState<MailType[]>([]);
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig | null>(null);
 
   useEffect(() => {
     const unsubscribeMails = subscribeToMails((mails) => {
       setStats({
         total: mails.length,
-        incoming: mails.filter(m => m.type === 'Masuk').length,
-        outgoing: mails.filter(m => m.type === 'Keluar').length,
+        incoming: mails.filter(m => m.type === MType.INCOMING).length,
+        outgoing: mails.filter(m => m.type === MType.OUTGOING).length,
         urgent: mails.filter(m => m.urgency === 'Segera').length
       });
+      // Ambil 5 naskah terbaru dari database
+      setLatestMails(mails.slice(0, 5));
     });
 
     const unsubscribeConfig = subscribeToConfig((config) => {
@@ -30,44 +36,50 @@ const Dashboard: React.FC = () => {
   }, []);
 
   if (!schoolConfig) {
-    return <div className="p-8 text-center text-slate-500">Memuat data dashboard...</div>;
+    return <div className="flex justify-center items-center h-screen"><Activity className="animate-spin text-indigo-600 mr-2"/> <span className="font-bold text-slate-500">Sinkronisasi Database...</span></div>;
   }
 
   const statCards = [
-    { title: 'Total Surat', value: stats.total, icon: <FileText size={24} />, color: 'from-blue-500 to-blue-600', text: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'Surat Masuk', value: stats.incoming, icon: <Mail size={24} />, color: 'from-emerald-500 to-emerald-600', text: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { title: 'Surat Keluar', value: stats.outgoing, icon: <Send size={24} />, color: 'from-violet-500 to-violet-600', text: 'text-violet-600', bg: 'bg-violet-50' },
+    { title: 'Total Arsip', value: stats.total, icon: <FileText size={24} />, color: 'from-blue-500 to-blue-600', text: 'text-blue-600', bg: 'bg-blue-50' },
+    { title: 'Arsip Masuk', value: stats.incoming, icon: <Mail size={24} />, color: 'from-emerald-500 to-emerald-600', text: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { title: 'Arsip Keluar', value: stats.outgoing, icon: <Send size={24} />, color: 'from-violet-500 to-violet-600', text: 'text-violet-600', bg: 'bg-violet-50' },
     { title: 'Perlu Tindakan', value: stats.urgent, icon: <AlertTriangle size={24} />, color: 'from-rose-500 to-rose-600', text: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
-  const data = [
+  const chartData = [
     { name: 'Masuk', value: stats.incoming },
     { name: 'Keluar', value: stats.outgoing },
   ];
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 to-violet-700 shadow-xl shadow-indigo-900/20 text-white p-8 md:p-10">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-2xl shadow-slate-900/30 text-white p-8 md:p-12">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-indigo-500 opacity-10 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-violet-500 opacity-10 rounded-full blur-[80px]"></div>
         
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-          <div className="w-28 h-28 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner flex-shrink-0">
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+          <div className="w-32 h-32 bg-white/5 backdrop-blur-xl rounded-[2rem] flex items-center justify-center border border-white/10 shadow-2xl flex-shrink-0 group overflow-hidden">
              <img 
               src={schoolConfig.logoUrl} 
               alt="Logo" 
-              className="w-20 h-20 object-contain drop-shadow-md"
+              className="w-24 h-24 object-contain drop-shadow-2xl group-hover:scale-110 transition-transform duration-500"
               onError={(e) => { e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.svg"; }}
              />
           </div>
-          <div className="text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-br from-white to-indigo-100">
+          <div className="text-center md:text-left flex-1">
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-3 text-white">
               {schoolConfig.name}
             </h1>
-            <p className="text-indigo-100 text-lg mb-1 font-medium">Sistem Informasi Manajemen Arsip Surat Sekolah</p>
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] text-indigo-50 mt-2">
-              <SchoolConfigIcon className="w-3 h-3 mr-2" />
-              {schoolConfig.address}
+            <p className="text-indigo-200 text-xl mb-4 font-semibold opacity-90">Sistem Arsip & Basis Data Digital Realtime</p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+              <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-indigo-100 backdrop-blur-sm">
+                <MapPin className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+                {schoolConfig.address}
+              </div>
+              <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-black text-emerald-400 backdrop-blur-sm uppercase tracking-widest">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2 animate-pulse"></div>
+                Realtime Database Active
+              </div>
             </div>
           </div>
         </div>
@@ -75,96 +87,116 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, idx) => (
-          <div key={idx} className="bg-white rounded-2xl p-6 shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 group">
+          <div key={idx} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-500 mb-1">{card.title}</p>
-                <h3 className="text-3xl font-bold text-slate-800">{card.value}</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{card.title}</p>
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">{card.value}</h3>
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-lg shadow-indigo-500/10 group-hover:scale-110 transition-transform`}>
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-lg shadow-indigo-500/10 group-hover:scale-110 transition-transform duration-300`}>
                 {card.icon}
               </div>
             </div>
-            <div className={`mt-4 pt-4 border-t border-slate-50 flex items-center text-[11px] font-semibold ${card.text}`}>
-               <div className={`px-2 py-0.5 rounded-md ${card.bg} mr-2 uppercase tracking-widest`}>Sync</div>
-               Aktif via Cloud Turso
+            <div className={`mt-5 pt-5 border-t border-slate-50 flex items-center text-[10px] font-black uppercase tracking-widest ${card.text}`}>
+               <div className={`w-2 h-2 rounded-full ${card.bg.replace('bg-', 'bg-').replace('50', '500')} mr-2 animate-pulse`}></div>
+               Sync via Hybrid Cloud
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-slate-100">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-xl font-bold text-slate-800">Statistik Surat</h3>
-              <p className="text-slate-500 text-sm">Volume surat masuk vs keluar bulan ini</p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Statistics Chart */}
+        <div className="lg:col-span-8 space-y-8">
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 h-full">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Perbandingan Data</h3>
+                <p className="text-slate-500 font-bold text-sm">Distribusi volume arsip masuk dan keluar sekolah</p>
+              </div>
+              <div className="bg-indigo-50 p-4 rounded-2xl">
+                <TrendingUp className="text-indigo-600" size={28} />
+              </div>
             </div>
-            <div className="bg-slate-50 p-2 rounded-lg">
-              <TrendingUp className="text-indigo-600" size={24} />
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} barSize={80}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 13, fontWeight: 800}} 
+                    dy={15}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 12}} 
+                  />
+                  <Tooltip 
+                    cursor={{fill: '#f8fafc'}}
+                    contentStyle={{ 
+                      borderRadius: '24px', 
+                      border: 'none', 
+                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                      padding: '16px 20px',
+                      fontFamily: 'Plus Jakarta Sans, sans-serif',
+                      fontWeight: 'bold'
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[24, 24, 0, 0]}>
+                    <Cell fill="#6366f1" />
+                    <Cell fill="#8b5cf6" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} barSize={60}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} 
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#64748b', fontSize: 12}} 
-                />
-                <Tooltip 
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{ 
-                    borderRadius: '12px', 
-                    border: 'none', 
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                    padding: '12px 16px',
-                    fontFamily: 'Plus Jakarta Sans, sans-serif'
-                  }}
-                />
-                <Bar dataKey="value" radius={[12, 12, 0, 0]}>
-                  <Cell fill="#6366f1" />
-                  <Cell fill="#8b5cf6" />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-slate-900 rounded-3xl shadow-xl p-8 text-white relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600 rounded-full blur-[80px] opacity-40 -mr-20 -mt-20"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500 rounded-full blur-[80px] opacity-30 -ml-20 -mb-20"></div>
-          
-          <div className="relative z-10">
-            <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center mb-6 border border-white/20">
-              <svg className="w-6 h-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            </div>
-            <h3 className="text-2xl font-bold mb-3 leading-tight">AI Assistant & Cloud Sync</h3>
-            <p className="text-slate-300 text-sm leading-relaxed mb-6">
-              Analisis surat otomatis, sinkronisasi cloud realtime, dan editor surat F4 terintegrasi dalam satu sistem cerdas.
-            </p>
-          </div>
-          
-          <Link to="/create" className="relative z-10 w-full py-4 px-4 bg-white text-slate-900 rounded-2xl font-black text-sm hover:bg-indigo-50 transition-all flex items-center justify-center group shadow-xl">
-            Buat Surat Sekarang
-            <ArrowUpRight size={16} className="ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-          </Link>
+        {/* Recent Activities / Database Peek */}
+        <div className="lg:col-span-4 space-y-6">
+           <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col h-full">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Activity size={20} className="text-indigo-600" /> Arsip Terbaru
+                </h3>
+                <Link to="/inbox" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Semua Data</Link>
+              </div>
+              
+              <div className="space-y-3 flex-1">
+                {latestMails.length > 0 ? (
+                  latestMails.map((mail) => (
+                    <Link to={mail.type === MType.INCOMING ? '/inbox' : '/outbox'} key={mail.id} className="block group p-4 bg-slate-50 rounded-2xl hover:bg-white hover:shadow-lg border border-transparent hover:border-slate-100 transition-all">
+                       <div className="flex justify-between items-start mb-1.5">
+                         <span className={`text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${mail.type === MType.INCOMING ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                           {mail.type}
+                         </span>
+                         <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                           <Clock size={10} /> {format(new Date(mail.createdAt), 'dd/MM HH:mm')}
+                         </span>
+                       </div>
+                       <h4 className="text-xs font-black text-slate-800 uppercase line-clamp-1 group-hover:text-indigo-600 transition-colors">{mail.subject}</h4>
+                       <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">{mail.sender}</p>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="h-40 flex flex-col items-center justify-center text-slate-300 gap-2">
+                    <FileText size={40} className="opacity-20" />
+                    <p className="text-xs font-black uppercase tracking-widest opacity-40">Belum ada data</p>
+                  </div>
+                )}
+              </div>
+
+              <Link to="/create" className="mt-6 w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 flex items-center justify-center gap-3 hover:bg-slate-800 transition-all active:scale-95">
+                Buat Arsip Baru <ArrowUpRight size={16} />
+              </Link>
+           </div>
         </div>
       </div>
     </div>
   );
 };
-
-const SchoolConfigIcon = (props: any) => (
-  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-);
 
 export default Dashboard;

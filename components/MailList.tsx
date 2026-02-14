@@ -4,7 +4,7 @@ import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
 import { subscribeToMails, deleteMail, subscribeToConfig, saveMail } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2, PenTool, Upload } from 'lucide-react';
 import MailForm from './MailForm';
 import { suggestReply, generateSPTContent } from '../services/geminiService';
 import { SchoolConfig } from '../types';
@@ -18,6 +18,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const [mails, setMails] = useState<Mail[]>([]);
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showOutboxOptions, setShowOutboxOptions] = useState(false);
   const [editData, setEditData] = useState<Mail | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -193,6 +194,82 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     }
   };
 
+  const handlePrintExpedition = (mail: Mail) => {
+    if (!schoolConfig) return;
+    const config = schoolConfig;
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Lembar Ekspedisi - ${mail.referenceNumber}</title>
+            <style>
+              body { font-family: 'Times New Roman', serif; padding: 40px; }
+              .header-container { display: flex; align-items: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px; }
+              .logo { width: 60px; height: 60px; margin-right: 15px; object-fit: contain; }
+              .header-text h2 { margin: 0; font-size: 14pt; text-transform: uppercase; }
+              .header-text p { margin: 0; font-size: 10pt; }
+              .title { text-align: center; font-weight: bold; text-decoration: underline; margin: 20px 0; font-size: 12pt; }
+              .receipt-box { border: 1px solid black; padding: 25px; border-radius: 8px; }
+              .row { display: flex; margin-bottom: 12px; font-size: 11pt; }
+              .label { width: 140px; font-weight: bold; }
+              .value { flex: 1; }
+              .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+              .sig-block { text-align: center; width: 40%; }
+              .line { margin-top: 70px; border-bottom: 1px solid black; }
+            </style>
+          </head>
+          <body>
+            <div class="receipt-box">
+                <div class="header-container">
+                <img src="${config.logoUrl}" class="logo" />
+                <div class="header-text">
+                    <h2>${config.name}</h2>
+                    <p>${config.address}</p>
+                </div>
+                </div>
+                
+                <div class="title">BUKTI EKSPEDISI / TANDA TERIMA SURAT</div>
+                
+                <div class="row">
+                    <div class="label">Nomor Surat</div>
+                    <div class="value">: ${mail.referenceNumber}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Tanggal Surat</div>
+                    <div class="value">: ${format(new Date(mail.date), 'dd MMMM yyyy', { locale: id })}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Tujuan Kepada</div>
+                    <div class="value">: <strong>${mail.sender}</strong></div>
+                </div>
+                <div class="row">
+                    <div class="label">Perihal</div>
+                    <div class="value">: ${mail.subject}</div>
+                </div>
+
+                <div class="signatures">
+                    <div class="sig-block">
+                        Petugas Pengirim,
+                        <div class="line"></div>
+                        (Tata Usaha)
+                    </div>
+                    <div class="sig-block">
+                        Penerima,
+                        <div class="line"></div>
+                        (.......................................)
+                        <div style="font-size:9pt; margin-top:5px;">Nama Terang & Stempel</div>
+                    </div>
+                </div>
+            </div>
+            <script>window.onload = function() { window.print(); }</script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
   const handleDownload = (mail: Mail, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (mail.fileUrl?.startsWith('data:')) {
@@ -214,6 +291,15 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     const reply = await suggestReply(`Pengirim: ${mail.sender}\nPerihal: ${mail.subject}\nIsi: ${mail.description}`);
     setAiReply(reply);
     setReplyLoading(false);
+  };
+
+  const handleAddButtonClick = () => {
+    if (type === MailType.OUTGOING) {
+      setShowOutboxOptions(true);
+    } else {
+      setEditData(null);
+      setShowForm(true);
+    }
   };
 
   const availableMonths = Array.from(new Set(mails.map(m => m.date.substring(0, 7)))).sort().reverse();
@@ -257,7 +343,11 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
           </div>
           <div className="flex gap-2">
              <button onClick={(e) => handleEdit(mail, e)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Edit Data"><Edit size={16}/></button>
-             <button onClick={() => handlePrintDisposition(mail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Lembar Arsip"><Printer size={16}/></button>
+             {type === MailType.INCOMING ? (
+                <button onClick={() => handlePrintDisposition(mail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Lembar Disposisi"><Printer size={16}/></button>
+             ) : (
+                <button onClick={() => handlePrintExpedition(mail)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors" title="Cetak Bukti Ekspedisi"><Printer size={16}/></button>
+             )}
              <button onClick={(e) => handleDelete(mail.id, e)} className="p-2 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors" title="Hapus Permanen"><Trash2 size={16}/></button>
           </div>
         </div>
@@ -298,7 +388,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
            </div>
         </div>
 
-        {/* Form Disposisi */}
+        {/* Form Disposisi (Hanya Surat Masuk) */}
         {type === MailType.INCOMING && (
           <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 space-y-2">
             <div className="flex justify-between items-center">
@@ -373,7 +463,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   );
 
   return (
-    <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
+    <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col relative">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black text-slate-800 tracking-tight">
@@ -382,7 +472,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
           <p className="text-slate-500 font-bold text-sm">Arsip digital sekolah. Klik surat untuk detail dan unduhan.</p>
         </div>
         <button
-          onClick={() => { setEditData(null); setShowForm(true); }}
+          onClick={handleAddButtonClick}
           className="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 font-black text-sm"
         >
           <Plus size={20} className="mr-2" /> TAMBAH DATA
@@ -513,6 +603,48 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
 
       {showForm && (
         <MailForm type={type} onClose={() => { setShowForm(false); setEditData(null); }} initialData={editData} />
+      )}
+
+      {/* Modal Pilihan Surat Keluar */}
+      {showOutboxOptions && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-fade-in-up">
+            <h3 className="text-lg font-black text-slate-800 mb-2">Pilih Jenis Input</h3>
+            <p className="text-slate-500 text-sm mb-6">Bagaimana Anda ingin memproses surat keluar ini?</p>
+            
+            <div className="space-y-3">
+              <button 
+                onClick={() => { setShowOutboxOptions(false); navigate('/create'); }}
+                className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center gap-4 hover:bg-indigo-100 transition-all group text-left"
+              >
+                <div className="bg-indigo-600 p-3 rounded-xl text-white shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
+                  <PenTool size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-indigo-900 text-sm">Buat Naskah Baru</h4>
+                  <p className="text-[10px] text-indigo-700/70 mt-0.5">Gunakan editor surat digital otomatis.</p>
+                </div>
+              </button>
+
+              <button 
+                onClick={() => { setShowOutboxOptions(false); setEditData(null); setShowForm(true); }}
+                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-4 hover:bg-slate-100 transition-all group text-left"
+              >
+                <div className="bg-white p-3 rounded-xl text-slate-600 border border-slate-200 shadow-sm group-hover:scale-110 transition-transform">
+                  <Upload size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-sm">Arsip Manual</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Upload scan surat fisik yang sudah ada.</p>
+                </div>
+              </button>
+            </div>
+            
+            <button onClick={() => setShowOutboxOptions(false)} className="w-full mt-6 py-3 text-slate-400 hover:text-rose-500 text-xs font-bold uppercase tracking-widest transition-colors">
+              Batal
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

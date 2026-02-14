@@ -1,3 +1,4 @@
+
 import { MailType, MailStatus, UrgencyLevel } from './types';
 
 export const APP_NAME = "ArsipSurat SD";
@@ -51,6 +52,25 @@ No : Nama : NIP : Jabatan : Keterangan
 
 Ditetapkan di : Kediri
 Pada Tanggal : [TANGGAL_SURAT]`
+  },
+  {
+    id: 't_sppd',
+    name: 'Surat Perintah Perjalanan Dinas (SPPD)',
+    subject: 'SURAT PERINTAH PERJALANAN DINAS',
+    category: 'Dinas',
+    layout: 'centered',
+    content: `Pejabat pemberi perintah : Kepala Sekolah
+Nama pegawai yang diperintah : [NAMA_PETUGAS]
+NIP : [NIP_PETUGAS]
+Pangkat dan Golongan : [JABATAN_PETUGAS]
+Maksud Perjalanan Dinas : Menghadiri ...
+Alat angkut yang dipergunakan : Kendaraan Pribadi
+Tempat berangkat : SDN [NAMA_SEKOLAH]
+Tempat tujuan : ...
+Lamanya perjalanan dinas : 1 (Satu) Hari
+Tanggal berangkat : ...
+Tanggal kembali : ...
+Dasar Perintah : SPT Nomor ... Tanggal ...`
   },
   {
     id: 't_pip_aktivasi',

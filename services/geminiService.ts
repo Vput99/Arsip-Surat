@@ -118,6 +118,56 @@ export const generateSPTContent = async (invitationMail: any): Promise<string> =
   }
 };
 
+export const generateSPPDContent = async (sptMail: any): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  try {
+    const prompt = `Anda adalah sekretaris administrasi sekolah dasar. 
+    Buatkan naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) berdasarkan data Surat Perintah Tugas (SPT) berikut:
+    
+    DATA SPT:
+    - Nomor SPT: ${sptMail.referenceNumber}
+    - Perihal/Tugas: ${sptMail.subject}
+    - Isi SPT: ${sptMail.description}
+    
+    INSTRUKSI FORMAT SPPD:
+    1. Pejabat Pemberi Perintah : Kepala SDN [NAMA_SEKOLAH]
+    2. Nama Pegawai yang diperintah : [AMBIL DARI SPT JIKA ADA, ATAU [NAMA_PETUGAS]]
+    3. Maksud Perjalanan Dinas : Menghadiri ${sptMail.subject}
+    4. Alat Angkut : Kendaraan Pribadi / Umum
+    5. Tempat Berangkat : SDN [NAMA_SEKOLAH]
+    6. Tempat Tujuan : [EKSTRAK DARI SPT]
+    7. Lamanya Perjalanan Dinas : 1 (Satu) Hari
+    8. Tanggal Berangkat : [EKSTRAK TANGGAL DARI SPT]
+    9. Tanggal Kembali : [SAMA DENGAN TANGGAL BERANGKAT]
+    10. Dasar Perintah : SPT Nomor ${sptMail.referenceNumber} Tanggal ${sptMail.date}
+    
+    OUTPUT HARUS BERUPA TEKS POLOS DENGAN FORMAT KEY-VALUE TITIK DUA:
+    Pejabat pemberi perintah : Kepala Sekolah
+    Nama pegawai yang diperintah : [NAMA_PETUGAS]
+    NIP : [NIP_PETUGAS]
+    Pangkat dan Golongan : [JABATAN_PETUGAS]
+    Maksud Perjalanan Dinas : ${sptMail.subject}
+    Alat angkut yang dipergunakan : Kendaraan Pribadi
+    Tempat berangkat : SDN [NAMA_SEKOLAH]
+    Tempat tujuan : [Ekstrak Tempat]
+    Lamanya perjalanan dinas : 1 (Satu) Hari
+    Tanggal berangkat : [Ekstrak Tanggal]
+    Tanggal kembali : [Ekstrak Tanggal]
+    Dasar Perintah : SPT Nomor ${sptMail.referenceNumber} Tanggal ${sptMail.date}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt
+    });
+
+    return (response.text || "").trim();
+  } catch (error) {
+    console.error("Gemini SPPD Error:", error);
+    return `Pejabat pemberi perintah : Kepala Sekolah\nNama pegawai : [NAMA_PETUGAS]\nMaksud : Menghadiri ${sptMail.subject}\nDasar : SPT Nomor ${sptMail.referenceNumber}`;
+  }
+};
+
 export const suggestReply = async (incomingMailText: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 

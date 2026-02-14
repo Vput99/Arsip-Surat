@@ -4,9 +4,9 @@ import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
 import { subscribeToMails, deleteMail, subscribeToConfig, saveMail } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2, PenTool, Upload } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2, PenTool, Upload, MapPin } from 'lucide-react';
 import MailForm from './MailForm';
-import { suggestReply, generateSPTContent } from '../services/geminiService';
+import { suggestReply, generateSPTContent, generateSPPDContent } from '../services/geminiService';
 import { SchoolConfig } from '../types';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,7 +31,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const [aiReply, setAiReply] = useState<string>('');
   const [replyLoading, setReplyLoading] = useState(false);
   
-  // State Disposisi
   const [dispositionNote, setDispositionNote] = useState('');
   const [isSavingDisposition, setIsSavingDisposition] = useState(false);
   
@@ -40,7 +39,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   useEffect(() => {
     const unsubscribeMails = subscribeToMails((allMails) => {
       setMails(allMails.filter(m => m.type === type));
-      // Update selected mail real-time if selected
       if (selectedMail) {
         const updated = allMails.find(m => m.id === selectedMail.id);
         if (updated) setSelectedMail(updated);
@@ -60,7 +58,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   const handleSelectMail = (mail: Mail) => {
     setSelectedMail(mail);
     setAiReply('');
-    setDispositionNote(mail.disposition || ''); // Load existing disposition
+    setDispositionNote(mail.disposition || '');
     if (window.innerWidth < 1024) {
       setShowDetailModal(true);
     }
@@ -122,6 +120,25 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       });
     } catch (err) {
       alert("Gagal men-generate naskah SPT. Coba lagi.");
+    } finally {
+      setReplyLoading(false);
+    }
+  };
+
+  const handleCreateSPPD = async (mail: Mail) => {
+    setReplyLoading(true);
+    try {
+      const content = await generateSPPDContent(mail);
+      navigate('/create', { 
+        state: { 
+          templateId: 't_sppd', // Memilih template SPPD
+          subject: `SURAT PERINTAH PERJALANAN DINAS - ${mail.sender}`,
+          content: content,
+          referenceSPT: mail.referenceNumber
+        } 
+      });
+    } catch (err) {
+      alert("Gagal men-generate naskah SPPD.");
     } finally {
       setReplyLoading(false);
     }
@@ -354,7 +371,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
       </div>
       
       <div className="p-6 overflow-y-auto flex-1 space-y-6">
-        {/* Gambar Preview Jika Ada */}
         {mail.fileUrl && mail.fileUrl.startsWith('data:image') && (
           <div className="relative group">
             <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Pratinjau Lampiran</label>
@@ -388,7 +404,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
            </div>
         </div>
 
-        {/* Form Disposisi (Hanya Surat Masuk) */}
         {type === MailType.INCOMING && (
           <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 space-y-2">
             <div className="flex justify-between items-center">
@@ -429,6 +444,19 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
                {replyLoading ? 'MENYUSUN SPT...' : 'BUAT SURAT TUGAS (SPT)'}
                {!replyLoading && <Sparkles size={14} className="animate-pulse" />}
             </button>
+          )}
+
+          {/* Tombol Buat SPPD (Khusus Surat Keluar Kategori Tugas/SPT) */}
+          {type === MailType.OUTGOING && (mail.category === 'Tugas' || mail.subject.includes('TUGAS')) && (
+             <button 
+               onClick={() => handleCreateSPPD(mail)}
+               disabled={replyLoading}
+               className="w-full py-4 bg-violet-600 text-white rounded-2xl hover:bg-violet-700 transition-all text-sm font-black flex items-center justify-center gap-3 shadow-xl shadow-violet-500/30"
+             >
+               {replyLoading ? <Loader2 size={18} className="animate-spin" /> : <MapPin size={20} />}
+               {replyLoading ? 'MENYUSUN SPPD...' : 'BUAT SURAT SPPD'}
+               {!replyLoading && <Sparkles size={14} className="animate-pulse" />}
+             </button>
           )}
 
           {mail.fileUrl && (
@@ -510,6 +538,7 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
             <option value="Semua">Semua Kategori</option>
             <option value="Undangan">Undangan</option>
             <option value="Dinas">Dinas</option>
+            <option value="Tugas">Tugas</option>
             <option value="Pemberitahuan">Pemberitahuan</option>
           </select>
         </div>
@@ -605,7 +634,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
         <MailForm type={type} onClose={() => { setShowForm(false); setEditData(null); }} initialData={editData} />
       )}
 
-      {/* Modal Pilihan Surat Keluar */}
       {showOutboxOptions && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-fade-in-up">

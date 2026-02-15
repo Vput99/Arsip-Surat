@@ -4,7 +4,6 @@ import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight, Clock, M
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { subscribeToMails, subscribeToConfig } from '../services/storage';
 import { SchoolConfig, Mail as MailType, MailType as MType } from '../types';
-// Re-verified named import for Link from react-router-dom
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
@@ -35,18 +34,21 @@ const Dashboard: React.FC = () => {
 
   if (!schoolConfig) {
     return (
-      <div className="flex flex-col justify-center items-center h-[60vh] gap-4">
-        <Activity className="animate-spin text-indigo-600 w-12 h-12"/> 
-        <span className="font-black text-slate-400 uppercase tracking-widest text-sm">Sinkronisasi Basis Data...</span>
+      <div className="flex flex-col justify-center items-center h-[60vh] gap-6">
+        <div className="relative">
+           <Activity className="animate-spin text-indigo-600 w-16 h-16 opacity-20"/> 
+           <Activity className="absolute inset-0 animate-pulse text-indigo-600 w-16 h-16"/> 
+        </div>
+        <span className="font-black text-slate-400 uppercase tracking-[0.3em] text-xs">Menghubungkan Server Realtime...</span>
       </div>
     );
   }
 
   const statCards = [
-    { title: 'Total Arsip', value: stats.total, icon: <FileText size={24} />, color: 'from-blue-500 to-blue-600' },
-    { title: 'Arsip Masuk', value: stats.incoming, icon: <Mail size={24} />, color: 'from-emerald-500 to-emerald-600' },
-    { title: 'Arsip Keluar', value: stats.outgoing, icon: <Send size={24} />, color: 'from-violet-500 to-violet-600' },
-    { title: 'Perlu Tindakan', value: stats.urgent, icon: <AlertTriangle size={24} />, color: 'from-rose-500 to-rose-600' },
+    { title: 'Total Arsip', value: stats.total, icon: <FileText size={22} />, color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-200' },
+    { title: 'Arsip Masuk', value: stats.incoming, icon: <Mail size={22} />, color: 'from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-200' },
+    { title: 'Arsip Keluar', value: stats.outgoing, icon: <Send size={22} />, color: 'from-violet-500 to-violet-600', shadow: 'shadow-violet-200' },
+    { title: 'Perlu Tindakan', value: stats.urgent, icon: <AlertTriangle size={22} />, color: 'from-rose-500 to-rose-600', shadow: 'shadow-rose-200' },
   ];
 
   const chartData = [
@@ -55,84 +57,92 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
+    <div className="space-y-10 animate-fade-in pb-16">
       {/* Banner Utama */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 shadow-2xl text-white p-8 md:p-12">
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-indigo-500 opacity-10 rounded-full blur-[100px]"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
-          <div className="w-32 h-32 bg-white/5 backdrop-blur-xl rounded-[2rem] flex items-center justify-center border border-white/10 shadow-2xl flex-shrink-0">
-             <img src={schoolConfig.logoUrl} alt="Logo" className="w-24 h-24 object-contain" />
+      <div className="relative overflow-hidden rounded-[3rem] bg-slate-900 shadow-2xl text-white p-10 md:p-14 border border-white/5 group">
+        <div className="absolute top-0 right-0 -mt-24 -mr-24 w-96 h-96 bg-indigo-600 opacity-20 rounded-full blur-[120px] group-hover:opacity-30 transition-opacity duration-700"></div>
+        <div className="absolute bottom-0 left-0 -mb-24 -ml-24 w-96 h-96 bg-emerald-600 opacity-10 rounded-full blur-[100px]"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+          <div className="w-40 h-40 bg-white/10 backdrop-blur-2xl rounded-[2.5rem] flex items-center justify-center border border-white/20 shadow-2xl flex-shrink-0 ring-4 ring-white/5 hover:scale-105 transition-transform duration-500">
+             <img src={schoolConfig.logoUrl} alt="Logo" className="w-28 h-28 object-contain" />
           </div>
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-2 uppercase">{schoolConfig.name}</h1>
-            <p className="text-indigo-200 text-lg font-bold opacity-80 mb-4 tracking-wide">Sistem Arsip & Administrasi Digital Realtime</p>
-            <div className="flex flex-wrap justify-center md:justify-start gap-3">
-              <span className="px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <MapPin size={12} /> {schoolConfig.address}
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4 uppercase leading-tight drop-shadow-lg">{schoolConfig.name}</h1>
+            <p className="text-indigo-200 text-lg md:text-xl font-bold opacity-80 mb-8 tracking-wide max-w-2xl mx-auto md:mx-0">Sistem Informasi Manajemen Arsip Sekolah Berbasis Realtime & Intelligence.</p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <span className="px-5 py-2.5 rounded-2xl bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2.5 backdrop-blur-md">
+                <MapPin size={14} className="text-indigo-400" /> {schoolConfig.address}
               </span>
-              <span className="px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div> Database Online
+              <span className="px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 flex items-center gap-2.5 backdrop-blur-md">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div> Realtime Sync
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Menu Cepat (Fitur Baru) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Link to="/attendance" className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all flex items-center gap-6 group">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-            <CalendarCheck size={32} />
+      {/* Menu Cepat */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Link to="/attendance" className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:border-emerald-200 transition-all duration-500 flex items-center gap-8 group relative overflow-hidden">
+          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
+          <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-emerald-100">
+            <CalendarCheck size={36} />
           </div>
-          <div>
-            <h3 className="text-xl font-black text-slate-900">Input Absensi</h3>
-            <p className="text-slate-500 font-medium text-sm italic">Kelola daftar hadir Guru, Pegawai, & Tukang.</p>
+          <div className="relative z-10">
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-1">Input Absensi</h3>
+            <p className="text-slate-400 font-bold text-sm italic">Otomasi kehadiran Guru, Pegawai, & Tukang.</p>
           </div>
-          <ArrowUpRight className="ml-auto text-slate-300 group-hover:text-emerald-600 transition-colors" />
+          <ArrowUpRight className="ml-auto text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all relative z-10" size={28} />
         </Link>
-        <Link to="/honor" className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all flex items-center gap-6 group">
-          <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-            <HandCoins size={32} />
+        <Link to="/honor" className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:border-amber-200 transition-all duration-500 flex items-center gap-8 group relative overflow-hidden">
+          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-amber-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
+          <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-amber-100">
+            <HandCoins size={36} />
           </div>
-          <div>
-            <h3 className="text-xl font-black text-slate-900">Penerimaan Honor</h3>
-            <p className="text-slate-500 font-medium text-sm italic">Format Juknis BOS 2026 + Pajak Otomatis.</p>
+          <div className="relative z-10">
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-1">Penerimaan Honor</h3>
+            <p className="text-slate-400 font-bold text-sm italic">Format Juknis BOS & Perhitungan Pajak Otomatis.</p>
           </div>
-          <ArrowUpRight className="ml-auto text-slate-300 group-hover:text-amber-600 transition-colors" />
+          <ArrowUpRight className="ml-auto text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all relative z-10" size={28} />
         </Link>
       </div>
 
       {/* Statistik Utama */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, idx) => (
-          <div key={idx} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:-translate-y-1 transition-all group">
-            <div className="flex items-start justify-between">
+          <div key={idx} className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-slate-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
+            <div className="flex items-start justify-between relative z-10">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{card.title}</p>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{card.value}</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{card.title}</p>
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">{card.value}</h3>
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-lg`}>
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-xl ${card.shadow} group-hover:scale-110 transition-transform duration-500`}>
                 {card.icon}
               </div>
             </div>
+            <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-slate-50 rounded-full opacity-50"></div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-10">
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Volume Arsip</h3>
-            <div className="bg-indigo-50 p-3 rounded-xl text-indigo-600"><TrendingUp size={24} /></div>
+        <div className="lg:col-span-8 bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-12 relative z-10">
+            <div>
+               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Analisis Volume Arsip</h3>
+               <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1">Perbandingan Masuk vs Keluar</p>
+            </div>
+            <div className="bg-indigo-50 p-4 rounded-2xl text-indigo-600 shadow-inner"><TrendingUp size={28} /></div>
           </div>
-          <div className="h-72 w-full">
+          <div className="h-80 w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} barSize={60}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 800}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} />
-                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold' }} />
-                <Bar dataKey="value" radius={[15, 15, 0, 0]}>
+              <BarChart data={chartData} barSize={70}>
+                <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 13, fontWeight: 800}} dy={15} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 500}} />
+                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '16px', fontWeight: 'bold' }} />
+                <Bar dataKey="value" radius={[20, 20, 0, 0]} animationDuration={1500}>
                   <Cell fill="#6366f1" />
                   <Cell fill="#8b5cf6" />
                 </Bar>
@@ -141,26 +151,32 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-              <Activity size={18} className="text-indigo-600" /> Terbaru
+        <div className="lg:col-span-4 bg-[#0F172A] p-8 rounded-[3rem] shadow-2xl border border-white/5 flex flex-col group">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
+              <div className="bg-indigo-600 p-2 rounded-xl"><Activity size={20} className="text-white animate-pulse" /></div>
+              Aktivitas Terkini
             </h3>
-            <Link to="/inbox" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Semua</Link>
+            <Link to="/inbox" className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] hover:text-white transition-colors">View All</Link>
           </div>
-          <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] pr-2">
-            {latestMails.map((mail) => (
-              <div key={mail.id} className="p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all">
-                <div className="flex justify-between items-start mb-1">
-                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${mail.type === MType.INCOMING ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>{mail.type}</span>
-                  <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1"><Clock size={10} /> {format(new Date(mail.createdAt), 'dd/MM HH:mm')}</span>
+          <div className="space-y-4 flex-1 overflow-y-auto max-h-[380px] pr-2 custom-scrollbar">
+            {latestMails.length > 0 ? latestMails.map((mail) => (
+              <div key={mail.id} className="p-5 bg-white/5 hover:bg-white/10 rounded-[2rem] border border-white/5 hover:border-white/10 transition-all duration-300 group/item">
+                <div className="flex justify-between items-start mb-2">
+                  <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${mail.type === MType.INCOMING ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-400'}`}>{mail.type}</span>
+                  <span className="text-[9px] font-bold text-slate-500 flex items-center gap-2"><Clock size={12} /> {format(new Date(mail.createdAt), 'dd/MM HH:mm')}</span>
                 </div>
-                <h4 className="text-xs font-black text-slate-800 uppercase line-clamp-1">{mail.subject}</h4>
+                <h4 className="text-[13px] font-black text-slate-200 uppercase line-clamp-2 leading-relaxed group-hover/item:text-white transition-colors">{mail.subject}</h4>
               </div>
-            ))}
+            )) : (
+              <div className="py-20 text-center opacity-30 flex flex-col items-center">
+                 <FileText size={40} className="text-slate-500 mb-4" />
+                 <p className="text-xs font-black uppercase tracking-widest">Belum ada arsip</p>
+              </div>
+            )}
           </div>
-          <Link to="/create" className="mt-6 w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all">
-            Buat Naskah Baru <ArrowUpRight size={16} />
+          <Link to="/create" className="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-indigo-900/40 flex items-center justify-center gap-4 hover:bg-white hover:text-indigo-600 transition-all duration-500 transform active:scale-95">
+            NEW ARCHIVE <ArrowUpRight size={18} />
           </Link>
         </div>
       </div>

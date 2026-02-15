@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-// Added CheckCircle to imports
 import { 
   Coins, Printer, Loader2, Save, Music, Hammer, ChevronLeft, 
   ZoomIn, ZoomOut, QrCode, Sparkles, Zap, Trash2, ShieldCheck, 
-  TrendingUp, Activity, CreditCard, Banknote, PenTool, CheckCircle 
+  TrendingUp, Activity, CreditCard, Banknote, PenTool, CheckCircle,
+  ToggleLeft, ToggleRight, Info, UserCheck, ChevronDown
 } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail, subscribeToAttendance } from '../services/storage';
 import { analyzePayroll } from '../services/geminiService';
@@ -27,19 +27,40 @@ const HonorManager: React.FC = () => {
   const [rates, setRates] = useState<Record<string, number>>({});
   const [bulkRate, setBulkRate] = useState('');
   const [attendanceData, setAttendanceData] = useState<Record<string, string>>({});
+  const [isTaxActive, setIsTaxActive] = useState(true);
+  
+  // State baru untuk bendahara
+  const [selectedBendahara, setSelectedBendahara] = useState<StaffMember | null>(null);
+  
   const [saveLoading, setSaveLoading] = useState(false);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState<string | null>(null);
-  const [scale, setScale] = useState(0.85);
+  const [scale, setScale] = useState(0.8);
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const TAX_RATE = 0.05; // PPh21
+  const TAX_RATE = 0.05; // PPh21 5%
 
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig(setConfig);
     const unsubscribeStaff = subscribeToStaff(setAllStaff);
     return () => { unsubscribeConfig(); unsubscribeStaff(); };
   }, []);
+
+  // Set bendahara default jika belum ada yang terpilih
+  useEffect(() => {
+    if (!selectedBendahara && allStaff.length > 0) {
+      const candidate = allStaff.find(s => s.category === 'reg' || s.category === 'pppk');
+      if (candidate) setSelectedBendahara(candidate);
+    }
+  }, [allStaff]);
+
+  useEffect(() => {
+    if (activeCategory === 'tukang') {
+      setIsTaxActive(false);
+    } else {
+      setIsTaxActive(true);
+    }
+  }, [activeCategory]);
 
   useEffect(() => {
     const unsubscribe = subscribeToAttendance(year, month, activeCategory, (data) => {
@@ -50,6 +71,9 @@ const HonorManager: React.FC = () => {
   }, [year, month, activeCategory]);
 
   const currentStaffList = allStaff.filter(s => s.category === activeCategory);
+  
+  // Daftar staf yang bisa jadi bendahara (ASN & PPPK)
+  const treasurerCandidates = allStaff.filter(s => s.category === 'reg' || s.category === 'pppk');
 
   const getAttendanceCount = (staffId: string) => {
     let count = 0;
@@ -74,7 +98,7 @@ const HonorManager: React.FC = () => {
   };
 
   const calculateGross = (staffId: string) => getAttendanceCount(staffId) * (rates[staffId] || 0);
-  const calculateTax = (staffId: string) => Math.floor(calculateGross(staffId) * TAX_RATE);
+  const calculateTax = (staffId: string) => isTaxActive ? Math.floor(calculateGross(staffId) * TAX_RATE) : 0;
   const calculateNet = (staffId: string) => calculateGross(staffId) - calculateTax(staffId);
 
   const handleAiAnalysis = async () => {
@@ -83,10 +107,12 @@ const HonorManager: React.FC = () => {
     const payload = {
       category: activeCategory === 'extra' ? 'Ekstrakurikuler' : 'Tukang',
       period,
+      isTaxActive,
       staff: currentStaffList.map(s => ({
         nama: s.name,
         hadir: getAttendanceCount(s.id),
         bruto: calculateGross(s.id),
+        pajak: calculateTax(s.id),
         netto: calculateNet(s.id)
       }))
     };
@@ -97,6 +123,10 @@ const HonorManager: React.FC = () => {
 
   const handleGenerateReceipt = async () => {
     if (!receiptRef.current) return;
+    if (!selectedBendahara) {
+      alert("Harap pilih Bendahara terlebih dahulu di panel pengaturan.");
+      return;
+    }
     if (!confirm('Simpan daftar penerimaan honor ini ke Arsip Surat Keluar?')) return;
     
     setSaveLoading(true);
@@ -117,7 +147,7 @@ const HonorManager: React.FC = () => {
         createdAt: new Date().toISOString(),
         sender: 'Bendahara BOS',
         subject: `Daftar Honor ${activeCategory === 'extra' ? 'Ekstrakurikuler' : 'Tenaga Tukang'} - ${period}`,
-        description: `Rekapitulasi pembayaran honorarium bulan ${period} sesuai Juknis BOS.`,
+        description: `Rekapitulasi pembayaran honorarium bulan ${period}. Bendahara: ${selectedBendahara.name}.`,
         category: 'Absensi',
         urgency: UrgencyLevel.LOW,
         status: MailStatus.ARCHIVED,
@@ -161,7 +191,7 @@ const HonorManager: React.FC = () => {
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pilih Kategori</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pilih Kategori Honor</label>
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setActiveCategory('extra')} className={`py-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border ${activeCategory === 'extra' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}>
                   <Music size={24} /><span className="text-[10px] font-black uppercase">Ekskul</span>
@@ -172,13 +202,51 @@ const HonorManager: React.FC = () => {
               </div>
             </div>
 
+            {/* Pemilihan Bendahara */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block flex items-center gap-2">
+                 <UserCheck size={14} className="text-indigo-600" /> Pilih Bendahara BOS
+               </label>
+               <div className="relative">
+                  <select 
+                    value={selectedBendahara?.id || ''} 
+                    onChange={(e) => {
+                      const found = treasurerCandidates.find(c => c.id === e.target.value);
+                      if (found) setSelectedBendahara(found);
+                    }}
+                    className="w-full appearance-none px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="" disabled>-- Pilih Personil --</option>
+                    {treasurerCandidates.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.nip ? 'ASN' : 'Staff'})</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+               </div>
+               {selectedBendahara && (
+                 <div className="flex items-center gap-2 mt-2 px-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-[9px] font-bold text-emerald-600 uppercase">Terpilih: {selectedBendahara.name}</span>
+                 </div>
+               )}
+            </div>
+
+            <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${isTaxActive ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+               <div>
+                  <label className={`text-[10px] font-black uppercase tracking-widest block ${isTaxActive ? 'text-rose-600' : 'text-slate-500'}`}>Potong PPh21 (5%)</label>
+                  <p className="text-[8px] font-bold text-slate-400 italic">Klik toggle untuk {isTaxActive ? 'mematikan' : 'mengaktifkan'}</p>
+               </div>
+               <button onClick={() => setIsTaxActive(!isTaxActive)} className={`p-1 rounded-full transition-colors ${isTaxActive ? 'text-rose-600' : 'text-slate-300'}`}>
+                 {isTaxActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
+               </button>
+            </div>
+            
             <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 space-y-3">
                <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">Setel Tarif Masal</label>
                <div className="flex gap-2">
                  <input type="number" value={bulkRate} onChange={(e) => setBulkRate(e.target.value)} className="flex-1 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs font-bold outline-none" placeholder="Cth: 50000" />
                  <button onClick={applyBulkRate} className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"><Zap size={18}/></button>
                </div>
-               <p className="text-[8px] text-indigo-400 font-bold leading-tight">Gunakan ini untuk mengisi semua tarif personil sekaligus.</p>
             </div>
 
             <div className="space-y-3">
@@ -186,7 +254,7 @@ const HonorManager: React.FC = () => {
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daftar Tarif (Rp)</label>
                  <span className="text-[8px] font-black bg-slate-100 px-2 py-0.5 rounded uppercase">{currentStaffList.length} Org</span>
                </div>
-               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+               <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                   {currentStaffList.map(s => (
                     <div key={s.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl group transition-all hover:bg-white hover:border-indigo-200">
                       <p className="text-[10px] font-black text-slate-700 uppercase truncate mb-1.5 flex justify-between items-center">
@@ -205,8 +273,10 @@ const HonorManager: React.FC = () => {
                  <span className="text-slate-900">Rp {totalBruto.toLocaleString('id-ID')}</span>
                </div>
                <div className="flex justify-between text-xs font-black text-slate-400 uppercase">
-                 <span>Pajak (5%)</span>
-                 <span className="text-rose-500">- Rp {(totalBruto - totalNetto).toLocaleString('id-ID')}</span>
+                 <span>Pajak (PPh21)</span>
+                 <span className={`${isTaxActive ? 'text-rose-500' : 'text-slate-300'}`}>
+                   {isTaxActive ? `- Rp ${(totalBruto - totalNetto).toLocaleString('id-ID')}` : 'Rp 0'}
+                 </span>
                </div>
                <div className="flex justify-between text-sm font-black text-slate-900 uppercase">
                  <span>Total Netto</span>
@@ -229,7 +299,7 @@ const HonorManager: React.FC = () => {
           )}
         </div>
 
-        {/* Area Preview Dokument */}
+        {/* Area Preview Dokument - Landscape */}
         <div className="lg:col-span-9 overflow-x-auto bg-slate-200/50 rounded-[2.5rem] p-8 flex justify-center">
            <div 
              ref={receiptRef}
@@ -240,10 +310,10 @@ const HonorManager: React.FC = () => {
               <div className="border-b-[3px] border-double border-black pb-4 mb-6 grid grid-cols-[80px_1fr_80px] items-center text-center">
                  <img src={config.logoDaerahUrl} className="w-full h-auto object-contain" />
                  <div className="px-4">
-                    <h3 className="text-[12pt] uppercase font-bold">{config.headerLine1}</h3>
-                    <h3 className="text-[12pt] font-bold uppercase">{config.headerLine2}</h3>
+                    <h3 className="text-[12pt] uppercase font-bold leading-tight">{config.headerLine1}</h3>
+                    <h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine2}</h3>
                     <h1 className="text-[18pt] font-black uppercase my-1 tracking-tight">{config.name}</h1>
-                    <p className="text-[9pt] font-bold italic">{config.address}</p>
+                    <p className="text-[9pt] font-bold italic leading-tight">{config.address}</p>
                  </div>
                  <img src={config.logoUrl} className="w-full h-auto object-contain" />
               </div>
@@ -251,7 +321,7 @@ const HonorManager: React.FC = () => {
               <div className="text-center mb-8">
                  <h2 className="text-[14pt] font-bold underline uppercase">DAFTAR PENERIMAAN HONORARIUM</h2>
                  <p className="text-[11pt] uppercase tracking-widest mt-1">BULAN : {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
-                 <p className="text-[10pt] font-bold uppercase mt-0.5">KATEGORI : {activeCategory === 'extra' ? 'TENAGA EKSTRAKURIKULER' : 'TENAGA TUKANG / SARPRAS'}</p>
+                 <p className="text-[10pt] font-bold uppercase mt-0.5 tracking-tight">KATEGORI : {activeCategory === 'extra' ? 'TENAGA EKSTRAKURIKULER' : 'TENAGA TUKANG / SARPRAS'}</p>
               </div>
 
               <div className="flex-1">
@@ -260,11 +330,12 @@ const HonorManager: React.FC = () => {
                       <tr className="bg-slate-50">
                          <th className="border border-black p-2 w-10 text-center">NO</th>
                          <th className="border border-black p-2 text-left">NAMA PENERIMA / NIK</th>
-                         <th className="border border-black p-2 text-center w-24">VOL (ORG/HARI)</th>
-                         <th className="border border-black p-2 text-right w-44">BRUTO (Rp)</th>
+                         <th className="border border-black p-2 text-center w-32">JABATAN</th>
+                         <th className="border border-black p-2 text-center w-24">VOL (HARI)</th>
+                         <th className="border border-black p-2 text-right w-40">BRUTO (Rp)</th>
                          <th className="border border-black p-2 text-right w-36">PPh21 (5%)</th>
-                         <th className="border border-black p-2 text-right w-44">NETTO (Rp)</th>
-                         <th className="border border-black p-2 text-center w-48">TANDA TANGAN</th>
+                         <th className="border border-black p-2 text-right w-40">NETTO (Rp)</th>
+                         <th className="border border-black p-2 text-center w-44">TANDA TANGAN</th>
                       </tr>
                    </thead>
                    <tbody>
@@ -274,15 +345,20 @@ const HonorManager: React.FC = () => {
                         const tax = calculateTax(s.id);
                         const net = calculateNet(s.id);
                         return (
-                          <tr key={s.id} className="h-11">
-                             <td className="border border-black p-2 text-center">{idx + 1}</td>
+                          <tr key={s.id} className="h-12">
+                             <td className="border border-black p-2 text-center font-bold">{idx + 1}</td>
                              <td className="border border-black p-2 leading-tight">
                                 <span className="font-bold block uppercase">{s.name}</span>
-                                <span className="text-[7pt] text-slate-500 italic uppercase">Nik. {s.nip || '-'}</span>
+                                <span className="text-[7.5pt] text-slate-500 italic uppercase">Nik. {s.nip || '-'}</span>
+                             </td>
+                             <td className="border border-black p-2 text-center text-[8.5pt] uppercase leading-tight font-medium">
+                                {s.rank || '-'}
                              </td>
                              <td className="border border-black p-2 text-center font-bold">{count}</td>
                              <td className="border border-black p-2 text-right">{gross.toLocaleString('id-ID')}</td>
-                             <td className="border border-black p-2 text-right italic">({tax.toLocaleString('id-ID')})</td>
+                             <td className={`border border-black p-2 text-right italic ${isTaxActive ? 'text-slate-500' : 'text-slate-200'}`}>
+                                ({isTaxActive ? tax.toLocaleString('id-ID') : '0'})
+                             </td>
                              <td className="border border-black p-2 text-right font-bold">{net.toLocaleString('id-ID')}</td>
                              <td className="border border-black p-2 text-left relative overflow-hidden">
                                 <span className="text-[6.5pt] text-slate-400 absolute top-1 left-1">{idx + 1}.</span>
@@ -293,10 +369,12 @@ const HonorManager: React.FC = () => {
                       })}
                       {currentStaffList.length > 0 && (
                         <tr className="bg-slate-50 font-bold">
-                           <td className="border border-black p-3 text-center" colSpan={3}>JUMLAH TOTAL</td>
+                           <td className="border border-black p-3 text-center" colSpan={4}>JUMLAH TOTAL</td>
                            <td className="border border-black p-3 text-right">{totalBruto.toLocaleString('id-ID')}</td>
-                           <td className="border border-black p-3 text-right">({(totalBruto - totalNetto).toLocaleString('id-ID')})</td>
-                           <td className="border border-black p-3 text-right underline">{totalNetto.toLocaleString('id-ID')}</td>
+                           <td className="border border-black p-3 text-right">
+                             ({isTaxActive ? (totalBruto - totalNetto).toLocaleString('id-ID') : '0'})
+                           </td>
+                           <td className="border border-black p-3 text-right underline decoration-2 decoration-indigo-500">{totalNetto.toLocaleString('id-ID')}</td>
                            <td className="border border-black p-3 bg-white"></td>
                         </tr>
                       )}
@@ -308,25 +386,34 @@ const HonorManager: React.FC = () => {
               <div className="mt-12 grid grid-cols-2 text-[10.5pt] leading-tight font-serif px-6">
                  <div className="text-center w-[250px]">
                     <p className="mb-8">Mengetahui,</p>
-                    <p className="font-bold">Bendahara BOS</p>
+                    <p className="font-bold uppercase">Bendahara BOS</p>
                     <div className="h-24"></div>
-                    <p className="font-bold underline uppercase">.........................................</p>
-                    <p>NIP. ..................................</p>
+                    {selectedBendahara ? (
+                      <>
+                        <p className="font-bold underline uppercase">{selectedBendahara.name}</p>
+                        <p>NIP. {selectedBendahara.nip || '..................................'}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-bold underline uppercase">.........................................</p>
+                        <p>NIP. ..................................</p>
+                      </>
+                    )}
                  </div>
                  <div className="text-center w-[250px] ml-auto">
                     <p className="mb-1">Kediri, {format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
-                    <p className="font-bold uppercase">Kepala Sekolah {config.name}</p>
+                    <p className="font-bold uppercase tracking-tight">Kepala Sekolah {config.name}</p>
                     <div className="h-24 flex items-center justify-center my-1">
                        {/* Space for Principal Stamp */}
                     </div>
-                    <p className="font-bold underline uppercase">{config.principalName}</p>
+                    <p className="font-bold underline uppercase decoration-2">{config.principalName}</p>
                     <p>NIP. {config.principalNip}</p>
                  </div>
               </div>
               
               <div className="mt-auto pt-4 flex justify-between items-center text-[7pt] text-slate-400 italic border-t border-slate-100">
                 <span>Dokumen ini dihasilkan secara otomatis berdasarkan Juknis BOS 2026.</span>
-                <span>PPh21 (5%) dikenakan pada Wajib Pajak sesuai ketentuan perundangan.</span>
+                <span>PPh21 (5%) hanya dikenakan pada Wajib Pajak sesuai ambang batas PTKP yang berlaku.</span>
               </div>
            </div>
         </div>
@@ -335,7 +422,7 @@ const HonorManager: React.FC = () => {
       {/* Zoom Control */}
       <div className="fixed bottom-6 right-6 flex gap-2 z-50 print:hidden">
         <button onClick={() => setScale(Math.max(0.4, scale - 0.1))} className="p-3 bg-white border shadow-xl rounded-2xl hover:bg-slate-50 transition-all"><ZoomOut size={20}/></button>
-        <button onClick={() => setScale(0.85)} className="px-5 bg-white border shadow-xl rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50">Reset</button>
+        <button onClick={() => setScale(0.8)} className="px-5 bg-white border shadow-xl rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50">Reset</button>
         <button onClick={() => setScale(Math.min(1.2, scale + 0.1))} className="p-3 bg-white border shadow-xl rounded-2xl hover:bg-slate-50 transition-all"><ZoomIn size={20}/></button>
       </div>
 

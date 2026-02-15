@@ -84,7 +84,7 @@ export const analyzePayroll = async (data: any): Promise<string> => {
 };
 
 /**
- * Pembuatan SPT - Perbaikan duplikasi "Dasar" dan Judul
+ * Pembuatan SPT - Perbaikan duplikasi "Dasar" dan Judul, serta penambahan penutup
  */
 export const generateSPTFromInvitation = async (invitation: Mail): Promise<string> => {
   try {
@@ -98,7 +98,8 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
     1. JANGAN sertakan Judul Surat (seperti "SURAT PERINTAH TUGAS") karena sudah ada di sistem.
     2. JANGAN sertakan KOP Sekolah atau bagian Tanda Tangan.
     3. Mulai langsung dari naskah 'Dasar :'.
-    4. Gunakan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], dan [JABATAN_PETUGAS] agar bisa diedit user.
+    4. Gunakan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], dan [JABATAN_PETUGAS].
+    5. AKHIRI naskah dengan kalimat penutup: "Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan penuh tanggung jawab."
     
     Format Naskah:
     Dasar: Surat dari ${invitation.sender} Nomor ${invitation.referenceNumber} Tanggal ${invitation.date} perihal ${invitation.subject}.
@@ -111,8 +112,10 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
     Jabatan : [JABATAN_PETUGAS]
 
     Untuk menghadiri kegiatan tersebut pada :
-    Tanggal : [Ekstrak tanggal kegiatan saja]
-    Tempat : [Ekstrak tempat kegiatan saja]`;
+    Tanggal : [Ekstrak tanggal kegiatan saja dari konteks]
+    Tempat : [Ekstrak tempat kegiatan saja dari konteks]
+
+    Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan penuh tanggung jawab.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",

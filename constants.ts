@@ -97,11 +97,11 @@ Nama : [NAMA_PETUGAS]
 NIP : [NIP_PETUGAS]
 Jabatan : [JABATAN_PETUGAS]
 
-Nama tersebut akan di beri tugas untuk menghadiri undangan tersebut pada :
-tanggal : [TANGGAL_KEGIATAN]
+Untuk menghadiri kegiatan tersebut pada :
+Tanggal : [TANGGAL_KEGIATAN]
 Tempat : [TEMPAT_KEGIATAN]
 
-Berikut surat tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya.`
+Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan penuh tanggung jawab.`
   },
   {
     id: 't_sppd',

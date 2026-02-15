@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, QrCode, Sparkles, Zap, Trash2, ShieldCheck, 
   TrendingUp, Activity, CreditCard, Banknote, PenTool, CheckCircle,
   ToggleLeft, ToggleRight, Info, UserCheck, ChevronDown, MapPin, Search, UserMinus, UserPlus,
-  Users, Percent
+  Users, Percent, Hash
 } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail, subscribeToAttendance } from '../services/storage';
 import { analyzePayroll } from '../services/geminiService';
@@ -26,17 +26,16 @@ const HonorManager: React.FC = () => {
   const [month, setMonth] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
   const [rates, setRates] = useState<Record<string, number>>({});
+  // State untuk volume manual (Trip/Hari)
+  const [manualVolumes, setManualVolumes] = useState<Record<string, number>>({});
   // State tarif pajak spesifik per orang (khusus SPPD)
   const [taxTiers, setTaxTiers] = useState<Record<string, number>>({});
   const [bulkRate, setBulkRate] = useState('');
   const [attendanceData, setAttendanceData] = useState<Record<string, string>>({});
   const [isTaxActive, setIsTaxActive] = useState(true);
   
-  // State untuk seleksi pegawai SPPD
   const [selectedSppdStaffIds, setSelectedSppdStaffIds] = useState<string[]>([]);
   const [staffSearch, setStaffSearch] = useState('');
-  
-  // State untuk bendahara
   const [selectedBendahara, setSelectedBendahara] = useState<StaffMember | null>(null);
   
   const [saveLoading, setSaveLoading] = useState(false);
@@ -45,7 +44,7 @@ const HonorManager: React.FC = () => {
   const [scale, setScale] = useState(0.8);
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const DEFAULT_TAX_RATE = 0.05; // 5%
+  const DEFAULT_TAX_RATE = 0.05;
 
   useEffect(() => {
     const unsubscribeConfig = subscribeToConfig(setConfig);
@@ -84,6 +83,10 @@ const HonorManager: React.FC = () => {
   const treasurerCandidates = allStaff.filter(s => s.category === 'reg' || s.category === 'pppk');
 
   const getAttendanceCount = (staffId: string) => {
+    // Jika ada input manual, utamakan itu
+    if (manualVolumes[staffId] !== undefined) return manualVolumes[staffId];
+
+    // Jika tidak ada manual, ambil dari data absensi
     let count = 0;
     const days = getDaysInMonth(new Date(year, month));
     for (let d = 1; d <= days; d++) {
@@ -100,6 +103,10 @@ const HonorManager: React.FC = () => {
 
   const handleRateChange = (staffId: string, val: string) => {
     setRates({ ...rates, [staffId]: parseInt(val) || 0 });
+  };
+
+  const handleVolumeChange = (staffId: string, val: string) => {
+    setManualVolumes({ ...manualVolumes, [staffId]: parseInt(val) || 0 });
   };
 
   const handleTaxTierChange = (staffId: string, tier: number) => {
@@ -120,13 +127,10 @@ const HonorManager: React.FC = () => {
   const calculateTax = (staffId: string) => {
     if (!isTaxActive) return 0;
     const gross = calculateGross(staffId);
-    
-    // Jika SPPD, gunakan taxTier spesifik (Juknis BOS)
     if (activeCategory === 'sppd') {
       const tier = taxTiers[staffId] ?? 0; 
       return Math.floor(gross * tier);
     }
-    
     return Math.floor(gross * DEFAULT_TAX_RATE);
   };
 
@@ -210,10 +214,10 @@ const HonorManager: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-2 max-w-[1600px] mx-auto">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Manajemen Keuangan</h2>
-          <p className="text-slate-500 font-bold text-sm italic">Laporan BOS & Pajak Juknis Terbaru.</p>
+          <p className="text-slate-500 font-bold text-sm italic">Otomatisasi Laporan BOS & Transport SPPD.</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleAiAnalysis} disabled={aiAnalyzing} className="px-6 py-3 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-sm flex items-center gap-2 hover:bg-indigo-50 transition-all">
+          <button onClick={handleAiAnalysis} disabled={aiAnalyzing} className="px-6 py-3 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-sm flex items-center gap-2">
             {aiAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} className="text-amber-500" />}
             Analisis AI
           </button>
@@ -228,7 +232,7 @@ const HonorManager: React.FC = () => {
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Kategori Daftar</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pilih Kategori Dokumen</label>
               <div className="grid grid-cols-3 gap-2">
                 <button onClick={() => setActiveCategory('extra')} className={`py-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border ${activeCategory === 'extra' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'}`}>
                   <Music size={20} /><span className="text-[8px] font-black uppercase">Ekskul</span>
@@ -246,7 +250,7 @@ const HonorManager: React.FC = () => {
             {activeCategory === 'sppd' && (
               <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-3 animate-fade-in">
                 <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest block flex items-center gap-2">
-                  <Users size={14} /> Pilih Pegawai Dinas
+                  <Users size={14} /> Pilih Penerima Transport
                 </label>
                 <div className="relative">
                   <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
@@ -290,7 +294,7 @@ const HonorManager: React.FC = () => {
                       const found = treasurerCandidates.find(c => c.id === e.target.value);
                       if (found) setSelectedBendahara(found);
                     }}
-                    className="w-full appearance-none px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full appearance-none px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none"
                   >
                     {treasurerCandidates.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
@@ -300,46 +304,43 @@ const HonorManager: React.FC = () => {
                </div>
             </div>
 
-            {/* Toggle Pajak Global */}
-            <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${isTaxActive ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
-               <div>
-                  <label className={`text-[10px] font-black uppercase tracking-widest block ${isTaxActive ? 'text-rose-600' : 'text-slate-500'}`}>Potong PPh21 (5%)</label>
-                  <p className="text-[8px] font-bold text-slate-400 italic">Otomatisasi Juknis BOS</p>
-               </div>
-               <button onClick={() => setIsTaxActive(!isTaxActive)} className={`p-1 rounded-full transition-colors ${isTaxActive ? 'text-rose-600' : 'text-slate-300'}`}>
-                 {isTaxActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
-               </button>
-            </div>
-            
             <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 space-y-3">
-               <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">Tarif Satuan (Rp)</label>
+               <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">Setel Tarif Masal (Rp)</label>
                <div className="flex gap-2">
-                 <input type="number" value={bulkRate} onChange={(e) => setBulkRate(e.target.value)} className="flex-1 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs font-bold outline-none" placeholder="0" />
+                 <input type="number" value={bulkRate} onChange={(e) => setBulkRate(e.target.value)} className="flex-1 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs font-bold outline-none" placeholder="Cth: 50000" />
                  <button onClick={applyBulkRate} className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"><Zap size={18}/></button>
                </div>
             </div>
 
             <div className="space-y-3">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Input Nominal & Pajak</label>
-               <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Detail Nominal & Trip</label>
+               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                   {currentStaffList.map(s => (
-                    <div key={s.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
+                    <div key={s.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-3 group hover:border-indigo-200 transition-all">
                       <div className="flex justify-between items-center">
                         <p className="text-[10px] font-black text-slate-700 uppercase truncate">{s.name}</p>
-                        <span className="text-[8px] font-bold bg-white px-2 py-0.5 rounded border border-slate-200">{getAttendanceCount(s.id)}x</span>
                       </div>
-                      <input type="number" value={rates[s.id] || ''} onChange={(e) => handleRateChange(s.id, e.target.value)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none" placeholder="Tarif..." />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black text-slate-400 uppercase">Tarif /Trip</label>
+                          <input type="number" value={rates[s.id] || ''} onChange={(e) => handleRateChange(s.id, e.target.value)} className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold outline-none" placeholder="Rp" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black text-indigo-500 uppercase">Jumlah Trip</label>
+                          <input type="number" value={manualVolumes[s.id] ?? getAttendanceCount(s.id)} onChange={(e) => handleVolumeChange(s.id, e.target.value)} className="w-full px-2 py-1.5 bg-white border border-indigo-100 rounded-lg text-[11px] font-black text-indigo-600 outline-none" placeholder="0" />
+                        </div>
+                      </div>
                       
                       {activeCategory === 'sppd' && isTaxActive && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
                           <Percent size={10} className="text-rose-400" />
                           <select 
                             value={taxTiers[s.id] || 0} 
                             onChange={(e) => handleTaxTierChange(s.id, parseFloat(e.target.value))}
                             className="flex-1 bg-white border border-rose-100 rounded-md text-[9px] font-bold p-1 outline-none"
                           >
-                            <option value={0}>PPh 0% (Gol I/II / Non-ASN / P3K Paruh Waktu)</option>
-                            <option value={0.05}>PPh 5% (Gol III / PPPK ASN)</option>
+                            <option value={0}>PPh 0% (Gol I/II / Non-ASN)</option>
+                            <option value={0.05}>PPh 5% (Gol III / PPPK)</option>
                             <option value={0.15}>PPh 15% (Gol IV)</option>
                           </select>
                         </div>
@@ -353,7 +354,7 @@ const HonorManager: React.FC = () => {
             </div>
 
             <div className="pt-4 border-t border-slate-100 space-y-2">
-               <div className="flex justify-between text-xs font-black text-slate-400 uppercase">
+               <div className="flex justify-between text-xs font-black text-slate-400 uppercase tracking-widest">
                  <span>Total Netto</span>
                  <span className="text-indigo-600 underline">Rp {totalNetto.toLocaleString('id-ID')}</span>
                </div>
@@ -390,7 +391,7 @@ const HonorManager: React.FC = () => {
                    <thead>
                       <tr className="bg-slate-50">
                          <th className="border border-black p-2 w-10 text-center">NO</th>
-                         <th className="border border-black p-2 text-left">NAMA PENERIMA / NIK</th>
+                         <th className="border border-black p-2 text-left">NAMA PENERIMA / NIP</th>
                          <th className="border border-black p-2 text-center w-32">JABATAN</th>
                          <th className="border border-black p-2 text-center w-24">{activeCategory === 'sppd' ? 'VOL (TRIP)' : 'VOL (HARI)'}</th>
                          <th className="border border-black p-2 text-right w-40">BRUTO (Rp)</th>
@@ -411,7 +412,7 @@ const HonorManager: React.FC = () => {
                              <td className="border border-black p-2 text-center font-bold">{idx + 1}</td>
                              <td className="border border-black p-2 leading-tight">
                                 <span className="font-bold block uppercase">{s.name}</span>
-                                <span className="text-[7.5pt] text-slate-500 italic uppercase">Nik. {s.nip || '-'}</span>
+                                <span className="text-[7.5pt] text-slate-500 italic uppercase">NIP. {s.nip || '-'}</span>
                              </td>
                              <td className="border border-black p-2 text-center text-[8pt] uppercase leading-tight">
                                 {s.rank || '-'}
@@ -478,7 +479,7 @@ const HonorManager: React.FC = () => {
               
               <div className="mt-auto pt-4 flex justify-between items-center text-[7pt] text-slate-400 italic border-t border-slate-100">
                 <span>Dihasilkan secara otomatis sesuai Juknis BOS & PMK 262/2010.</span>
-                <span>PPh 21 bagi ASN/PPPK Gol III (5%), Gol IV (15%), Gol I/II & P3K Paruh Waktu (0%).</span>
+                <span>Volume trip secara otomatis mengikuti data absensi atau input manual.</span>
               </div>
            </div>
         </div>

@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ClipboardCheck, Printer, Save, Sparkles, Loader2, ChevronLeft, ChevronRight, Activity, Users, Building2, Package, GraduationCap, ClipboardList, Info, ZoomIn, ZoomOut, Plus, Trash2, FileText, Layout, UserCog, ListChecks, Calendar, Home, History } from 'lucide-react';
+import { ClipboardCheck, Printer, Save, Loader2, Users, Building2, ZoomIn, ZoomOut, Plus, Trash2, UserCog, Home, Calendar } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, saveMonthlyReport, subscribeToMonthlyReport, StaffMember, subscribeToAttendance, saveStaff } from '../services/storage';
-import { SchoolConfig, MonthlyReport as IMonthlyReport, Mail, MailType, StudentRow } from '../types';
+import { SchoolConfig, MonthlyReport as IMonthlyReport, StudentRow } from '../types';
 import { format, getDaysInMonth } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 import html2canvas from 'html2canvas';
@@ -60,7 +60,7 @@ const MonthlyReport: React.FC = () => {
       if (data) setReportData(data);
     });
     const unsubscribeAttendance = subscribeToAttendance(year, month, 'reg', (data) => {
-        if (data) setAttendanceData(prev => ({ ...prev, ...data.attendance }));
+        if (data && data.attendance) setAttendanceData(prev => ({ ...prev, ...data.attendance }));
     });
     return () => { 
       unsubscribeConfig(); 
@@ -135,6 +135,7 @@ const MonthlyReport: React.FC = () => {
   };
 
   const filteredStaff = allStaff.filter(s => s.category === 'reg' || s.category === 'pppk');
+  const matrixKeys = Object.keys(reportData.studentMatrix) as Array<keyof IMonthlyReport['studentMatrix']>;
 
   const inputClass = "w-full p-2 text-[11px] font-bold border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
   const sectionLabel = "text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-3";
@@ -181,25 +182,28 @@ const MonthlyReport: React.FC = () => {
             <div className="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-8">
               {activeTab === 'siswa' && (
                 <div className="space-y-6">
-                  {(Object.entries(reportData.studentMatrix) as [string, StudentRow][]).map(([key, row]) => (
-                    <div key={key} className="space-y-3 p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{key.replace(/([A-Z])/g, ' $1')}</label>
-                      <div className="grid grid-cols-6 gap-2">
-                        {row.l.map((val, idx) => (
-                          <div key={`l-${idx}`} className="space-y-1 text-center">
-                            <span className="text-[8px] font-black text-slate-400">K{idx+1} L</span>
-                            <input type="number" value={val} onChange={(e) => updateMatrix(key as any, 'l', idx, e.target.value)} className="w-full p-2 text-xs font-bold border rounded-lg text-center focus:ring-1 focus:ring-indigo-300" />
-                          </div>
-                        ))}
-                        {row.p.map((val, idx) => (
-                          <div key={`p-${idx}`} className="space-y-1 text-center">
-                            <span className="text-[8px] font-black text-rose-400">K{idx+1} P</span>
-                            <input type="number" value={val} onChange={(e) => updateMatrix(key as any, 'p', idx, e.target.value)} className="w-full p-2 text-xs font-bold border rounded-lg text-center bg-rose-50/50 focus:ring-1 focus:ring-rose-300" />
-                          </div>
-                        ))}
+                  {matrixKeys.map((key) => {
+                    const row = reportData.studentMatrix[key];
+                    return (
+                      <div key={key} className="space-y-3 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{key.replace(/([A-Z])/g, ' $1')}</label>
+                        <div className="grid grid-cols-6 gap-2">
+                          {row.l.map((val, idx) => (
+                            <div key={`l-${idx}`} className="space-y-1 text-center">
+                              <span className="text-[8px] font-black text-slate-400">K{idx+1} L</span>
+                              <input type="number" value={val} onChange={(e) => updateMatrix(key, 'l', idx, e.target.value)} className="w-full p-2 text-xs font-bold border rounded-lg text-center focus:ring-1 focus:ring-indigo-300" />
+                            </div>
+                          ))}
+                          {row.p.map((val, idx) => (
+                            <div key={`p-${idx}`} className="space-y-1 text-center">
+                              <span className="text-[8px] font-black text-rose-400">K{idx+1} P</span>
+                              <input type="number" value={val} onChange={(e) => updateMatrix(key, 'p', idx, e.target.value)} className="w-full p-2 text-xs font-bold border rounded-lg text-center bg-rose-50/50 focus:ring-1 focus:ring-rose-300" />
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               
@@ -212,6 +216,7 @@ const MonthlyReport: React.FC = () => {
 
                   {pegawaiSubTab === 'ringkasan' ? (
                     <div className="space-y-4">
+                      {/* FIX: Cast Object.entries to correct type to fix 'unknown' property access errors */}
                       {(Object.entries(reportData.staffData) as [string, { pnsL: number, pnsP: number, nonPnsL: number, nonPnsP: number }][]).map(([job, data]) => (
                         <div key={job} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
                           <p className="text-[10px] font-black text-slate-700 uppercase">{job}</p>
@@ -220,14 +225,14 @@ const MonthlyReport: React.FC = () => {
                               <span className="text-[9px] font-black text-slate-400 uppercase">PNS/PPPK</span>
                               <div className="flex gap-2">
                                 <input type="number" value={data.pnsL} onChange={(e) => setReportData(prev => ({ ...prev, staffData: { ...prev.staffData, [job]: { ...data, pnsL: parseInt(e.target.value)||0 }}}))} className="w-full p-2 text-xs border rounded-lg" placeholder="L"/>
-                                <input type="number" value={data.pnsP} onChange={(e) => setReportData(prev => ({ ...prev, staffData: { ...prev.staffData, [job]: { ...data, pnsP: parseInt(e.target.value)||0 }}})} className="w-full p-2 text-xs border rounded-lg bg-rose-50" placeholder="P"/>
+                                <input type="number" value={data.pnsP} onChange={(e) => setReportData(prev => ({ ...prev, staffData: { ...prev.staffData, [job]: { ...data, pnsP: parseInt(e.target.value)||0 }}}))} className="w-full p-2 text-xs border rounded-lg bg-rose-50" placeholder="P"/>
                               </div>
                             </div>
                             <div className="space-y-2">
                               <span className="text-[9px] font-black text-slate-400 uppercase">HONORER</span>
                               <div className="flex gap-2">
-                                <input type="number" value={data.nonPnsL} onChange={(e) => setReportData(prev => ({ ...prev, staffData: { ...prev.staffData, [job]: { ...data, nonPnsL: parseInt(e.target.value)||0 }}})} className="w-full p-2 text-xs border rounded-lg" placeholder="L"/>
-                                <input type="number" value={data.nonPnsP} onChange={(e) => setReportData(prev => ({ ...prev, staffData: { ...prev.staffData, [job]: { ...data, nonPnsP: parseInt(e.target.value)||0 }}})} className="w-full p-2 text-xs border rounded-lg bg-rose-50" placeholder="P"/>
+                                <input type="number" value={data.nonPnsL} onChange={(e) => setReportData(prev => ({ ...prev, staffData: { ...prev.staffData, [job]: { ...data, nonPnsL: parseInt(e.target.value)||0 }}}))} className="w-full p-2 text-xs border rounded-lg" placeholder="L"/>
+                                <input type="number" value={data.nonPnsP} onChange={(e) => setReportData(prev => ({ ...prev, staffData: { ...prev.staffData, [job]: { ...data, nonPnsP: parseInt(e.target.value)||0 }}}))} className="w-full p-2 text-xs border rounded-lg bg-rose-50" placeholder="P"/>
                               </div>
                             </div>
                           </div>
@@ -304,16 +309,22 @@ const MonthlyReport: React.FC = () => {
                       {reportData.facilities.map((f, i) => (
                         <div key={i} className="flex gap-2 items-center group">
                           <input value={f.name} onChange={(e) => {
-                            const newF = [...reportData.facilities]; 
-                            newF[i] = { ...newF[i], name: e.target.value };
-                            setReportData(prev => ({ ...prev, facilities: newF }));
+                            const newVal = e.target.value;
+                            setReportData(prev => {
+                                const newF = [...prev.facilities];
+                                newF[i] = { ...newF[i], name: newVal };
+                                return { ...prev, facilities: newF };
+                            });
                           }} className="flex-1 p-2 text-xs border rounded-lg bg-white" />
                           <input type="number" value={f.count} onChange={(e) => {
-                            const newF = [...reportData.facilities]; 
-                            newF[i] = { ...newF[i], count: parseInt(e.target.value)||0 };
-                            setReportData(prev => ({ ...prev, facilities: newF }));
+                            const newVal = parseInt(e.target.value) || 0;
+                            setReportData(prev => {
+                                const newF = [...prev.facilities];
+                                newF[i] = { ...newF[i], count: newVal };
+                                return { ...prev, facilities: newF };
+                            });
                           }} className="w-16 p-2 text-xs border rounded-lg text-center bg-white font-bold" />
-                          <button onClick={() => setReportData(prev => ({ ...prev, facilities: reportData.facilities.filter((_, idx) => idx !== i) }))} className="opacity-0 group-hover:opacity-100 text-rose-500 p-1"><Trash2 size={14}/></button>
+                          <button onClick={() => setReportData(prev => ({ ...prev, facilities: prev.facilities.filter((_, idx) => idx !== i) }))} className="opacity-0 group-hover:opacity-100 text-rose-500 p-1"><Trash2 size={14}/></button>
                         </div>
                       ))}
                    </div>
@@ -326,7 +337,7 @@ const MonthlyReport: React.FC = () => {
                       <p className={sectionLabel}>C. Usia Peserta Didik</p>
                       <div className="grid grid-cols-1 gap-3">
                         <div className="flex items-center gap-3">
-                           <span className="text-[10px] font-bold flex-1 uppercase tracking-tight">{'<'} 7 Tahun</span>
+                           <span className="text-[10px] font-bold flex-1 uppercase tracking-tight">Kurang dari 7 Th</span>
                            <input type="number" value={reportData.studentAge.under7} onChange={(e) => setReportData(prev => ({ ...prev, studentAge: { ...prev.studentAge, under7: parseInt(e.target.value)||0 } }))} className="w-24 p-2 text-xs border rounded-lg bg-white text-center" />
                         </div>
                         <div className="flex items-center gap-3">
@@ -334,7 +345,7 @@ const MonthlyReport: React.FC = () => {
                            <input type="number" value={reportData.studentAge.age7_12} onChange={(e) => setReportData(prev => ({ ...prev, studentAge: { ...prev.studentAge, age7_12: parseInt(e.target.value)||0 } }))} className="w-24 p-2 text-xs border rounded-lg bg-white text-center" />
                         </div>
                         <div className="flex items-center gap-3">
-                           <span className="text-[10px] font-bold flex-1 uppercase tracking-tight">{'>'} 12 Tahun</span>
+                           <span className="text-[10px] font-bold flex-1 uppercase tracking-tight">Lebih dari 12 Th</span>
                            <input type="number" value={reportData.studentAge.over12} onChange={(e) => setReportData(prev => ({ ...prev, studentAge: { ...prev.studentAge, over12: parseInt(e.target.value)||0 } }))} className="w-24 p-2 text-xs border rounded-lg bg-white text-center" />
                         </div>
                       </div>
@@ -427,26 +438,25 @@ const MonthlyReport: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {[
-                          { label: 'WNI Asli', key: 'wniAsli' },
-                          { label: 'WNI Tionghoa', key: 'wniTionghoa' },
-                          { label: 'WNI Arab', key: 'wniArab' },
-                          { label: 'WNI Lain-lain', key: 'wniLain' }
-                        ].map((row, idx) => (
-                        <tr key={idx} className="h-6">
-                            <td className="border border-black text-left px-2 font-bold uppercase">{row.label}</td>
-                            {[0,1,2,3,4,5].map(c => (
-                                <React.Fragment key={c}>
-                                  <td className="border border-black">{(reportData.studentMatrix[row.key as keyof IMonthlyReport['studentMatrix']] as StudentRow).l[c]}</td>
-                                  <td className="border border-black">{(reportData.studentMatrix[row.key as keyof IMonthlyReport['studentMatrix']] as StudentRow).p[c]}</td>
-                                  <td className="border border-black bg-slate-50 font-bold">{calculateSum(reportData.studentMatrix[row.key as keyof IMonthlyReport['studentMatrix']] as StudentRow, 'total_class', c)}</td>
-                                </React.Fragment>
-                            ))}
-                            <td className="border border-black bg-slate-100 font-bold">{calculateSum(reportData.studentMatrix[row.key as keyof IMonthlyReport['studentMatrix']] as StudentRow, 'total_l')}</td>
-                            <td className="border border-black bg-slate-100 font-bold">{calculateSum(reportData.studentMatrix[row.key as keyof IMonthlyReport['studentMatrix']] as StudentRow, 'total_p')}</td>
-                            <td className="border border-black bg-slate-200 font-bold">{calculateSum(reportData.studentMatrix[row.key as keyof IMonthlyReport['studentMatrix']] as StudentRow, 'total_row')}</td>
-                        </tr>
-                        ))}
+                        {matrixKeys.map((key, idx) => {
+                           if (idx > 3) return null; // Hanya kategori kewarganegaraan
+                           const row = reportData.studentMatrix[key];
+                           return (
+                             <tr key={key} className="h-6">
+                                <td className="border border-black text-left px-2 font-bold uppercase">{key.replace(/([A-Z])/g, ' $1')}</td>
+                                {[0,1,2,3,4,5].map(c => (
+                                    <React.Fragment key={c}>
+                                      <td className="border border-black">{row.l[c]}</td>
+                                      <td className="border border-black">{row.p[c]}</td>
+                                      <td className="border border-black bg-slate-50 font-bold">{calculateSum(row, 'total_class', c)}</td>
+                                    </React.Fragment>
+                                ))}
+                                <td className="border border-black bg-slate-100 font-bold">{calculateSum(row, 'total_l')}</td>
+                                <td className="border border-black bg-slate-100 font-bold">{calculateSum(row, 'total_p')}</td>
+                                <td className="border border-black bg-slate-200 font-bold">{calculateSum(row, 'total_row')}</td>
+                             </tr>
+                           );
+                        })}
                     </tbody>
                 </table>
                 </div>
@@ -469,6 +479,7 @@ const MonthlyReport: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
+                                {/* FIX: Cast Object.entries result to correct type to fix 'unknown' issues in preview rendering */}
                                 {(Object.entries(reportData.staffData) as [string, { pnsL: number, pnsP: number, nonPnsL: number, nonPnsP: number }][]).map(([job, d]) => (
                                 <tr key={job} className="h-5">
                                     <td className="border border-black px-1 uppercase font-bold text-left truncate">{job}</td>
@@ -579,7 +590,7 @@ const MonthlyReport: React.FC = () => {
                             ))}
                             {[...Array(Math.max(0, 14 - filteredStaff.length))].map((_, i) => (
                                 <tr key={`empty-${i}`} className="h-10">
-                                    {[...Array(17)].map((_, j) => <td key={j} className="border border-black"></td>)}
+                                    {[...Array(17)].map((__, j) => <td key={j} className="border border-black"></td>)}
                                 </tr>
                             ))}
                         </tbody>

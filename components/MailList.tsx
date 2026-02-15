@@ -9,6 +9,7 @@ import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Cal
 import MailForm from './MailForm';
 import { analyzeLetter, generateSPTFromInvitation, generateSPPDFromSPT, generateLaporanDanNotulen } from '../services/geminiService';
 import { SchoolConfig } from '../types';
+// Correct named import for useNavigate from react-router-dom
 import { useNavigate } from 'react-router-dom';
 
 interface MailListProps {

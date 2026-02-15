@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 // Fix: Import Indonesian locale from the specific subpath to avoid index export issues
 import { id } from 'date-fns/locale/id';
 import { QRCodeSVG } from 'qrcode.react';
+// Corrected named imports from react-router-dom
 import { useLocation, useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';

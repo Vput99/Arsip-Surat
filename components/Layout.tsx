@@ -1,8 +1,8 @@
 
-import React, { useRef, useState, useEffect } from 'react';
-/* Link and useLocation are standard exports in react-router-dom v5 and v6 */
+import React, { useState, useEffect } from 'react';
+// Import corrected named exports from react-router-dom
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, AlertCircle, RefreshCw, CalendarCheck, Cloud, Server, HandCoins } from 'lucide-react';
+import { Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, RefreshCw, CalendarCheck, Cloud, Server, HandCoins } from 'lucide-react';
 import { subscribeToConnectionStatus, forceCheckConnections } from '../services/storage';
 
 interface LayoutProps {
@@ -23,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleRefreshConnection = async () => {
     setIsChecking(true);
-    const result = await forceCheckConnections();
+    await forceCheckConnections();
     setTimeout(() => setIsChecking(false), 1000);
   };
 
@@ -39,27 +39,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
+      {/* Overlay Mobile */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)}/>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] lg:hidden" onClick={() => setIsSidebarOpen(false)}/>
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
-        <div className="flex items-center h-24 px-8 border-b border-white/5 bg-gradient-to-b from-slate-800 to-slate-900">
+      {/* Sidebar Navigasi */}
+      <aside className={`fixed inset-y-0 left-0 z-[70] w-72 bg-slate-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+        <div className="flex items-center h-24 px-8 border-b border-white/5 bg-gradient-to-b from-slate-800 to-slate-900 shrink-0">
           <div className="bg-indigo-600 p-2 rounded-xl mr-3 shadow-lg shadow-indigo-500/20">
             <School className="text-white" size={24} />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-white uppercase tracking-wider">Arsip Sekolah</h1>
+            <h1 className="text-lg font-bold tracking-tight text-white uppercase">Arsip Sekolah</h1>
             <p className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.3em]">Realtime Cloud</p>
           </div>
         </div>
 
         <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
-          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Navigasi Utama</p>
+          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Menu Aplikasi</p>
           {navItems.map((item) => {
             const active = location.pathname === item.path;
             return (
-              <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)} className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40 translate-x-1' : 'text-slate-400 hover:bg-white/5 hover:text-white hover:translate-x-1'}`}>
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                onClick={() => setIsSidebarOpen(false)} 
+                className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40 translate-x-1' : 'text-slate-400 hover:bg-white/5 hover:text-white hover:translate-x-1'}`}
+              >
                 <div className="flex items-center">
                   <span className={`${active ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'} mr-3`}>{item.icon}</span>
                   <span className="font-bold text-sm tracking-tight">{item.label}</span>
@@ -70,27 +77,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           })}
         </nav>
 
-        <div className="px-6 py-6 space-y-3 bg-slate-800/20 border-t border-white/5 relative group">
-           <button 
-             onClick={handleRefreshConnection}
-             disabled={isChecking}
-             className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors disabled:animate-spin"
-             title="Cek Koneksi"
-           >
-             <RefreshCw size={14} />
-           </button>
-           
+        {/* Status Koneksi */}
+        <div className="px-6 py-6 space-y-3 bg-slate-800/20 border-t border-white/5 shrink-0">
+           <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Server Status</span>
+              <button onClick={handleRefreshConnection} disabled={isChecking} className={`${isChecking ? 'animate-spin' : ''} text-slate-500 hover:text-white`}>
+                <RefreshCw size={12} />
+              </button>
+           </div>
            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <Server size={12} className={status.turso ? 'text-emerald-400' : 'text-rose-400'} />
-                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Main DB (SQL)</span>
+                 <span className="text-[10px] font-bold text-slate-400">Database SQL</span>
               </div>
               <div className={`w-1.5 h-1.5 rounded-full ${status.turso ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-rose-400'}`}></div>
            </div>
            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <Cloud size={12} className={status.firebase ? 'text-emerald-400' : 'text-rose-400'} />
-                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sync Server</span>
+                 <span className="text-[10px] font-bold text-slate-400">Sync Server</span>
               </div>
               <div className={`w-1.5 h-1.5 rounded-full ${status.firebase ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-rose-400'}`}></div>
            </div>
@@ -98,18 +103,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30">
+        {/* Header Mobile */}
+        <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white border-b border-slate-200 sticky top-0 z-[50] shrink-0">
           <div className="font-black text-slate-900 text-lg flex items-center">
             <School className="mr-2 text-indigo-600" size={22} />
             ArsipSekolah
           </div>
-          <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-indigo-600 bg-indigo-50 rounded-2xl">
+          <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-indigo-600 bg-indigo-50 rounded-2xl hover:bg-indigo-100 transition-colors">
             <Menu size={22} />
           </button>
         </header>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-10">
-          <div className="max-w-7xl mx-auto">
+        {/* Konten Utama */}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 relative">
+          <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto min-h-full">
             {children}
           </div>
         </main>

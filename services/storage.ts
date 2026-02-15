@@ -101,22 +101,17 @@ export const subscribeToConnectionStatus = (callback: (status: { turso: boolean,
 
 export const initializeDefaultData = async () => {
   try {
-    // 1. Simpan Config Sekolah jika belum ada
     const configSnap = await getDoc(doc(db, COLLECTIONS.CONFIG, "main_settings"));
     if (!configSnap.exists()) {
       await setDoc(doc(db, COLLECTIONS.CONFIG, "main_settings"), DEFAULT_CONFIG);
     }
-    
-    // 2. Simpan/Update Semua Template dari Constants ke Database
     for (const t of LETTER_TEMPLATES) {
       const templateData: LetterTemplate = {
         ...t,
         createdAt: new Date().toISOString()
       };
-      // Overwrite template lama dengan versi terbaru dari kode
       await setDoc(doc(db, "letter_templates", t.id), templateData);
     }
-    
     return true;
   } catch (e) {
     console.error("Initialization failed:", e);
@@ -151,11 +146,9 @@ export const subscribeToMails = (onData: (mails: Mail[]) => void) => {
 
 export const saveMail = async (mail: Mail): Promise<void> => {
   if (!turso) throw new Error("Database SQL Offline");
-  
   try {
     await turso.execute("ALTER TABLE mails ADD COLUMN disposition TEXT");
   } catch (e) {}
-
   await turso.execute({
     sql: `INSERT OR REPLACE INTO mails (id, type, referenceNumber, date, receivedDate, createdAt, sender, subject, description, fileUrl, category, urgency, status, aiSummary, disposition) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -195,6 +188,30 @@ export const saveStaff = async (member: StaffMember): Promise<void> => {
 
 export const deleteStaff = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, "staff", id));
+};
+
+// --- ATTENDANCE REALTIME ---
+export const subscribeToAttendance = (year: number, month: number, category: string, onData: (data: any) => void) => {
+  const docId = `att_${year}_${month}_${category}`;
+  const docRef = doc(db, "attendance", docId);
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      onData(snapshot.data());
+    } else {
+      onData({ attendance: {}, holidays: [] });
+    }
+    updateStatus(undefined, true);
+  }, (err) => {
+    updateStatus(undefined, false);
+  });
+};
+
+export const saveAttendance = async (year: number, month: number, category: string, data: any) => {
+  const docId = `att_${year}_${month}_${category}`;
+  await setDoc(doc(db, "attendance", docId), { 
+    ...data, 
+    updatedAt: new Date().toISOString() 
+  }, { merge: true });
 };
 
 export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {

@@ -1,5 +1,6 @@
 
 import React from 'react';
+// Explicitly re-verified named imports from react-router-dom
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';

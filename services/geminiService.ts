@@ -1,12 +1,12 @@
 
+// Inisialisasi AI dengan API Key dari environment
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, UrgencyLevel, Mail } from "../types";
 
-// Inisialisasi AI dengan API Key dari environment
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Analisis Surat Masuk (Gunakan Pro untuk ekstraksi data yang kompleks)
+ * Analisis Surat Masuk (Gunakan Flash untuk ekstraksi data yang cepat dan akurat)
  */
 export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
   try {
@@ -29,17 +29,16 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: { parts },
       config: {
-        thinkingConfig: { thinkingBudget: 4000 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             summary: { type: Type.STRING },
             category: { type: Type.STRING },
-            urgency: { type: Type.STRING, enum: [UrgencyLevel.LOW, UrgencyLevel.MEDIUM, UrgencyLevel.HIGH] },
+            urgency: { type: Type.STRING },
             sentiment: { type: Type.STRING },
             referenceNumber: { type: Type.STRING },
             sender: { type: Type.STRING },

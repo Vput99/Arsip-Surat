@@ -11,7 +11,7 @@ import {
   setDoc, 
   deleteDoc
 } from "firebase/firestore";
-import { Mail, SchoolConfig } from '../types';
+import { Mail, SchoolConfig, MonthlyReport } from '../types';
 import { LETTER_TEMPLATES } from '../constants';
 
 export interface StaffMember {
@@ -188,6 +188,20 @@ export const saveStaff = async (member: StaffMember): Promise<void> => {
 
 export const deleteStaff = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, "staff", id));
+};
+
+// --- MONTHLY REPORTS ---
+export const saveMonthlyReport = async (report: MonthlyReport) => {
+  const docId = `rep_${report.year}_${report.month}`;
+  await setDoc(doc(db, "monthly_reports", docId), report);
+};
+
+export const subscribeToMonthlyReport = (year: number, month: number, onData: (data: MonthlyReport | null) => void) => {
+  const docId = `rep_${year}_${month}`;
+  return onSnapshot(doc(db, "monthly_reports", docId), (snap) => {
+    if (snap.exists()) onData(snap.data() as MonthlyReport);
+    else onData(null);
+  });
 };
 
 // --- ATTENDANCE REALTIME ---

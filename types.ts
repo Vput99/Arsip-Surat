@@ -22,37 +22,70 @@ export enum UrgencyLevel {
 export interface Mail {
   id: string;
   type: MailType;
-  referenceNumber: string; // Nomor Surat
-  date: string; // Tanggal Surat
-  receivedDate: string; // Tanggal Diterima/Dikirim
-  createdAt: string; // Waktu Input Data (Realtime)
-  sender: string; // Pengirim (untuk surat masuk) or Tujuan (untuk surat keluar)
-  subject: string; // Perihal
-  description: string; // Isi Ringkas
-  fileUrl?: string; // Simulasi link file
+  referenceNumber: string;
+  date: string;
+  receivedDate: string;
+  createdAt: string;
+  sender: string;
+  subject: string;
+  description: string;
+  fileUrl?: string;
   category: string;
   urgency: UrgencyLevel;
   status: MailStatus;
-  aiSummary?: string; // Ringkasan dari AI
-  disposition?: string; // Catatan Disposisi (Instruksi Kepsek)
-}
-
-export interface StatCardProps {
-  title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  color: string;
+  aiSummary?: string;
+  disposition?: string;
 }
 
 export interface AIAnalysisResult {
   summary: string;
   category: string;
-  urgency: UrgencyLevel;
-  sentiment: string;
-  referenceNumber?: string;
-  sender?: string;
-  subject?: string;
-  date?: string;
+  urgency: string;
+  sentiment?: string;
+  referenceNumber: string;
+  sender: string;
+  subject: string;
+  date: string;
+}
+
+export interface StudentRow {
+  l: number[]; // Index 0-5 for Class 1-6
+  p: number[]; // Index 0-5 for Class 1-6
+}
+
+export interface MonthlyReport {
+  id: string;
+  month: number;
+  year: number;
+  // Section A: Keadaan Siswa
+  studentMatrix: {
+    wniAsli: StudentRow;
+    wniTionghoa: StudentRow;
+    wniArab: StudentRow;
+    wniLain: StudentRow;
+    agamaIslam: StudentRow;
+    agamaKatolik: StudentRow;
+    agamaProtestan: StudentRow;
+    agamaHindu: StudentRow;
+    agamaBudha: StudentRow;
+  };
+  // Section B & C
+  classCondition: { baik: number, rusakRingan: number, rusakBerat: number };
+  studentAge: { under7: number, age7_12: number, over12: number };
+  // Section D: Kepegawaian
+  staffData: Record<string, { pnsL: number, pnsP: number, nonPnsL: number, nonPnsP: number }>;
+  // Section E & F
+  effectiveDays: number;
+  absentSakit: number;
+  absentIjin: number;
+  absentAlfa: number;
+  graduates: { l: number, p: number };
+  // Section G: Sarpras
+  facilities: { name: string, count: number }[];
+  
+  infrastructureNote: string;
+  summaryNarrative: string;
+  createdAt: string;
 }
 
 export interface SchoolConfig {
@@ -60,10 +93,10 @@ export interface SchoolConfig {
   address: string;
   email: string;
   npsn: string;
-  headerLine1: string; // e.g. PEMERINTAH KOTA KEDIRI
-  headerLine2: string; // e.g. DINAS PENDIDIKAN
-  logoUrl: string; // Logo Sekolah (Kanan)
-  logoDaerahUrl: string; // Logo Daerah (Kiri)
-  principalName: string; // Nama Kepala Sekolah Default
-  principalNip: string; // NIP Kepala Sekolah Default
+  headerLine1: string;
+  headerLine2: string;
+  logoUrl: string;
+  logoDaerahUrl: string;
+  principalName: string;
+  principalNip: string;
 }

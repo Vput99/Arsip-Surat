@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, RefreshCw, CalendarCheck, Cloud, Server, HandCoins } from 'lucide-react';
+import { Send, Inbox, LayoutDashboard, Menu, X, School, Settings, ChevronRight, PenTool, Database, Activity, RefreshCw, CalendarCheck, Cloud, Server, HandCoins, ClipboardCheck } from 'lucide-react';
 import { subscribeToConnectionStatus, forceCheckConnections } from '../services/storage';
 
 interface LayoutProps {
@@ -32,6 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/outbox', label: 'Arsip Keluar', icon: <Send size={20} /> },
     { path: '/create', label: 'Input Naskah', icon: <PenTool size={20} /> },
     { path: '/attendance', label: 'Input Absensi', icon: <CalendarCheck size={20} /> },
+    { path: '/monthly-report', label: 'Lapor Bulan', icon: <ClipboardCheck size={20} /> },
     { path: '/honor', label: 'Penerimaan Honor', icon: <HandCoins size={20} /> },
     { path: '/settings', label: 'Konfigurasi', icon: <Settings size={20} /> },
   ];

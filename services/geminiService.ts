@@ -58,7 +58,7 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
 };
 
 /**
- * Analisis Payroll/Honorarium (Fitur Canggih Baru)
+ * Analisis Payroll/Honorarium
  */
 export const analyzePayroll = async (data: any): Promise<string> => {
   try {
@@ -84,19 +84,25 @@ export const analyzePayroll = async (data: any): Promise<string> => {
 };
 
 /**
- * Pembuatan SPT
+ * Pembuatan SPT - Perbaikan duplikasi "Dasar" dan Judul
  */
 export const generateSPTFromInvitation = async (invitation: Mail): Promise<string> => {
   try {
-    const prompt = `Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data berikut:
-    Pengirim: ${invitation.sender}
-    Nomor Surat Masuk: ${invitation.referenceNumber}
+    const prompt = `Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data surat masuk berikut:
+    Dari: ${invitation.sender}
+    Nomor: ${invitation.referenceNumber}
     Perihal: ${invitation.subject}
-    Isi: ${invitation.description}
+    Deskripsi: ${invitation.description}
     
-    Buat draf resmi dengan format:
-    Dasar : Surat dari [PENGIRIM] Nomor [NOMOR] Tanggal [TANGGAL] perihal [PERIHAL].
-    Dasar : Program Kerja Sekolah Tahun Pelajaran 2024/2025.
+    ATURAN PENTING:
+    1. JANGAN sertakan Judul Surat (seperti "SURAT PERINTAH TUGAS") karena sudah ada di sistem.
+    2. JANGAN sertakan KOP Sekolah atau bagian Tanda Tangan.
+    3. Mulai langsung dari naskah 'Dasar :'.
+    4. Gunakan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], dan [JABATAN_PETUGAS] agar bisa diedit user.
+    
+    Format Naskah:
+    Dasar: Surat dari ${invitation.sender} Nomor ${invitation.referenceNumber} Tanggal ${invitation.date} perihal ${invitation.subject}.
+    Dasar: Program Kerja Sekolah Tahun Pelajaran 2024/2025.
 
     MEMERINTAHKAN :
     Kepada :
@@ -105,8 +111,8 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
     Jabatan : [JABATAN_PETUGAS]
 
     Untuk menghadiri kegiatan tersebut pada :
-    Tanggal : [Ekstrak tanggal dari isi surat]
-    Tempat : [Ekstrak tempat dari isi surat]`;
+    Tanggal : [Ekstrak tanggal kegiatan saja]
+    Tempat : [Ekstrak tempat kegiatan saja]`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -121,13 +127,14 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
 };
 
 /**
- * Pembuatan SPPD
+ * Pembuatan SPPD - Fokus pada body saja
  */
 export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
   try {
-    const prompt = `Berdasarkan SPT Nomor ${spt.referenceNumber} perihal "${spt.subject}", buatkan naskah SPPD resmi. 
+    const prompt = `Berdasarkan SPT Nomor ${spt.referenceNumber} perihal "${spt.subject}", buatkan naskah SPPD. 
     Detail: "${spt.description}"
-    Format harus rapi menggunakan label titik dua.`;
+    Hanya berikan isi poin-poin naskah SPPD saja, jangan sertakan Judul Surat atau Nama Sekolah. 
+    Pastikan menggunakan label titik dua yang rapi.`;
     
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -140,13 +147,13 @@ export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
 };
 
 /**
- * Pembuatan Laporan/Notulen
+ * Pembuatan Laporan/Notulen - Fokus pada body saja
  */
 export const generateLaporanDanNotulen = async (mailContext: Mail, type: 'LAPORAN' | 'NOTULEN'): Promise<string> => {
   try {
     const prompt = type === 'LAPORAN' 
-      ? `Buatkan narasi LAPORAN HASIL PERJALANAN DINAS yang formal. Perihal: "${mailContext.subject}". Deskripsi awal: "${mailContext.description}". Tulis 3 paragraf.`
-      : `Buatkan naskah NOTULEN RAPAT. Perihal: "${mailContext.subject}". Pembahasan: "${mailContext.description}". Tulis dalam poin-poin profesional.`;
+      ? `Buatkan naskah LAPORAN HASIL PERJALANAN DINAS (Hanya isinya saja). Perihal: "${mailContext.subject}". Deskripsi awal: "${mailContext.description}". Tulis 3 paragraf tanpa judul.`
+      : `Buatkan naskah NOTULEN RAPAT (Hanya isinya saja). Perihal: "${mailContext.subject}". Pembahasan: "${mailContext.description}". Tulis dalam poin-poin tanpa judul.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -165,7 +172,7 @@ export const generateNotulenContent = async (context: string): Promise<string> =
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: { parts: [{ text: `Rapikan catatan rapat berikut menjadi notulen resmi Dana BOS: "${context}"` }] }
+      contents: { parts: [{ text: `Rapikan catatan rapat berikut menjadi naskah notulen resmi Dana BOS (Hanya berikan isinya saja, tanpa judul): "${context}"` }] }
     });
     return response.text || "";
   } catch (e) { return "Gagal merapikan notulen."; }
@@ -175,7 +182,7 @@ export const generateLaporanSPPDContent = async (context: string): Promise<strin
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: { parts: [{ text: `Buat narasi laporan perjalanan dinas dari poin-poin ini: "${context}"` }] }
+      contents: { parts: [{ text: `Buat narasi laporan perjalanan dinas dari poin-poin ini (Hanya berikan isinya saja, tanpa judul): "${context}"` }] }
     });
     return response.text || "";
   } catch (e) { return "Gagal merapikan laporan."; }

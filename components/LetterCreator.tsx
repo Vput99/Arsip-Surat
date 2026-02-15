@@ -4,21 +4,31 @@ import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users
 import { subscribeToConfig, subscribeToTemplates, LetterTemplate, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
 import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { format } from 'date-fns';
-// Fix: Import Indonesian locale from the specific subpath to avoid index export issues
 import { id } from 'date-fns/locale/id';
 import { QRCodeSVG } from 'qrcode.react';
-// Corrected named imports from react-router-dom
 import { useLocation, useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { generateNotulenContent, generateLaporanSPPDContent } from '../services/geminiService';
 
-const SmartContentRenderer = ({ text }: { text: string }) => {
+const SmartContentRenderer = ({ text, subject }: { text: string, subject: string }) => {
   if (!text) return null;
+  
+  // Membersihkan teks dari kata-kata pengantar AI dan duplikasi judul
   const cleanText = (t: string) => {
-    return t.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '')
+    let result = t.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '')
             .replace(/\*\*/g, '')
             .trim();
+    
+    // Cegah duplikasi judul jika AI menyertakan judul di baris pertama
+    const subjectClean = subject.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const firstLine = result.split('\n')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    if (firstLine.includes(subjectClean) || (subjectClean.length > 5 && firstLine.length > 5 && subjectClean.includes(firstLine))) {
+       result = result.split('\n').slice(1).join('\n').trim();
+    }
+
+    return result;
   };
 
   const lines = cleanText(text).split('\n');
@@ -176,6 +186,7 @@ const LetterCreator: React.FC = () => {
       setTemplates(data);
       if (isInitialized.current) return;
 
+      // Prioritas 1: Jika ada data content dari AI (Chain Process)
       if (state && state.content) {
         const targetTemplate = data.find(t => t.id === state.templateId) || data[0];
         if (targetTemplate) {
@@ -187,10 +198,11 @@ const LetterCreator: React.FC = () => {
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
           isInitialized.current = true;
+          return;
         }
-        return;
       }
 
+      // Prioritas 2: Jika hanya ada ID templat saja
       if (state && state.templateId) {
         const targetTemplate = data.find(t => t.id === state.templateId);
         if (targetTemplate) {
@@ -202,9 +214,12 @@ const LetterCreator: React.FC = () => {
             signatureTitle: targetTemplate.category === 'Tugas' ? 'Kepala Sekolah,' : 'Kepala Sekolah'
           }));
           isInitialized.current = true;
+          return;
         }
       } 
-      else if (data.length > 0) {
+      
+      // Default: Ambil templat pertama
+      if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);
         setFormData(prev => ({ 
@@ -253,12 +268,6 @@ const LetterCreator: React.FC = () => {
       alert("Gagal memproses AI. Periksa koneksi internet.");
     } finally {
       setAiGenerating(false);
-    }
-  };
-
-  const handleResetSubject = () => {
-    if (selectedTemplate) {
-      setFormData(prev => ({ ...prev, subject: selectedTemplate.subject }));
     }
   };
 
@@ -410,7 +419,15 @@ const LetterCreator: React.FC = () => {
           <div className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 flex flex-col min-h-[350px]">
              <div className="flex justify-between items-center mb-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Isi Naskah</label>
-                <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5"><Users size={12} /> Personil</button>
+                <div className="flex gap-2">
+                   { (selectedTemplate?.id === 't_notulen' || selectedTemplate?.id === 't_laporan_sppd') && (
+                     <button onClick={handleMagicFill} disabled={aiGenerating} className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg border border-indigo-100 flex items-center gap-1.5 hover:bg-indigo-100 transition-colors">
+                       {aiGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} className="text-amber-500" />} 
+                       Magic Fill
+                     </button>
+                   )}
+                   <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-colors"><Users size={12} /> Personil</button>
+                </div>
              </div>
              <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] resize-none" />
           </div>
@@ -438,7 +455,7 @@ const LetterCreator: React.FC = () => {
                      </div>
                    )}
                    <div className="flex-1">
-                     <SmartContentRenderer text={part} />
+                     <SmartContentRenderer text={part} subject={formData.subject} />
                    </div>
                    {pIdx === contentParts.length - 1 && (
                      <div className="mt-8 ml-auto w-[350px] flex flex-col text-center">
@@ -473,15 +490,15 @@ const LetterCreator: React.FC = () => {
            <div className="bg-white rounded-[2rem] w-full max-w-md p-6 shadow-2xl flex flex-col h-[70vh]">
               <div className="flex justify-between items-center mb-6">
                  <h4 className="text-lg font-black text-slate-800">Pilih Personil</h4>
-                 <button onClick={() => setShowStaffPicker(false)} className="text-slate-400 font-bold text-xs">Tutup</button>
+                 <button onClick={() => setShowStaffPicker(false)} className="text-slate-400 font-bold text-xs hover:text-rose-500 transition-colors">Tutup</button>
               </div>
               <div className="relative mb-4">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input type="text" placeholder="Cari nama..." value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl outline-none" />
               </div>
-              <div className="flex-1 overflow-y-auto space-y-2">
+              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
                 {staff.filter(s => s.name.toLowerCase().includes(staffSearch.toLowerCase())).map(member => (
-                  <button key={member.id} onClick={() => handleSelectStaff(member)} className="w-full p-4 bg-slate-50 rounded-xl text-left hover:bg-indigo-50 border border-transparent hover:border-indigo-100">
+                  <button key={member.id} onClick={() => handleSelectStaff(member)} className="w-full p-4 bg-slate-50 rounded-xl text-left hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all">
                     <p className="font-bold text-slate-800">{member.name}</p>
                     <p className="text-[10px] text-slate-400 uppercase tracking-widest">{member.rank}</p>
                   </button>
@@ -499,6 +516,10 @@ const LetterCreator: React.FC = () => {
           font-size: 12pt;
           line-height: 1.5;
         } 
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
         @media print { 
           @page { size: 215mm 330mm portrait; margin: 0; } 
           body * { visibility: hidden; } 

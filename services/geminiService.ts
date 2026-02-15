@@ -6,7 +6,7 @@ import { AIAnalysisResult, UrgencyLevel, Mail } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Analisis Surat Masuk (Gunakan Flash untuk ekstraksi data yang cepat dan akurat)
+ * Analisis Surat Masuk
  */
 export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
   try {
@@ -58,7 +58,33 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
 };
 
 /**
- * Pembuatan SPT (Gunakan Flash untuk kecepatan dan stabilitas)
+ * Analisis Payroll/Honorarium (Fitur Canggih Baru)
+ */
+export const analyzePayroll = async (data: any): Promise<string> => {
+  try {
+    const prompt = `Analisis data pembayaran honor sekolah berikut dan buatkan ringkasan eksekutif profesional untuk laporan BOS:
+    Kategori: ${data.category}
+    Bulan: ${data.period}
+    Data: ${JSON.stringify(data.staff)}
+    
+    Berikan:
+    1. Total Bruto, Pajak PPh21, dan Total Netto.
+    2. Ringkasan jumlah kehadiran tertinggi dan terendah.
+    3. Narasi singkat untuk dasar pencairan dana BOS.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: { parts: [{ text: prompt }] }
+    });
+    
+    return response.text || "Gagal melakukan analisis.";
+  } catch (e) {
+    return "Analisis AI tidak tersedia saat ini.";
+  }
+};
+
+/**
+ * Pembuatan SPT
  */
 export const generateSPTFromInvitation = async (invitation: Mail): Promise<string> => {
   try {

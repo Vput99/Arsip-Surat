@@ -4,7 +4,6 @@ import { Printer, Users, Calendar, Loader2, UserCheck, Music, Hammer, ChevronLef
 import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
 import { SchoolConfig, Mail, MailType, MailStatus, UrgencyLevel } from '../types';
 import { format, getDaysInMonth, isSunday, isSaturday } from 'date-fns';
-// Fix: Import Indonesian locale from the specific subpath to avoid index export issues
 import { id } from 'date-fns/locale/id';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
@@ -69,14 +68,6 @@ const AttendanceCreator: React.FC = () => {
   const isDayOff = (day: number) => {
     const date = new Date(year, month, day);
     return isSunday(date) || isSaturday(date) || holidays.includes(day);
-  };
-
-  const toggleHoliday = (day: number) => {
-    if (holidays.includes(day)) {
-      setHolidays(holidays.filter(d => d !== day));
-    } else {
-      setHolidays([...holidays, day].sort((a, b) => a - b));
-    }
   };
 
   const markAllPresent = () => {
@@ -179,7 +170,7 @@ const AttendanceCreator: React.FC = () => {
         fileUrl: pdfDataUri,
       };
       await saveMail(newMail);
-      alert('Tersimpan.');
+      alert('Berhasil diarsipkan.');
       navigate('/outbox');
     } catch (e: any) {
       alert('Gagal: ' + e.message);
@@ -196,47 +187,69 @@ const AttendanceCreator: React.FC = () => {
         <h2 className="text-4xl font-black text-center mb-16">Presensi Kehadiran</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {(['reg', 'pppk', 'extra', 'tukang'] as const).map(m => (
-            <button key={m} onClick={() => { setActiveCategory(m); setView('editor'); }} className="bg-white p-8 rounded-3xl border border-slate-200 shadow hover:shadow-xl transition-all text-left">
-              <h3 className="text-xl font-bold mb-2 uppercase">{m}</h3>
-              <p className="text-slate-500 text-sm">Buka Editor Absensi</p>
+            <button key={m} onClick={() => { setActiveCategory(m); setView('editor'); }} className="bg-white p-8 rounded-3xl border border-slate-200 shadow hover:shadow-xl transition-all text-left group">
+              <div className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center ${m === 'reg' ? 'bg-blue-100 text-blue-600' : m === 'pppk' ? 'bg-violet-100 text-violet-600' : m === 'extra' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                {m === 'extra' ? <Music size={24}/> : m === 'tukang' ? <Hammer size={24}/> : <Users size={24}/>}
+              </div>
+              <h3 className="text-lg font-black mb-1 uppercase tracking-tight">{m}</h3>
+              <p className="text-slate-500 text-xs font-bold">Kelola Daftar Hadir</p>
             </button>
           ))}
         </div>
-        <button onClick={() => setView('recap')} className="w-full mt-10 bg-slate-900 text-white p-8 rounded-3xl flex items-center justify-between">
-            <h3 className="text-2xl font-black">Rekapitulasi Kehadiran</h3>
-            <ArrowRight size={32}/>
+        <button onClick={() => setView('recap')} className="w-full mt-10 bg-slate-900 text-white p-8 rounded-[2.5rem] flex items-center justify-between hover:bg-slate-800 transition-all group">
+            <div>
+              <h3 className="text-2xl font-black mb-1">Rekapitulasi Kehadiran</h3>
+              <p className="text-slate-400 font-bold text-sm">Lihat ringkasan kehadiran seluruh personil</p>
+            </div>
+            <ArrowRight size={32} className="group-hover:translate-x-2 transition-transform" />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in h-screen overflow-hidden">
+    <div className="flex flex-col gap-6 animate-fade-in h-[calc(100vh-100px)] overflow-hidden">
       <div className="flex justify-between items-center px-2 print:hidden">
-         <button onClick={() => setView('menu')} className="p-3 bg-white border rounded-2xl"><ChevronLeft/></button>
+         <div className="flex items-center gap-4">
+           <button onClick={() => setView('menu')} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50"><ChevronLeft size={20}/></button>
+           <h2 className="text-xl font-black uppercase tracking-tight">{getCategoryTitle(activeCategory)}</h2>
+         </div>
          <div className="flex gap-2">
-            <button onClick={handleReset} className="p-3 bg-rose-50 text-rose-600 rounded-xl"><RotateCcw size={18}/></button>
-            <button onClick={markAllPresent} className="px-4 py-2 bg-white border rounded-xl text-xs font-bold">Hadirkan Semua</button>
-            <button onClick={handleSaveToArchive} disabled={saveLoading} className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold text-xs">{saveLoading ? '...' : 'Arsip'}</button>
-            <button onClick={() => window.print()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs">Cetak</button>
+            <button onClick={handleReset} title="Reset Data" className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl hover:bg-rose-100"><RotateCcw size={18}/></button>
+            <button onClick={markAllPresent} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50">Hadirkan Semua</button>
+            <button onClick={handleSaveToArchive} disabled={saveLoading} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-100 hover:bg-emerald-700">{saveLoading ? <Loader2 size={16} className="animate-spin" /> : 'Arsip Digital'}</button>
+            <button onClick={() => window.print()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700">Cetak</button>
          </div>
       </div>
-      <div className="flex-1 overflow-auto flex justify-center p-12 print:p-0">
-         <div ref={paperRef} className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col p-10" style={{ width: '330mm', minHeight: '215mm', transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-            <div className="border-b-[3px] border-double border-black pb-2 mb-4 text-center">
-               <h3 className="text-[14pt] uppercase">{config.headerLine1}</h3>
-               <h3 className="text-[14pt] font-bold uppercase">{config.headerLine2}</h3>
-               <h1 className="text-[18pt] font-black uppercase my-1">{config.name}</h1>
+      
+      <div className="flex-1 overflow-auto bg-slate-100/50 rounded-[3rem] p-12 print:p-0 print:bg-white">
+         <div ref={paperRef} className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col p-[15mm] text-black font-serif mx-auto" style={{ width: '330mm', minHeight: '215mm', transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+            {/* Kop Surat */}
+            <div className="border-b-[3px] border-double border-black pb-4 mb-6 grid grid-cols-[80px_1fr_80px] items-center text-center">
+               <img src={config.logoDaerahUrl} className="w-full h-auto" />
+               <div className="px-4">
+                  <h3 className="text-[12pt] uppercase font-bold">{config.headerLine1}</h3>
+                  <h3 className="text-[12pt] font-bold uppercase">{config.headerLine2}</h3>
+                  <h1 className="text-[16pt] font-black uppercase my-1 tracking-tight">{config.name}</h1>
+                  <p className="text-[9pt] font-bold italic">{config.address}</p>
+               </div>
+               <img src={config.logoUrl} className="w-full h-auto" />
             </div>
-            <h2 className="text-center text-[14pt] font-bold underline uppercase mb-6">{view === 'recap' ? 'REKAPITULASI' : getCategoryTitle(activeCategory)}</h2>
-            <div className="w-full overflow-x-auto">
-               <table className="w-full border-collapse border-black border-[1.5pt] text-[9pt]">
+
+            <h2 className="text-center text-[13pt] font-bold underline uppercase mb-6">{getCategoryTitle(activeCategory)} BULAN {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</h2>
+            
+            <div className="w-full overflow-hidden">
+               <table className="w-full border-collapse border-black border-[1.5pt] text-[8pt]">
                   <thead>
-                    <tr>
-                      <th className="border border-black p-1">NO</th>
-                      <th className="border border-black p-1">NAMA / NIP</th>
-                      {view === 'editor' && dateRange.map(d => <th key={d} className={`border border-black p-0.5 text-[7pt] ${isDayOff(d) ? 'bg-red-500 text-white' : ''}`}>{d}</th>)}
-                      <th className="border border-black p-1">JML</th>
+                    <tr className="bg-slate-50">
+                      <th className="border border-black p-1 w-8">NO</th>
+                      <th className="border border-black p-1 text-left">NAMA / NIP</th>
+                      {dateRange.map(d => (
+                        <th key={d} className={`border border-black p-0.5 w-6 text-[7pt] ${isDayOff(d) ? 'bg-red-500 text-white' : ''}`}>
+                          {d}
+                        </th>
+                      ))}
+                      <th className="border border-black p-1 w-10">JML</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -245,9 +258,16 @@ const AttendanceCreator: React.FC = () => {
                       return (
                         <tr key={staff.id}>
                           <td className="border border-black text-center">{idx + 1}</td>
-                          <td className="border border-black px-2 py-1 font-bold">{staff.name}</td>
-                          {view === 'editor' && dateRange.map(d => (
-                            <td key={d} onClick={() => toggleAttendance(staff.id, d, 'in')} className={`border border-black text-center cursor-pointer ${isDayOff(d) ? 'bg-red-500' : ''}`}>
+                          <td className="border border-black px-2 py-1 font-bold leading-tight">
+                            {staff.name}<br/>
+                            <span className="text-[7pt] font-normal">{staff.nip || '-'}</span>
+                          </td>
+                          {dateRange.map(d => (
+                            <td 
+                              key={d} 
+                              onClick={() => toggleAttendance(staff.id, d, 'in')} 
+                              className={`border border-black text-center cursor-pointer h-8 transition-colors ${isDayOff(d) ? 'bg-red-500' : 'hover:bg-slate-50'}`}
+                            >
                               {getStatusDisplay(attendance[`${staff.id}-${d}-in`])}
                             </td>
                           ))}
@@ -258,13 +278,43 @@ const AttendanceCreator: React.FC = () => {
                   </tbody>
                </table>
             </div>
+
+            <div className="mt-8 flex justify-between px-10 text-[10pt]">
+               <div className="text-center w-[200px]">
+                  <p className="mb-20">Mengetahui,<br/>Kepala Sekolah</p>
+                  <p className="font-bold underline uppercase">{config.principalName}</p>
+                  <p>NIP. {config.principalNip}</p>
+               </div>
+               <div className="text-center w-[200px]">
+                  <p className="mb-20">Kediri, {format(new Date(), 'dd MMMM yyyy', { locale: id })}<br/>Petugas Absensi,</p>
+                  <p className="font-bold underline uppercase">....................................</p>
+                  <p>NIP. ............................</p>
+               </div>
+            </div>
          </div>
       </div>
+      
+      {/* Zoom Controls print:hidden */}
+      <div className="fixed bottom-6 right-6 flex gap-2 print:hidden">
+        <button onClick={() => setScale(Math.max(0.5, scale - 0.1))} className="p-3 bg-white border shadow-lg rounded-2xl"><ZoomOut size={20}/></button>
+        <button onClick={() => setScale(1)} className="px-4 bg-white border shadow-lg rounded-2xl font-bold text-xs">{Math.round(scale * 100)}%</button>
+        <button onClick={() => setScale(Math.min(1.5, scale + 0.1))} className="p-3 bg-white border shadow-lg rounded-2xl"><ZoomIn size={20}/></button>
+      </div>
+
       <style>{`
         @media print {
           body * { visibility: hidden; }
           .attendance-paper-landscape, .attendance-paper-landscape * { visibility: visible !important; }
-          .attendance-paper-landscape { position: absolute !important; left: 0 !important; top: 0 !important; width: 330mm !important; height: 215mm !important; margin: 0 !important; transform: scale(1) !important; }
+          .attendance-paper-landscape { 
+            position: absolute !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 330mm !important; 
+            height: 215mm !important; 
+            margin: 0 !important; 
+            transform: none !important; 
+            padding: 15mm !important;
+          }
           @page { size: 330mm 215mm landscape; margin: 0; }
         }
       `}</style>

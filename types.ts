@@ -1,6 +1,4 @@
 
-import React;
-
 export enum MailType {
   INCOMING = 'Masuk',
   OUTGOING = 'Keluar'

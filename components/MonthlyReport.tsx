@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ClipboardCheck, Printer, Save, Loader2, Users, Building2, ZoomIn, ZoomOut, Plus, Trash2, UserCog, Home, Calendar } from 'lucide-react';
+import { ClipboardCheck, Printer, Save, Loader2, Users, Building2, ZoomIn, ZoomOut, Plus, Trash2, UserCog, Home, Calendar, Activity } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, saveMonthlyReport, subscribeToMonthlyReport, StaffMember, subscribeToAttendance, saveStaff } from '../services/storage';
 import { SchoolConfig, MonthlyReport as IMonthlyReport, StudentRow } from '../types';
 import { format, getDaysInMonth } from 'date-fns';
@@ -134,6 +134,19 @@ const MonthlyReport: React.FC = () => {
       return count || '';
   };
 
+  // FIX: Guard clause untuk mencegah crash layar putih jika config belum termuat
+  if (!config) {
+    return (
+      <div className="flex flex-col justify-center items-center h-[60vh] gap-6">
+        <div className="relative">
+           <Activity className="animate-spin text-indigo-600 w-16 h-16 opacity-20"/> 
+           <Activity className="absolute inset-0 animate-pulse text-indigo-600 w-16 h-16"/> 
+        </div>
+        <span className="font-black text-slate-400 uppercase tracking-[0.3em] text-xs">Menghubungkan Server Realtime...</span>
+      </div>
+    );
+  }
+
   const filteredStaff = allStaff.filter(s => s.category === 'reg' || s.category === 'pppk');
   const matrixKeys = Object.keys(reportData.studentMatrix) as Array<keyof IMonthlyReport['studentMatrix']>;
 
@@ -216,7 +229,6 @@ const MonthlyReport: React.FC = () => {
 
                   {pegawaiSubTab === 'ringkasan' ? (
                     <div className="space-y-4">
-                      {/* FIX: Cast Object.entries to correct type to fix 'unknown' property access errors */}
                       {(Object.entries(reportData.staffData) as [string, { pnsL: number, pnsP: number, nonPnsL: number, nonPnsP: number }][]).map(([job, data]) => (
                         <div key={job} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
                           <p className="text-[10px] font-black text-slate-700 uppercase">{job}</p>
@@ -479,7 +491,6 @@ const MonthlyReport: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* FIX: Cast Object.entries result to correct type to fix 'unknown' issues in preview rendering */}
                                 {(Object.entries(reportData.staffData) as [string, { pnsL: number, pnsP: number, nonPnsL: number, nonPnsP: number }][]).map(([job, d]) => (
                                 <tr key={job} className="h-5">
                                     <td className="border border-black px-1 uppercase font-bold text-left truncate">{job}</td>

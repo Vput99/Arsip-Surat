@@ -121,11 +121,9 @@ const HonorManager: React.FC = () => {
   const calculateTax = (staffId: string) => {
     if (!isTaxActive) return 0;
     const gross = calculateGross(staffId);
-    if (activeCategory === 'sppd') {
-      const tier = taxTiers[staffId] ?? 0; 
-      return Math.floor(gross * tier);
-    }
-    return Math.floor(gross * DEFAULT_TAX_RATE);
+    // Gunakan tier khusus jika sudah dipilih, jika belum gunakan default
+    const tier = taxTiers[staffId] !== undefined ? taxTiers[staffId] : DEFAULT_TAX_RATE;
+    return Math.floor(gross * tier);
   };
 
   const calculateNet = (staffId: string) => calculateGross(staffId) - calculateTax(staffId);
@@ -321,29 +319,33 @@ const HonorManager: React.FC = () => {
                           <input type="number" value={rates[s.id] || ''} onChange={(e) => handleRateChange(s.id, e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] font-bold outline-none focus:bg-white focus:border-indigo-300" placeholder="Rp" />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[8px] font-black text-indigo-400 uppercase">Trip</label>
+                          <label className="text-[8px] font-black text-indigo-400 uppercase">Trip/Hari</label>
                           <input type="number" value={manualVolumes[s.id] ?? getAttendanceCount(s.id)} onChange={(e) => handleVolumeChange(s.id, e.target.value)} className="w-full px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-[11px] font-black text-indigo-600 outline-none focus:bg-white" />
                         </div>
                       </div>
                       
-                      {activeCategory === 'sppd' && isTaxActive && (
-                        <div className="flex items-center gap-2 pt-3 border-t border-slate-50">
-                          <Percent size={12} className="text-rose-400" />
+                      {isTaxActive && (
+                        <div className="flex flex-col gap-2 pt-3 border-t border-slate-50">
+                          <div className="flex items-center gap-2">
+                             <Percent size={12} className="text-indigo-400" />
+                             <label className="text-[8px] font-black text-slate-400 uppercase">Golongan Pajak (PPh 21)</label>
+                          </div>
                           <select 
-                            value={taxTiers[s.id] || 0} 
+                            value={taxTiers[s.id] ?? (activeCategory === 'extra' ? DEFAULT_TAX_RATE : 0)} 
                             onChange={(e) => handleTaxTierChange(s.id, parseFloat(e.target.value))}
-                            className="flex-1 bg-white border border-rose-100 rounded-lg text-[9px] font-black p-1.5 outline-none uppercase"
+                            className="w-full bg-white border border-indigo-100 rounded-xl text-[9px] font-black p-2.5 outline-none uppercase"
                           >
-                            <option value={0}>PPh 0%</option>
-                            <option value={0.05}>PPh 5%</option>
-                            <option value={0.15}>PPh 15%</option>
+                            <option value={0}>PPh 0% (Gol I, II / PPPK Paruh Waktu)</option>
+                            <option value={0.05}>PPh 5% (Gol III / PPPK Penuh)</option>
+                            <option value={0.15}>PPh 15% (Gol IV)</option>
+                            <option value={0.06}>PPh 6% (Non ASN Tanpa NPWP)</option>
                           </select>
                         </div>
                       )}
                     </div>
                   ))}
                   {currentStaffList.length === 0 && (
-                    <p className="text-[10px] text-slate-400 font-bold italic text-center py-6 bg-slate-50 rounded-2xl">Pilih personil di panel atas.</p>
+                    <p className="text-[10px] text-slate-400 font-bold italic text-center py-6 bg-slate-50 rounded-2xl">Pilih personil untuk memuat data.</p>
                   )}
                </div>
             </div>
@@ -403,7 +405,7 @@ const HonorManager: React.FC = () => {
                         const gross = calculateGross(s.id);
                         const tax = calculateTax(s.id);
                         const net = calculateNet(s.id);
-                        const tier = taxTiers[s.id] ?? 0;
+                        const tier = taxTiers[s.id] ?? (activeCategory === 'extra' ? DEFAULT_TAX_RATE : 0);
                         return (
                           <tr key={s.id} className="h-14">
                              <td className="border-[1.2pt] border-black p-3 text-center font-bold">{idx + 1}</td>
@@ -421,7 +423,7 @@ const HonorManager: React.FC = () => {
                                 {isTaxActive ? (
                                   <>
                                     {tax > 0 ? `(${tax.toLocaleString('id-ID')})` : '0'}
-                                    {activeCategory === 'sppd' && tier > 0 && <span className="text-[7pt] block font-black opacity-60">({tier * 100}%)</span>}
+                                    {tier > 0 && <span className="text-[7pt] block font-black opacity-60">({tier * 100}%)</span>}
                                   </>
                                 ) : '0'}
                              </td>
@@ -451,11 +453,10 @@ const HonorManager: React.FC = () => {
                 </table>
               </div>
 
-              {/* Tanda Tangan - Dirapikan Agar Sejajar Sempurna */}
+              {/* Tanda Tangan */}
               <div className="mt-16 grid grid-cols-2 text-[11pt] leading-snug font-serif px-10">
-                 {/* Kolom Kiri: Mengetahui & Kepala Sekolah */}
                  <div className="text-center w-[280px]">
-                    <div className="h-[1.5em] mb-1"></div> {/* Placeholder Penyeimbang Tanggal di Kanan */}
+                    <div className="h-[1.5em] mb-1"></div>
                     <p className="mb-8">Mengetahui,</p>
                     <p className="font-bold uppercase tracking-tight">Kepala Sekolah {config.name}</p>
                     <div className="h-[30mm] flex items-center justify-center my-2"></div>
@@ -463,10 +464,9 @@ const HonorManager: React.FC = () => {
                     <p className="font-bold">NIP. {config.principalNip}</p>
                  </div>
                  
-                 {/* Kolom Kanan: Tanggal & Bendahara */}
                  <div className="text-center w-[280px] ml-auto">
                     <p className="mb-1">Kediri, {format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
-                    <div className="h-[1.5em] mb-8"></div> {/* Placeholder Penyeimbang "Mengetahui" di Kiri */}
+                    <div className="h-[1.5em] mb-8"></div>
                     <p className="font-bold uppercase tracking-tight">Bendahara BOS</p>
                     <div className="h-[30mm] flex items-center justify-center my-2"></div>
                     {selectedBendahara ? (
@@ -488,7 +488,6 @@ const HonorManager: React.FC = () => {
         </div>
       </div>
       
-      {/* Zoom Control */}
       <div className="fixed bottom-8 right-8 flex gap-3 z-50 print:hidden">
         <button onClick={() => setScale(Math.max(0.4, scale - 0.1))} className="p-4 bg-white border border-slate-200 shadow-2xl rounded-[1.5rem] hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-90"><ZoomOut size={22}/></button>
         <button onClick={() => setScale(0.85)} className="px-7 bg-indigo-600 text-white border border-indigo-700 shadow-2xl rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all active:scale-95">Reset View</button>

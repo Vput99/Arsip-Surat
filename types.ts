@@ -55,7 +55,7 @@ export interface MonthlyReport {
   id: string;
   month: number;
   year: number;
-  // Section A: Keadaan Siswa
+  // Section A: Keadaan Siswa (Identitas/Agama)
   studentMatrix: {
     wniAsli: StudentRow;
     wniTionghoa: StudentRow;
@@ -66,6 +66,15 @@ export interface MonthlyReport {
     agamaProtestan: StudentRow;
     agamaHindu: StudentRow;
     agamaBudha: StudentRow;
+  };
+  // Section Mutasi (Halaman Belakang)
+  mutasi: {
+    awalL: number[];
+    awalP: number[];
+    masukL: number[];
+    masukP: number[];
+    keluarL: number[];
+    keluarP: number[];
   };
   // Section B & C
   classCondition: { baik: number, rusakRingan: number, rusakBerat: number };
@@ -80,6 +89,14 @@ export interface MonthlyReport {
   graduates: { l: number, p: number };
   // Section G: Sarpras
   facilities: { name: string, count: number }[];
+  detailedSarpras: {
+    luasTanah: string;
+    statusTanah: string;
+    jumlahBangunan: string;
+    luasBangunan: string;
+    listrik: string;
+    air: string;
+  };
   
   infrastructureNote: string;
   summaryNarrative: string;

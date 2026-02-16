@@ -73,25 +73,18 @@ const MonthlyReport: React.FC = () => {
     return () => { unsubscribeConfig(); unsubscribeStaff(); unsubscribeReport(); };
   }, [month, year]);
 
-  // Logika Filter & Sorting PTK: Kepala Sekolah -> Sri Puji -> Sisanya
   const ptkStaff = [...allStaff]
     .filter(s => s.category === 'reg' || s.category === 'pppk')
     .sort((a, b) => {
-      // 1. Cek Kepala Sekolah (Berdasarkan Jabatan atau Nama di Config)
       const aIsKS = a.rank?.toLowerCase().includes('kepala sekolah') || a.rank?.toLowerCase().includes('kepsek') || a.name === config?.principalName;
       const bIsKS = b.rank?.toLowerCase().includes('kepala sekolah') || b.rank?.toLowerCase().includes('kepsek') || b.name === config?.principalName;
-      
       if (aIsKS && !bIsKS) return -1;
       if (!aIsKS && bIsKS) return 1;
-
-      // 2. Cek Sri Puji
       const aIsSri = a.name?.toLowerCase().includes('sri puji');
       const bIsSri = b.name?.toLowerCase().includes('sri puji');
-      
       if (aIsSri && !bIsSri) return -1;
       if (!aIsSri && bIsSri) return 1;
-
-      return 0; // Urutan default (Firebase orderIndex)
+      return 0;
     });
 
   const updateMatrix = (key: keyof IMonthlyReport['studentMatrix'], gender: 'l' | 'p', classIdx: number, val: string) => {
@@ -120,20 +113,9 @@ const MonthlyReport: React.FC = () => {
       const detailed = prev.staffDetailedData || {};
       const current = detailed[staffId] || { 
         absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 }, 
-        note: '',
-        birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: ''
+        note: '', birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: ''
       };
-      
-      return {
-        ...prev,
-        staffDetailedData: {
-          ...detailed,
-          [staffId]: {
-            ...current,
-            [field]: value
-          }
-        }
-      };
+      return { ...prev, staffDetailedData: { ...detailed, [staffId]: { ...current, [field]: value } } };
     });
   };
 
@@ -141,20 +123,19 @@ const MonthlyReport: React.FC = () => {
     const val = parseInt(value) || 0;
     setReportData(prev => {
       const detailed = prev.staffDetailedData || {};
-      const current = detailed[staffId] || { 
-        absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 }, 
-        note: ''
-      };
-      return {
-        ...prev,
-        staffDetailedData: {
-          ...detailed,
-          [staffId]: {
-            ...current,
-            absent: { ...current.absent, [type]: val }
-          }
-        }
-      };
+      const current = detailed[staffId] || { absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 }, note: '' };
+      return { ...prev, staffDetailedData: { ...detailed, [staffId]: { ...current, absent: { ...current.absent, [type]: val } } } };
+    });
+  };
+
+  const updateMutasi = (key: keyof IMonthlyReport['mutasi'], classIdx: number, val: string) => {
+    const num = parseInt(val) || 0;
+    setReportData(prev => {
+      const newMutasi = { ...prev.mutasi };
+      const newList = [...newMutasi[key]];
+      newList[classIdx] = num;
+      newMutasi[key] = newList;
+      return { ...prev, mutasi: newMutasi };
     });
   };
 
@@ -164,28 +145,16 @@ const MonthlyReport: React.FC = () => {
       const prevDate = subMonths(new Date(year, month, 1), 1);
       const prevM = prevDate.getMonth();
       const prevY = prevDate.getFullYear();
-      
       const docRef = doc(db, "monthly_reports", `rep_${prevY}_${prevM}`);
       const snap = await getDoc(docRef);
-      
       if (snap.exists()) {
         const prevData = snap.data() as IMonthlyReport;
-        setReportData({
-          ...prevData,
-          month,
-          year,
-          id: `rep_${year}_${month}`,
-          createdAt: new Date().toISOString()
-        });
+        setReportData({ ...prevData, month, year, id: `rep_${year}_${month}`, createdAt: new Date().toISOString() });
         alert(`Data dari bulan ${format(prevDate, 'MMMM yyyy', {locale: id})} berhasil disalin.`);
       } else {
         alert("Data bulan lalu tidak ditemukan.");
       }
-    } catch (e) {
-      alert("Gagal menyalin data.");
-    } finally {
-      setCopyLoading(false);
-    }
+    } catch (e) { alert("Gagal menyalin data."); } finally { setCopyLoading(false); }
   };
 
   const handleSave = async () => {
@@ -202,20 +171,15 @@ const MonthlyReport: React.FC = () => {
     setLoading(true);
     try {
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [330, 215] });
-      
-      // Page 1
       if (reportRef.current) {
         const canvas1 = await html2canvas(reportRef.current, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff', logging: false, windowWidth: 1500 });
         pdf.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 330, 215);
       }
-
-      // Page 2 (PTK Detail)
       if (ptkRef.current) {
         pdf.addPage();
         const canvas2 = await html2canvas(ptkRef.current, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff', logging: false, windowWidth: 1500 });
         pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 330, 215);
       }
-
       pdf.save(`LAPORAN_BULANAN_${config?.name}_${month + 1}_${year}.pdf`);
     } catch (e) { alert('Gagal ekspor PDF.'); }
     finally { setLoading(false); }
@@ -260,17 +224,13 @@ const MonthlyReport: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-20 animate-fade-in text-slate-900">
-      {/* Header Panel */}
       <div className="flex flex-col md:flex-row justify-between items-center bg-white/90 backdrop-blur-xl p-5 rounded-[2.5rem] border border-slate-200 shadow-xl sticky top-4 z-[50] print:hidden gap-4 ring-1 ring-slate-100">
         <div className="flex items-center gap-5">
           <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-4 rounded-3xl text-white shadow-2xl shadow-indigo-200 flex items-center justify-center">
             <FileSpreadsheet size={28} />
           </div>
           <div>
-            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-800 flex items-center gap-2">
-               Laporan Bulanan
-               <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-lg border border-indigo-100">F-SEK</span>
-            </h2>
+            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-800 flex items-center gap-2">Laporan Bulanan <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-lg border border-indigo-100">F-SEK</span></h2>
             <div className="flex items-center gap-2 mt-1">
                <Sparkles size={12} className="text-amber-500 animate-pulse" />
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Presisi Cetak F4 Landscape • Smart Layout</p>
@@ -298,19 +258,12 @@ const MonthlyReport: React.FC = () => {
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6">
-        {/* Editor Sidebar */}
         <div className="w-full xl:w-[460px] shrink-0 space-y-4 print:hidden">
            <div className="bg-white rounded-[3rem] border border-slate-200 shadow-2xl overflow-hidden h-[850px] flex flex-col ring-1 ring-slate-100">
               <div className="flex bg-slate-50/50 p-2 border-b overflow-x-auto custom-scrollbar">
                  {(['sekolah', 'siswa', 'pegawai', 'ptk', 'kondisi', 'mutasi', 'sarpras'] as const).map(t => (
                     <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-4 text-[10px] font-black uppercase rounded-2xl transition-all flex items-center justify-center gap-2 whitespace-nowrap ${activeTab === t ? 'bg-white text-indigo-600 shadow-xl border border-indigo-100' : 'text-slate-400 hover:text-slate-600'}`}>
-                       {t === 'sekolah' && <School size={14}/>}
-                       {t === 'siswa' && <Users size={14}/>}
-                       {t === 'pegawai' && <UserCog size={14}/>}
-                       {t === 'ptk' && <ClipboardList size={14}/>}
-                       {t === 'kondisi' && <LayoutGrid size={14}/>}
-                       {t === 'mutasi' && <ArrowLeftRight size={14}/>}
-                       {t === 'sarpras' && <Box size={14}/>}
+                       {t === 'sekolah' && <School size={14}/>}{t === 'siswa' && <Users size={14}/>}{t === 'pegawai' && <UserCog size={14}/>}{t === 'ptk' && <ClipboardList size={14}/>}{t === 'kondisi' && <LayoutGrid size={14}/>}{t === 'mutasi' && <ArrowLeftRight size={14}/>}{t === 'sarpras' && <Box size={14}/>}
                        {t.split('_')[0]}
                     </button>
                  ))}
@@ -339,56 +292,7 @@ const MonthlyReport: React.FC = () => {
                     </div>
                  )}
 
-                 {/* TAB DATA PTK (NEW) */}
-                 {activeTab === 'ptk' && (
-                    <div className="space-y-8">
-                       <p className="text-[11px] font-black uppercase text-indigo-600 border-b-2 border-indigo-100 pb-3 flex items-center gap-2 tracking-widest">Detail Pendidik & Tenaga Kependidikan</p>
-                       <div className="space-y-6">
-                          {ptkStaff.map((s, idx) => {
-                             const data = (reportData.staffDetailedData || {})[s.id] || { 
-                               absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 }, 
-                               birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: '', note: ''
-                             };
-                             return (
-                                <div key={s.id} className="p-6 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm space-y-4 hover:border-indigo-400 transition-all">
-                                   <div className="flex items-center gap-3 border-b border-slate-50 pb-3">
-                                      <span className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">{idx+1}</span>
-                                      <div>
-                                         <p className="text-xs font-black uppercase text-slate-800">{s.name}</p>
-                                         <p className="text-[9px] font-bold text-slate-400">NIP. {s.nip || '-'}</p>
-                                      </div>
-                                   </div>
-                                   <div className="grid grid-cols-2 gap-4">
-                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Tempat/Tgl Lahir</label><input value={data.birthInfo || ''} onChange={(e) => updatePtkDetail(s.id, 'birthInfo', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" placeholder="Kediri, 01-01-1980" /></div>
-                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Pangkat/Gol</label><input value={data.rank || s.rank || ''} onChange={(e) => updatePtkDetail(s.id, 'rank', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
-                                   </div>
-                                   <div className="grid grid-cols-3 gap-3">
-                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">TMT CPNS</label><input value={data.tmtCpns || ''} onChange={(e) => updatePtkDetail(s.id, 'tmtCpns', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
-                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">TMT Gol</label><input value={data.tmtGol || ''} onChange={(e) => updatePtkDetail(s.id, 'tmtGol', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
-                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Masa Kerja</label><input value={data.masaKerja || ''} onChange={(e) => updatePtkDetail(s.id, 'masaKerja', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
-                                   </div>
-                                   <div className="grid grid-cols-2 gap-4">
-                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Jabatan</label><input value={data.jabatan || s.rank || ''} onChange={(e) => updatePtkDetail(s.id, 'jabatan', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
-                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Unit Kerja</label><input value={data.unitKerja || config?.name || ''} onChange={(e) => updatePtkDetail(s.id, 'unitKerja', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
-                                   </div>
-                                   <div className="bg-slate-50 p-4 rounded-2xl">
-                                      <label className="text-[8px] font-black text-slate-500 uppercase block mb-3">Ketidakhadiran (Hari)</label>
-                                      <div className="grid grid-cols-6 gap-2">
-                                         {['s', 'i', 'a', 'ch', 'cd', 'dl'].map(type => (
-                                            <div key={type} className="text-center">
-                                               <span className="text-[7px] font-black text-slate-400 uppercase block mb-1">{type}</span>
-                                               <input type="number" value={(data.absent as any)[type] || 0} onChange={(e) => updatePtkAbsent(s.id, type, e.target.value)} className="w-full p-1.5 border rounded-lg text-center text-[10px] bg-white" />
-                                            </div>
-                                         ))}
-                                      </div>
-                                   </div>
-                                </div>
-                             );
-                          })}
-                       </div>
-                    </div>
-                 )}
-
+                 {/* TAB SISWA */}
                  {activeTab === 'siswa' && (
                     <div className="space-y-8">
                        <p className="text-[11px] font-black uppercase text-indigo-600 border-b-2 border-indigo-100 pb-3 flex items-center gap-2 tracking-widest">A. BANYAKNYA PESERTA DIDIK</p>
@@ -410,27 +314,172 @@ const MonthlyReport: React.FC = () => {
                        ))}
                     </div>
                  )}
+
+                 {/* TAB PEGAWAI (RE-ENABLED) */}
+                 {activeTab === 'pegawai' && (
+                    <div className="space-y-8">
+                       <p className="text-[11px] font-black uppercase text-indigo-600 border-b-2 border-indigo-100 pb-3 flex items-center gap-2 tracking-widest">B. STATUS KEPEGAWAIAN & PENDIDIKAN</p>
+                       {STAFF_ROWS.map(job => (
+                          <div key={job} className="p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 hover:border-indigo-200 transition-all hover:bg-white shadow-sm hover:shadow-md">
+                             <label className="text-[10px] font-black text-slate-700 uppercase tracking-tight block mb-4 border-l-4 border-indigo-500 pl-3">{job}</label>
+                             <div className="grid grid-cols-4 gap-3">
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">PNS L</span><input type="number" value={reportData.staffData[job]?.pnsL || 0} onChange={(e) => updateStaffData(job, 'pnsL', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">PNS P</span><input type="number" value={reportData.staffData[job]?.pnsP || 0} onChange={(e) => updateStaffData(job, 'pnsP', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">NON L</span><input type="number" value={reportData.staffData[job]?.nonPnsL || 0} onChange={(e) => updateStaffData(job, 'nonPnsL', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">NON P</span><input type="number" value={reportData.staffData[job]?.nonPnsP || 0} onChange={(e) => updateStaffData(job, 'nonPnsP', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">S1 L</span><input type="number" value={reportData.staffData[job]?.s1L || 0} onChange={(e) => updateStaffData(job, 's1L', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">S1 P</span><input type="number" value={reportData.staffData[job]?.s1P || 0} onChange={(e) => updateStaffData(job, 's1P', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">&lt;S1 L</span><input type="number" value={reportData.staffData[job]?.d3L || 0} onChange={(e) => updateStaffData(job, 'd3L', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block text-center opacity-40">&lt;S1 P</span><input type="number" value={reportData.staffData[job]?.d3P || 0} onChange={(e) => updateStaffData(job, 'd3P', e.target.value)} className="w-full p-2.5 text-[11px] font-black border rounded-xl text-center bg-white" /></div>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 )}
+
+                 {/* TAB PTK (DETAILED) */}
+                 {activeTab === 'ptk' && (
+                    <div className="space-y-8">
+                       <p className="text-[11px] font-black uppercase text-indigo-600 border-b-2 border-indigo-100 pb-3 flex items-center gap-2 tracking-widest">Detail Pendidik & Tenaga Kependidikan</p>
+                       <div className="space-y-6">
+                          {ptkStaff.map((s, idx) => {
+                             const data = (reportData.staffDetailedData || {})[s.id] || { 
+                               absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 }, 
+                               birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: '', note: ''
+                             };
+                             return (
+                                <div key={s.id} className="p-6 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm space-y-4 hover:border-indigo-400 transition-all">
+                                   <div className="flex items-center gap-3 border-b border-slate-50 pb-3">
+                                      <span className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">{idx+1}</span>
+                                      <div><p className="text-xs font-black uppercase text-slate-800">{s.name}</p><p className="text-[9px] font-bold text-slate-400">NIP. {s.nip || '-'}</p></div>
+                                   </div>
+                                   <div className="grid grid-cols-2 gap-4">
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Tempat/Tgl Lahir</label><input value={data.birthInfo || ''} onChange={(e) => updatePtkDetail(s.id, 'birthInfo', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" placeholder="Kediri, 01-01-1980" /></div>
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Pangkat/Gol</label><input value={data.rank || s.rank || ''} onChange={(e) => updatePtkDetail(s.id, 'rank', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
+                                   </div>
+                                   <div className="grid grid-cols-3 gap-3">
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">TMT CPNS</label><input value={data.tmtCpns || ''} onChange={(e) => updatePtkDetail(s.id, 'tmtCpns', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">TMT Gol</label><input value={data.tmtGol || ''} onChange={(e) => updatePtkDetail(s.id, 'tmtGol', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Masa Kerja</label><input value={data.masaKerja || ''} onChange={(e) => updatePtkDetail(s.id, 'masaKerja', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
+                                   </div>
+                                   <div className="grid grid-cols-2 gap-4">
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Jabatan</label><input value={data.jabatan || s.rank || ''} onChange={(e) => updatePtkDetail(s.id, 'jabatan', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Unit Kerja</label><input value={data.unitKerja || config?.name || ''} onChange={(e) => updatePtkDetail(s.id, 'unitKerja', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
+                                   </div>
+                                   <div className="bg-slate-50 p-4 rounded-2xl">
+                                      <label className="text-[8px] font-black text-slate-500 uppercase block mb-3">Ketidakhadiran (Hari)</label>
+                                      <div className="grid grid-cols-6 gap-2">
+                                         {['s', 'i', 'a', 'ch', 'cd', 'dl'].map(type => (<div key={type} className="text-center"><span className="text-[7px] font-black text-slate-400 uppercase block mb-1">{type}</span><input type="number" value={(data.absent as any)[type] || 0} onChange={(e) => updatePtkAbsent(s.id, type, e.target.value)} className="w-full p-1.5 border rounded-lg text-center text-[10px] bg-white" /></div>))}
+                                      </div>
+                                   </div>
+                                </div>
+                             );
+                          })}
+                       </div>
+                    </div>
+                 )}
+
+                 {/* TAB KONDISI (RE-ENABLED) */}
+                 {activeTab === 'kondisi' && (
+                    <div className="space-y-8">
+                       <p className="text-[11px] font-black uppercase text-indigo-600 border-b-2 border-indigo-100 pb-3 flex items-center gap-2 tracking-widest">C. KONDISI RUANG & USIA</p>
+                       <div className="p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 space-y-6">
+                          <div>
+                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 underline">I. KONDISI RUANG KELAS</label>
+                             <div className="grid grid-cols-3 gap-3">
+                                <div className="space-y-1"><span className="text-[8px] font-black block opacity-40">BAIK</span><input type="number" value={reportData.roomCondition.baik[0]} onChange={(e) => setReportData({...reportData, roomCondition: {...reportData.roomCondition, baik: [parseInt(e.target.value)||0]}})} className="w-full p-2 text-center border rounded-xl" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block opacity-40">R.RINGAN</span><input type="number" value={reportData.roomCondition.rusakRingan[0]} onChange={(e) => setReportData({...reportData, roomCondition: {...reportData.roomCondition, rusakRingan: [parseInt(e.target.value)||0]}})} className="w-full p-2 text-center border rounded-xl" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black block opacity-40">R.BERAT</span><input type="number" value={reportData.roomCondition.rusakBerat[0]} onChange={(e) => setReportData({...reportData, roomCondition: {...reportData.roomCondition, rusakBerat: [parseInt(e.target.value)||0]}})} className="w-full p-2 text-center border rounded-xl" /></div>
+                             </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                             <div><label className="text-[10px] font-black opacity-40 uppercase">Jml Rombel</label><input type="number" value={reportData.rombelData.jumlah[0]} onChange={(e) => setReportData({...reportData, rombelData: {...reportData.rombelData, jumlah: [parseInt(e.target.value)||0]}})} className="w-full p-2 border rounded-xl" /></div>
+                             <div><label className="text-[10px] font-black opacity-40 uppercase">Siswa Miskin</label><input type="number" value={reportData.rombelData.miskin[0]} onChange={(e) => setReportData({...reportData, rombelData: {...reportData.rombelData, miskin: [parseInt(e.target.value)||0]}})} className="w-full p-2 border rounded-xl" /></div>
+                          </div>
+                          <div>
+                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 underline">II. DATA USIA SISWA</label>
+                             <div className="space-y-3">
+                                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100"><span className="text-[10px] font-bold">&lt; 7 Tahun</span><input type="number" value={reportData.ageData.under7[0]} onChange={(e) => setReportData({...reportData, ageData: {...reportData.ageData, under7: [parseInt(e.target.value)||0]}})} className="w-20 p-1.5 border rounded text-center" /></div>
+                                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100"><span className="text-[10px] font-bold">7 - 12 Tahun</span><input type="number" value={reportData.ageData.age7_12[0]} onChange={(e) => setReportData({...reportData, ageData: {...reportData.ageData, age7_12: [parseInt(e.target.value)||0]}})} className="w-20 p-1.5 border rounded text-center" /></div>
+                                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100"><span className="text-[10px] font-bold">&gt; 12 Tahun</span><input type="number" value={reportData.ageData.over12[0]} onChange={(e) => setReportData({...reportData, ageData: {...reportData.ageData, over12: [parseInt(e.target.value)||0]}})} className="w-20 p-1.5 border rounded text-center" /></div>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 )}
+
+                 {/* TAB MUTASI (RE-ENABLED) */}
+                 {activeTab === 'mutasi' && (
+                    <div className="space-y-8">
+                       <p className="text-[11px] font-black uppercase text-indigo-600 border-b-2 border-indigo-100 pb-3 flex items-center gap-2 tracking-widest">D. MUTASI, ABSENSI & LULUS</p>
+                       <div className="space-y-6">
+                          <div className="p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+                             <label className="text-[10px] font-black text-slate-500 uppercase block mb-4">I. ABSENSI & HARI EFEKTIF</label>
+                             <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="col-span-2 space-y-1"><span className="text-[9px] font-bold opacity-40">HARI EFEKTIF</span><input type="number" value={reportData.effectiveDays} onChange={(e) => setReportData({...reportData, effectiveDays: parseInt(e.target.value)||0})} className="w-full p-2 border rounded-xl font-black text-indigo-600" /></div>
+                                <div className="space-y-1"><span className="text-[9px] font-bold opacity-40">SAKIT</span><input type="number" value={reportData.absentData.sakit} onChange={(e) => setReportData({...reportData, absentData: {...reportData.absentData, sakit: parseInt(e.target.value)||0}})} className="w-full p-2 border rounded-xl" /></div>
+                                <div className="space-y-1"><span className="text-[9px] font-bold opacity-40">IZIN</span><input type="number" value={reportData.absentData.ijin} onChange={(e) => setReportData({...reportData, absentData: {...reportData.absentData, ijin: parseInt(e.target.value)||0}})} className="w-full p-2 border rounded-xl" /></div>
+                                <div className="space-y-1"><span className="text-[9px] font-bold opacity-40">ALFA</span><input type="number" value={reportData.absentData.alfa} onChange={(e) => setReportData({...reportData, absentData: {...reportData.absentData, alfa: parseInt(e.target.value)||0}})} className="w-full p-2 border rounded-xl" /></div>
+                             </div>
+                          </div>
+                          <div className="p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+                             <label className="text-[10px] font-black text-slate-500 uppercase block mb-4">II. DATA KELULUSAN</label>
+                             <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1"><span className="text-[8px] font-black opacity-40">CALON L</span><input type="number" value={reportData.graduationData.pesertaL} onChange={(e) => setReportData({...reportData, graduationData: {...reportData.graduationData, pesertaL: parseInt(e.target.value)||0}})} className="w-full p-2 border rounded-xl" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black opacity-40">CALON P</span><input type="number" value={reportData.graduationData.pesertaP} onChange={(e) => setReportData({...reportData, graduationData: {...reportData.graduationData, pesertaP: parseInt(e.target.value)||0}})} className="w-full p-2 border rounded-xl" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black opacity-40">LULUS L</span><input type="number" value={reportData.graduationData.lulusL} onChange={(e) => setReportData({...reportData, graduationData: {...reportData.graduationData, lulusL: parseInt(e.target.value)||0}})} className="w-full p-2 border rounded-xl" /></div>
+                                <div className="space-y-1"><span className="text-[8px] font-black opacity-40">LULUS P</span><input type="number" value={reportData.graduationData.lulusP} onChange={(e) => setReportData({...reportData, graduationData: {...reportData.graduationData, lulusP: parseInt(e.target.value)||0}})} className="w-full p-2 border rounded-xl" /></div>
+                             </div>
+                          </div>
+                          <div className="p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+                             <label className="text-[10px] font-black text-slate-500 uppercase block mb-4">III. MUTASI SISWA</label>
+                             {(['masukL', 'masukP', 'keluarL', 'keluarP'] as const).map(key => (
+                                <div key={key} className="mb-4">
+                                   <span className="text-[8px] font-black opacity-40 block mb-1 uppercase tracking-widest">{key}</span>
+                                   <div className="grid grid-cols-6 gap-2">
+                                      {reportData.mutasi[key].map((v, i) => (<input key={i} type="number" value={v} onChange={(e) => updateMutasi(key, i, e.target.value)} className="w-full p-1.5 border rounded-lg text-center text-[10px]" />))}
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 )}
+
+                 {/* TAB SARPRAS (RE-ENABLED) */}
+                 {activeTab === 'sarpras' && (
+                    <div className="space-y-8">
+                       <p className="text-[11px] font-black uppercase text-indigo-600 border-b-2 border-indigo-100 pb-3 flex items-center gap-2 tracking-widest">F. SARANA PENDIDIKAN</p>
+                       <div className="grid grid-cols-1 gap-3">
+                          {reportData.facilities.map((f, i) => (
+                             <div key={i} className="flex items-center gap-4 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 group">
+                                <span className="text-[10px] font-black w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white transition-colors">{i+1}</span>
+                                <span className="flex-1 text-[11px] font-bold text-slate-700 truncate uppercase tracking-tight">{f.name}</span>
+                                <input type="number" value={f.count} onChange={(e) => {
+                                   const newFac = [...reportData.facilities];
+                                   newFac[i].count = parseInt(e.target.value) || 0;
+                                   setReportData({...reportData, facilities: newFac});
+                                }} className="w-20 p-2 text-[11px] font-black border border-slate-200 rounded-xl text-center bg-white outline-none focus:ring-2 focus:ring-indigo-500" />
+                             </div>
+                          ))}
+                       </div>
+                    </div>
+                 )}
               </div>
            </div>
         </div>
 
-        {/* Paper Preview Area */}
         <div className="flex-1 bg-slate-200/50 rounded-[4rem] p-6 overflow-auto flex flex-col items-center custom-scrollbar shadow-inner relative group ring-1 ring-slate-300/50">
            <div className="flex gap-4 print:hidden sticky top-0 z-40 mb-6 bg-white/90 backdrop-blur-md p-3 rounded-[2rem] border shadow-2xl ring-1 ring-slate-100 items-center">
              <div className="flex bg-slate-100 p-1 rounded-2xl mr-4 border border-slate-200">
-                <button onClick={() => setPreviewPage(1)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${previewPage === 1 ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400'}`}>
-                   <BookOpen size={14}/> Hal 1
-                </button>
-                <button onClick={() => setPreviewPage(2)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${previewPage === 2 ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400'}`}>
-                   <ClipboardList size={14}/> Hal 2: PTK
-                </button>
+                <button onClick={() => setPreviewPage(1)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${previewPage === 1 ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400'}`}><BookOpen size={14}/> Hal 1</button>
+                <button onClick={() => setPreviewPage(2)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${previewPage === 2 ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400'}`}><ClipboardList size={14}/> Hal 2: PTK</button>
              </div>
              <button onClick={() => setScale(s => Math.max(0.3, s - 0.05))} className="p-3 bg-white rounded-2xl border hover:bg-slate-50 transition-colors shadow-sm"><ZoomOut size={20}/></button>
              <button onClick={() => setScale(0.5)} className="px-8 bg-white rounded-2xl border text-[11px] font-black uppercase tracking-widest shadow-sm">Fit Screen</button>
              <button onClick={() => setScale(s => Math.min(1.2, s + 0.1))} className="p-3 bg-white rounded-2xl border hover:bg-slate-50 transition-colors shadow-sm"><ZoomIn size={20}/></button>
            </div>
 
-           {/* PAGE 1: RINGKASAN */}
            {previewPage === 1 && (
               <div ref={reportRef} className="bg-white p-[8mm] text-black font-sans origin-top overflow-hidden border border-slate-300 shadow-[0_40px_100px_rgba(0,0,0,0.15)] mb-10" style={{ width: '330mm', height: '215mm', transform: `scale(${scale})` }}>
                 <div className="text-center font-bold text-[11pt] border-b-[1.5pt] border-black pb-0.5 mb-2 uppercase tracking-wide">LAPOR BULAN {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</div>
@@ -456,7 +505,6 @@ const MonthlyReport: React.FC = () => {
                       <p className="font-black text-[9pt] tracking-tight bg-slate-100 px-2 py-1 rounded">NPSN : {config?.npsn}</p>
                    </div>
                 </div>
-
                 <div className="flex gap-2">
                    <div className="w-[190mm] shrink-0">
                       <div className="mb-2">
@@ -466,53 +514,28 @@ const MonthlyReport: React.FC = () => {
                               <tr><th className="border border-black w-[30mm] text-[6pt]" rowSpan={2}>JENIS DATA</th>{[1,2,3,4,5,6].map(k => <th key={k} className="border border-black" colSpan={3}>Kelas {k}</th>)}<th className="border border-black bg-slate-100" colSpan={3}>JUMLAH TOTAL</th></tr>
                               <tr className="bg-[#F8F9FA] h-[16px] font-bold">{[...Array(7)].map((_, i) => <React.Fragment key={i}><th className="border border-black w-[5.5mm]">L</th><th className="border border-black w-[5.5mm]">P</th><th className="border border-black w-[8mm] bg-slate-50">Jml</th></React.Fragment>)}</tr>
                            </thead>
-                           <tbody>
-                              {nationalityKeys.map((key) => {
-                                 const row = (reportData.studentMatrix as any)[key] || createEmptyRow();
-                                 return (<tr key={key} className="h-[17px]"><td className="border border-black text-left px-1.5 uppercase font-bold truncate tracking-tight">{key.replace(/([A-Z])/g, ' $1')}</td>{[0,1,2,3,4,5].map(i => (<React.Fragment key={i}><td className="border border-black">{row.l[i] || ''}</td><td className="border border-black">{row.p[i] || ''}</td><td className="border border-black bg-slate-50 font-bold">{row.l[i] + row.p[i] || ''}</td></React.Fragment>))}<td className="border border-black font-black">{sumArr(row.l)}</td><td className="border border-black font-black">{sumArr(row.p)}</td><td className="border border-black bg-slate-100 font-black">{sumArr(row.l) + sumArr(row.p)}</td></tr>);
-                              })}
-                           </tbody>
+                           <tbody>{nationalityKeys.map((key) => { const row = (reportData.studentMatrix as any)[key] || createEmptyRow(); return (<tr key={key} className="h-[17px]"><td className="border border-black text-left px-1.5 uppercase font-bold truncate tracking-tight">{key.replace(/([A-Z])/g, ' $1')}</td>{[0,1,2,3,4,5].map(i => (<React.Fragment key={i}><td className="border border-black">{row.l[i] || ''}</td><td className="border border-black">{row.p[i] || ''}</td><td className="border border-black bg-slate-50 font-bold">{row.l[i] + row.p[i] || ''}</td></React.Fragment>))}<td className="border border-black font-black">{sumArr(row.l)}</td><td className="border border-black font-black">{sumArr(row.p)}</td><td className="border border-black bg-slate-100 font-black">{sumArr(row.l) + sumArr(row.p)}</td></tr>); })}</tbody>
                         </table>
                       </div>
                       <div className="mb-2">
                         <div style={{ backgroundColor: "#FFF2CC" }} className="border border-black text-center font-black text-[7pt] py-0.5 tracking-widest uppercase">B. DATA AGAMA</div>
                         <table className="w-full border-collapse border border-black text-[5.5pt] text-center table-fixed">
-                           <tbody>
-                              {religionKeys.map((key) => {
-                                 const row = (reportData.studentMatrix as any)[key] || createEmptyRow();
-                                 return (<tr key={key} className="h-[17px]"><td className="border border-black text-left px-1.5 uppercase font-bold truncate tracking-tight w-[30mm]">{key.replace(/([A-Z])/g, ' $1')}</td>{[0,1,2,3,4,5].map(i => (<React.Fragment key={i}><td className="border border-black">{row.l[i] || ''}</td><td className="border border-black">{row.p[i] || ''}</td><td className="border border-black bg-slate-50 font-bold">{row.l[i] + row.p[i] || ''}</td></React.Fragment>))}<td className="border border-black font-black">{sumArr(row.l)}</td><td className="border border-black font-black">{sumArr(row.p)}</td><td className="border border-black bg-slate-100 font-black">{sumArr(row.l) + sumArr(row.p)}</td></tr>);
-                              })}
-                           </tbody>
+                           <tbody>{religionKeys.map((key) => { const row = (reportData.studentMatrix as any)[key] || createEmptyRow(); return (<tr key={key} className="h-[17px]"><td className="border border-black text-left px-1.5 uppercase font-bold truncate tracking-tight w-[30mm]">{key.replace(/([A-Z])/g, ' $1')}</td>{[0,1,2,3,4,5].map(i => (<React.Fragment key={i}><td className="border border-black">{row.l[i] || ''}</td><td className="border border-black">{row.p[i] || ''}</td><td className="border border-black bg-slate-50 font-bold">{row.l[i] + row.p[i] || ''}</td></React.Fragment>))}<td className="border border-black font-black">{sumArr(row.l)}</td><td className="border border-black font-black">{sumArr(row.p)}</td><td className="border border-black bg-slate-100 font-black">{sumArr(row.l) + sumArr(row.p)}</td></tr>); })}</tbody>
                         </table>
                       </div>
-
                       <div className="grid grid-cols-[1.5fr_1fr] gap-3">
                          <table className="w-full border-collapse border border-black text-[5.5pt] text-center table-fixed">
-                            <thead className="bg-[#DEEBF7] font-black h-[28px]">
-                               <tr><th className="border border-black w-[32mm] text-[6pt]" rowSpan={2}>Jabatan di Sekolah</th><th className="border border-black" colSpan={2}>Status Pegawai</th><th className="border border-black" colSpan={4}>Status Pendidikan</th><th className="border border-black" colSpan={2}>Jumlah</th><th className="border border-black w-[9mm] bg-blue-100" rowSpan={2}>Total</th></tr>
-                               <tr><th className="border border-black w-[6mm]">PNS</th><th className="border border-black w-[6mm]">Non</th><th className="border border-black w-[6mm]">&lt;S1</th><th className="border border-black w-[6mm]">S1</th><th className="border border-black w-[6mm]">S2</th><th className="border border-black w-[6mm]">Lain</th><th className="border border-black w-[7mm]">L</th><th className="border border-black w-[7mm]">P</th></tr>
-                            </thead>
-                            <tbody>
-                               {STAFF_ROWS.map((job) => {
-                                  const d = reportData.staffData[job] || { pnsL: 0, pnsP: 0, nonPnsL: 0, nonPnsP: 0, s1L: 0, s1P: 0, d3L: 0, d3P: 0 };
-                                  return (<tr key={job} className="h-[18px]"><td className="border border-black text-left px-1.5 font-bold truncate leading-tight uppercase tracking-tighter text-[5.5pt]">{job}</td><td className="border border-black">{d.pnsL + d.pnsP || ''}</td><td className="border border-black">{d.nonPnsL + d.nonPnsP || ''}</td><td className="border border-black">{d.d3L + d.d3P || ''}</td><td className="border border-black">{d.s1L + d.s1P || ''}</td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black font-bold">{d.pnsL + d.nonPnsL || ''}</td><td className="border border-black font-bold">{d.pnsP + d.nonPnsP || ''}</td><td className="border border-black bg-blue-50 font-black">{d.pnsL + d.pnsP + d.nonPnsL + d.nonPnsP || '0'}</td></tr>)
-                               })}
-                            </tbody>
+                            <thead className="bg-[#DEEBF7] font-black h-[28px]"><tr><th className="border border-black w-[32mm] text-[6pt]" rowSpan={2}>Jabatan di Sekolah</th><th className="border border-black" colSpan={2}>Status Pegawai</th><th className="border border-black" colSpan={4}>Status Pendidikan</th><th className="border border-black" colSpan={2}>Jumlah</th><th className="border border-black w-[9mm] bg-blue-100" rowSpan={2}>Total</th></tr><tr><th className="border border-black w-[6mm]">PNS</th><th className="border border-black w-[6mm]">Non</th><th className="border border-black w-[6mm]">&lt;S1</th><th className="border border-black w-[6mm]">S1</th><th className="border border-black w-[6mm]">S2</th><th className="border border-black w-[6mm]">Lain</th><th className="border border-black w-[7mm]">L</th><th className="border border-black w-[7mm]">P</th></tr></thead>
+                            <tbody>{STAFF_ROWS.map((job) => { const d = reportData.staffData[job] || { pnsL: 0, pnsP: 0, nonPnsL: 0, nonPnsP: 0, s1L: 0, s1P: 0, d3L: 0, d3P: 0 }; return (<tr key={job} className="h-[18px]"><td className="border border-black text-left px-1.5 font-bold truncate leading-tight uppercase tracking-tighter text-[5.5pt]">{job}</td><td className="border border-black">{d.pnsL + d.pnsP || ''}</td><td className="border border-black">{d.nonPnsL + d.nonPnsP || ''}</td><td className="border border-black">{d.d3L + d.d3P || ''}</td><td className="border border-black">{d.s1L + d.s1P || ''}</td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black font-bold">{d.pnsL + d.nonPnsL || ''}</td><td className="border border-black font-bold">{d.pnsP + d.nonPnsP || ''}</td><td className="border border-black bg-blue-50 font-black">{d.pnsL + d.pnsP + d.nonPnsL + d.nonPnsP || '0'}</td></tr>) })}</tbody>
                          </table>
                          <div className="space-y-2">
                             <div className="bg-[#FCE4D6] border border-black p-0.5 text-center font-black text-[7pt] uppercase tracking-widest">D. Hari Efektif dan Absensi</div>
                             <table className="w-full border-collapse border border-black text-[6pt] text-center table-fixed">
-                               <tbody>
-                                  <tr className="h-6"><td className="border border-black text-left px-1.5 font-bold uppercase tracking-tighter">Hari Efektif Belajar *)</td><td className="border border-black font-black w-[12mm] text-[8pt] bg-orange-50">{reportData.effectiveDays}</td><td className="border border-black w-10 font-bold">Hari</td></tr>
-                                  <tr className="h-5"><td className="border border-black text-left px-1.5">a. Sakit</td><td className="border border-black font-bold">{reportData.absentData.sakit}</td><td className="border border-black">Siswa</td></tr>
-                                  <tr className="h-5"><td className="border border-black text-left px-1.5">b. Ijin</td><td className="border border-black font-bold">{reportData.absentData.ijin}</td><td className="border border-black">Siswa</td></tr>
-                                  <tr className="h-5"><td className="border border-black text-left px-1.5">c. Alfa</td><td className="border border-black font-bold">{reportData.absentData.alfa}</td><td className="border border-black">Siswa</td></tr>
-                               </tbody>
+                               <tbody><tr className="h-6"><td className="border border-black text-left px-1.5 font-bold uppercase tracking-tighter">Hari Efektif Belajar *)</td><td className="border border-black font-black w-[12mm] text-[8pt] bg-orange-50">{reportData.effectiveDays}</td><td className="border border-black w-10 font-bold">Hari</td></tr><tr className="h-5"><td className="border border-black text-left px-1.5">a. Sakit</td><td className="border border-black font-bold">{reportData.absentData.sakit}</td><td className="border border-black">Siswa</td></tr><tr className="h-5"><td className="border border-black text-left px-1.5">b. Ijin</td><td className="border border-black font-bold">{reportData.absentData.ijin}</td><td className="border border-black">Siswa</td></tr><tr className="h-5"><td className="border border-black text-left px-1.5">c. Alfa</td><td className="border border-black font-bold">{reportData.absentData.alfa}</td><td className="border border-black">Siswa</td></tr></tbody>
                             </table>
                          </div>
                       </div>
                    </div>
-
                    <div className="w-[62mm] shrink-0 space-y-3">
                       <div>
                          <div className="bg-[#D9EAD3] border border-black p-0.5 text-center font-black text-[7pt] uppercase tracking-widest">C. Kondisi Ruang Kelas</div>
@@ -544,98 +567,22 @@ const MonthlyReport: React.FC = () => {
               </div>
            )}
 
-           {/* PAGE 2: DATA PTK DETAIL (Excel Format) */}
            {previewPage === 2 && (
               <div ref={ptkRef} className="bg-white p-[8mm] text-black font-sans origin-top overflow-hidden border border-slate-300 shadow-[0_40px_100px_rgba(0,0,0,0.15)] mb-10" style={{ width: '330mm', height: '215mm', transform: `scale(${scale})` }}>
                  <div className="text-center font-black text-[10pt] mb-3 uppercase tracking-wider">DATA PENDIDIK DAN TENAGA KEPENDIDIKAN</div>
-                 
                  <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr] gap-4 text-[7pt] mb-4 uppercase font-bold text-slate-900 border-b pb-2">
-                    <div>
-                       <div className="flex gap-2"><span>NAMA LEMBAGA</span><span>:</span><span className="font-black">{config?.name}</span></div>
-                       <div className="flex gap-2"><span>BULAN</span><span>:</span><span>{format(new Date(year, month, 1), 'MMMM', { locale: id })}</span></div>
-                    </div>
-                    <div className="col-start-3">
-                       <div className="flex gap-2"><span>KAB./KOTA</span><span>:</span><span>{config?.city}</span></div>
-                       <div className="flex gap-2"><span>PROVINSI</span><span>:</span><span>{config?.province}</span></div>
-                    </div>
+                    <div><div className="flex gap-2"><span>NAMA LEMBAGA</span><span>:</span><span className="font-black">{config?.name}</span></div><div className="flex gap-2"><span>BULAN</span><span>:</span><span>{format(new Date(year, month, 1), 'MMMM', { locale: id })}</span></div></div>
+                    <div className="col-start-3"><div className="flex gap-2"><span>KAB./KOTA</span><span>:</span><span>{config?.city}</span></div><div className="flex gap-2"><span>PROVINSI</span><span>:</span><span>{config?.province}</span></div></div>
                  </div>
-
                  <table className="w-full border-collapse border border-black text-[5.5pt] text-center table-fixed">
-                    <thead>
-                       <tr className="bg-slate-100 font-bold h-8">
-                          <th className="border border-black w-[6mm]">NO</th>
-                          <th className="border border-black w-[28mm]">NAMA</th>
-                          <th className="border border-black w-[20mm]">TEMPAT,<br/>TGL LAHIR</th>
-                          <th className="border border-black w-[24mm]">NIP</th>
-                          <th className="border border-black w-[18mm]">PANGKAT/GOL.</th>
-                          <th className="border border-black w-[14mm]">TMT<br/>CPNS</th>
-                          <th className="border border-black w-[14mm]">TMT GOL.<br/>TERAKHIR</th>
-                          <th className="border border-black w-[14mm]">MASA KERJA<br/>GOL.</th>
-                          <th className="border border-black w-[20mm]">JABATAN</th>
-                          <th className="border border-black w-[18mm]">STATUS<br/>KEPEG.</th>
-                          <th className="border border-black w-[20mm]">PENDIDIKAN/<br/>TH. LULUS</th>
-                          <th className="border border-black w-[20mm]">NOMOR HP</th>
-                          <th className="border border-black w-[20mm]">UNIT KERJA</th>
-                          <th className="border border-black" colSpan={6}>KETIDAKHADIRAN</th>
-                          <th className="border border-black w-[10mm]">KET.</th>
-                       </tr>
-                       <tr className="bg-slate-50 text-[4.5pt]">
-                          {Array.from({length: 13}).map((_, i) => <th key={i} className="border border-black">{i+1}</th>)}
-                          {['S','I','A','Ch','Cd','Dl'].map(t => <th key={t} className="border border-black">{t}</th>)}
-                          <th className="border border-black">20</th>
-                       </tr>
-                    </thead>
-                    <tbody>
-                       {ptkStaff.map((s, idx) => {
-                          const d = (reportData.staffDetailedData || {})[s.id] || {};
-                          return (
-                             <tr key={s.id} className="h-9">
-                                <td className="border border-black">{idx + 1}</td>
-                                <td className="border border-black text-left px-1 font-bold leading-tight uppercase">{s.name}</td>
-                                <td className="border border-black">{d.birthInfo || '-'}</td>
-                                <td className="border border-black">{s.nip || '-'}</td>
-                                <td className="border border-black">{d.rank || s.rank || '-'}</td>
-                                <td className="border border-black">{d.tmtCpns || '-'}</td>
-                                <td className="border border-black">{d.tmtGol || '-'}</td>
-                                <td className="border border-black">{d.masaKerja || '-'}</td>
-                                <td className="border border-black">{d.jabatan || s.rank || '-'}</td>
-                                <td className="border border-black">{s.category === 'reg' ? 'PNS' : 'NON PNS'}</td>
-                                <td className="border border-black">{d.pendidikan || '-'}</td>
-                                <td className="border border-black">{d.phone || '-'}</td>
-                                <td className="border border-black">{d.unitKerja || config?.name || '-'}</td>
-                                {['s','i', 'a', 'ch', 'cd', 'dl'].map(type => (
-                                   <td key={type} className="border border-black">{(d.absent as any)?.[type] || ''}</td>
-                                ))}
-                                <td className="border border-black">{d.note || ''}</td>
-                             </tr>
-                          )
-                       })}
-                    </tbody>
+                    <thead><tr className="bg-slate-100 font-bold h-8"><th className="border border-black w-[6mm]">NO</th><th className="border border-black w-[28mm]">NAMA</th><th className="border border-black w-[20mm]">TEMPAT,<br/>TGL LAHIR</th><th className="border border-black w-[24mm]">NIP</th><th className="border border-black w-[18mm]">PANGKAT/GOL.</th><th className="border border-black w-[14mm]">TMT<br/>CPNS</th><th className="border border-black w-[14mm]">TMT GOL.<br/>TERAKHIR</th><th className="border border-black w-[14mm]">MASA KERJA<br/>GOL.</th><th className="border border-black w-[20mm]">JABATAN</th><th className="border border-black w-[18mm]">STATUS<br/>KEPEG.</th><th className="border border-black w-[20mm]">PENDIDIKAN/<br/>TH. LULUS</th><th className="border border-black w-[20mm]">NOMOR HP</th><th className="border border-black w-[20mm]">UNIT KERJA</th><th className="border border-black" colSpan={6}>KETIDAKHADIRAN</th><th className="border border-black w-[10mm]">KET.</th></tr><tr className="bg-slate-50 text-[4.5pt]">{Array.from({length: 13}).map((_, i) => <th key={i} className="border border-black">{i+1}</th>)}{['S','I','A','Ch','Cd','Dl'].map(t => <th key={t} className="border border-black">{t}</th>)}<th className="border border-black">20</th></tr></thead>
+                    <tbody>{ptkStaff.map((s, idx) => { const d = (reportData.staffDetailedData || {})[s.id] || {}; return (<tr key={s.id} className="h-9"><td className="border border-black">{idx + 1}</td><td className="border border-black text-left px-1 font-bold leading-tight uppercase">{s.name}</td><td className="border border-black">{d.birthInfo || '-'}</td><td className="border border-black">{s.nip || '-'}</td><td className="border border-black">{d.rank || s.rank || '-'}</td><td className="border border-black">{d.tmtCpns || '-'}</td><td className="border border-black">{d.tmtGol || '-'}</td><td className="border border-black">{d.masaKerja || '-'}</td><td className="border border-black">{d.jabatan || s.rank || '-'}</td><td className="border border-black">{s.category === 'reg' ? 'PNS' : 'NON PNS'}</td><td className="border border-black">{d.pendidikan || '-'}</td><td className="border border-black">{d.phone || '-'}</td><td className="border border-black">{d.unitKerja || config?.name || '-'}</td>{['s','i', 'a', 'ch', 'cd', 'dl'].map(type => (<td key={type} className="border border-black">{(d.absent as any)?.[type] || ''}</td>))}<td className="border border-black">{d.note || ''}</td></tr>) })}</tbody>
                  </table>
-
-                 <div className="mt-8 flex justify-end">
-                    <div className="text-center w-[60mm] font-serif leading-snug">
-                       <p className="text-[7.5pt] mb-1 font-bold">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
-                       <p className="text-[7.5pt] mb-12 font-black uppercase">KEPALA SEKOLAH</p>
-                       <p className="text-[7.5pt] font-black underline uppercase">{config?.principalName}</p>
-                       <p className="text-[7pt] font-bold">NIP. {config?.principalNip}</p>
-                    </div>
-                 </div>
+                 <div className="mt-8 flex justify-end"><div className="text-center w-[60mm] font-serif leading-snug"><p className="text-[7.5pt] mb-1 font-bold">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p><p className="text-[7.5pt] mb-12 font-black uppercase">KEPALA SEKOLAH</p><p className="text-[7.5pt] font-black underline uppercase">{config?.principalName}</p><p className="text-[7pt] font-bold">NIP. {config?.principalNip}</p></div></div>
               </div>
            )}
         </div>
       </div>
-      
-      <style>{`
-        .report-paper { box-sizing: border-box; background-color: white; page-break-after: always; color: black; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        @media print {
-          body * { visibility: hidden; }
-          .report-paper, .report-paper * { visibility: visible !important; }
-        }
-      `}</style>
     </div>
   );
 };

@@ -443,6 +443,7 @@ const LetterCreator: React.FC = () => {
                         <h3 className="text-[14pt] font-bold uppercase tracking-wide">{config.headerLine2}</h3>
                         <h1 className="text-[18pt] font-black uppercase my-1 tracking-tight">{config.name}</h1>
                         <p className="text-[10pt] leading-tight">{config.address}</p>
+                        <p className="text-[9pt] font-bold">NPSN: {config.npsn} | Email: {config.email}</p>
                      </div>
                      <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-full h-auto object-contain" />}</div>
                   </div>

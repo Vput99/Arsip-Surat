@@ -73,9 +73,7 @@ const HonorManager: React.FC = () => {
     return () => unsubscribe();
   }, [year, month, activeCategory]);
 
-  const currentStaffList = activeCategory === 'sppd' 
-    ? allStaff.filter(s => (s.category === 'reg' || s.category === 'pppk') && selectedSppdStaffIds.includes(s.id))
-    : allStaff.filter(s => s.category === activeCategory);
+  const currentStaffList = allStaff.filter(s => s.category === activeCategory);
   
   const treasurerCandidates = allStaff.filter(s => s.category === 'reg' || s.category === 'pppk');
 
@@ -373,7 +371,8 @@ const HonorManager: React.FC = () => {
                     <h3 className="text-[14pt] uppercase font-bold leading-tight">{config.headerLine1}</h3>
                     <h3 className="text-[14pt] font-bold uppercase leading-tight">{config.headerLine2}</h3>
                     <h1 className="text-[20pt] font-black uppercase my-1.5 tracking-tight">{config.name}</h1>
-                    <p className="text-[10pt] font-bold italic leading-tight">{config.address}</p>
+                    <p className="text-[10pt] font-bold leading-tight">{config.address}</p>
+                    <p className="text-[10pt] font-bold italic leading-tight">NPSN: {config.npsn} | Email: {config.email}</p>
                  </div>
                  <img src={config.logoUrl} className="w-[85%] h-auto object-contain mx-auto" />
               </div>
@@ -384,7 +383,7 @@ const HonorManager: React.FC = () => {
               </div>
 
               <div className="flex-1">
-                <table className="w-full border-collapse border-black border-[1.5pt] text-[10pt]">
+                <table className="w-full border-collapse border-black border-[1.2pt] text-[10pt]">
                    <thead>
                       <tr className="bg-slate-100/50">
                          <th className="border-[1.2pt] border-black p-3 w-[12mm] text-center font-bold">NO</th>

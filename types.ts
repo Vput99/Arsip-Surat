@@ -55,7 +55,8 @@ export interface MonthlyReport {
   id: string;
   month: number;
   year: number;
-  // Section A: Keadaan Siswa (Identitas/Agama)
+  
+  // BAGIAN UTAMA: Identitas & Agama (Halaman Depan)
   studentMatrix: {
     wniAsli: StudentRow;
     wniTionghoa: StudentRow;
@@ -66,40 +67,63 @@ export interface MonthlyReport {
     agamaProtestan: StudentRow;
     agamaHindu: StudentRow;
     agamaBudha: StudentRow;
+    agamaLain: StudentRow;
   };
-  // Section Mutasi (Halaman Belakang)
-  mutasi: {
-    awalL: number[];
-    awalP: number[];
-    masukL: number[];
-    masukP: number[];
-    keluarL: number[];
-    keluarP: number[];
+
+  // BAGIAN KEPEGAWAIAN (Halaman Depan - Agregat)
+  staffData: Record<string, { 
+    pnsL: number, pnsP: number, 
+    nonPnsL: number, nonPnsP: number,
+    s1L: number, s1P: number,
+    d3L: number, d3P: number
+  }>;
+
+  // BAGIAN DATA PTK (Halaman Belakang Detail - Per Orang)
+  staffDetailedData?: Record<string, {
+    absent: { s: number, i: number, a: number, ch: number, cd: number, dl: number },
+    note: string
+  }>;
+
+  // BAGIAN A: Kondisi Ruang (Halaman Belakang)
+  roomCondition: {
+    baik: number[];
+    rusakRingan: number[];
+    rusakBerat: number[];
   };
-  // Section B & C
-  classCondition: { baik: number, rusakRingan: number, rusakBerat: number };
-  studentAge: { under7: number, age7_12: number, over12: number };
-  // Section D: Kepegawaian
-  staffData: Record<string, { pnsL: number, pnsP: number, nonPnsL: number, nonPnsP: number }>;
-  // Section E & F
+
+  // BAGIAN B: Rombel & Miskin (Halaman Belakang)
+  rombelData: {
+    jumlah: number[];
+    miskin: number[];
+  };
+
+  // BAGIAN C: Usia Siswa (Halaman Belakang)
+  ageData: {
+    under7: number[];
+    age7_12: number[];
+    over12: number[];
+  };
+
+  // BAGIAN D: Absensi
   effectiveDays: number;
-  absentSakit: number;
-  absentIjin: number;
-  absentAlfa: number;
-  graduates: { l: number, p: number };
-  // Section G: Sarpras
-  facilities: { name: string, count: number }[];
-  detailedSarpras: {
-    luasTanah: string;
-    statusTanah: string;
-    jumlahBangunan: string;
-    luasBangunan: string;
-    listrik: string;
-    air: string;
+  absentData: { sakit: number, ijin: number, alfa: number };
+
+  // BAGIAN E: Kelulusan
+  graduationData: {
+    pesertaL: number, pesertaP: number,
+    lulusL: number, lulusP: number
   };
-  
-  infrastructureNote: string;
-  summaryNarrative: string;
+
+  // BAGIAN F: Sarana Pendidikan (Halaman Belakang)
+  facilities: { name: string, count: number }[];
+
+  // BAGIAN MUTASI (Halaman Belakang)
+  mutasi: {
+    awalL: number[]; awalP: number[];
+    masukL: number[]; masukP: number[];
+    keluarL: number[]; keluarP: number[];
+  };
+
   createdAt: string;
 }
 

@@ -199,6 +199,9 @@ const Settings: React.FC = () => {
 
   if (!config) return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-indigo-600" /></div>;
 
+  const labelClass = "text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1";
+  const inputClass = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm transition-all";
+
   return (
     <div className="max-w-5xl mx-auto py-6 animate-fade-in pb-20">
       
@@ -259,33 +262,50 @@ const Settings: React.FC = () => {
                     </div>
                  </div>
                </section>
+               
                <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                 <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Data Sekolah</h3>
+                 <div className="space-y-6">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Data Sekolah Utama</h3>
                     <div className="space-y-4">
-                      <input name="name" value={config.name} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" placeholder="Nama Sekolah" />
+                      <div><label className={labelClass}>Nama Lembaga</label><input name="name" value={config.name} onChange={handleChange} className={inputClass} placeholder="SD NEGERI ..." /></div>
                       <div className="grid grid-cols-2 gap-4">
-                        <input name="npsn" value={config.npsn} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="NPSN" />
-                        <input name="email" value={config.email} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Email" />
+                        <div><label className={labelClass}>NPSN</label><input name="npsn" value={config.npsn} onChange={handleChange} className={inputClass} placeholder="2053..." /></div>
+                        <div><label className={labelClass}>NSS</label><input name="nss" value={config.nss} onChange={handleChange} className={inputClass} placeholder="1010..." /></div>
                       </div>
-                      <input name="headerLine1" value={config.headerLine1} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 1" />
-                      <input name="headerLine2" value={config.headerLine2} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="Header Baris 2" />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div><label className={labelClass}>Email Sekolah</label><input name="email" value={config.email} onChange={handleChange} className={inputClass} placeholder="admin@sd..." /></div>
+                        <div><label className={labelClass}>No. Telp / HP KS</label><input name="phone" value={config.phone} onChange={handleChange} className={inputClass} placeholder="0858..." /></div>
+                      </div>
+                      <div><label className={labelClass}>Alamat Sekolah</label><textarea name="address" rows={2} value={config.address} onChange={handleChange} className={`${inputClass} resize-none`} placeholder="Jl. Raya ..." /></div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div><label className={labelClass}>Kelurahan</label><input name="village" value={config.village} onChange={handleChange} className={inputClass} /></div>
+                        <div><label className={labelClass}>Kecamatan</label><input name="district" value={config.district} onChange={handleChange} className={inputClass} /></div>
+                        <div><label className={labelClass}>Kota/Kab</label><input name="city" value={config.city} onChange={handleChange} className={inputClass} /></div>
+                      </div>
                     </div>
                  </div>
-                 <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Pejabat</h3>
+                 <div className="space-y-6">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Akreditasi & Pejabat</h3>
                     <div className="space-y-4">
-                      <input name="principalName" value={config.principalName} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none font-bold text-sm" placeholder="Nama Kepala Sekolah" />
-                      <input name="principalNip" value={config.principalNip} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm" placeholder="NIP Kepala Sekolah" />
-                      <textarea name="address" rows={2} value={config.address} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl outline-none text-sm resize-none" placeholder="Alamat Lengkap" />
+                      <div className="grid grid-cols-3 gap-4">
+                         <div className="col-span-1"><label className={labelClass}>Akreditasi</label><input name="accreditation" value={config.accreditation} onChange={handleChange} className={inputClass} placeholder="A" /></div>
+                         <div className="col-span-1"><label className={labelClass}>Thn Akre</label><input name="accreditationYear" value={config.accreditationYear} onChange={handleChange} className={inputClass} placeholder="2020" /></div>
+                         <div className="col-span-1"><label className={labelClass}>Gugus</label><input name="gugus" value={config.gugus} onChange={handleChange} className={inputClass} /></div>
+                      </div>
+                      <div><label className={labelClass}>Nama Kepala Sekolah</label><input name="principalName" value={config.principalName} onChange={handleChange} className={inputClass} placeholder="Nama Lengkap & Gelar" /></div>
+                      <div><label className={labelClass}>NIP Kepala Sekolah</label><input name="principalNip" value={config.principalNip} onChange={handleChange} className={inputClass} placeholder="1986..." /></div>
+                      <div className="pt-4 space-y-4 border-t border-slate-100">
+                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Header Kop Surat</h3>
+                         <div><label className={labelClass}>Header Baris 1</label><input name="headerLine1" value={config.headerLine1} onChange={handleChange} className={inputClass} /></div>
+                         <div><label className={labelClass}>Header Baris 2</label><input name="headerLine2" value={config.headerLine2} onChange={handleChange} className={inputClass} /></div>
+                      </div>
                     </div>
                  </div>
                </section>
                <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">{loading ? <Loader2 className="animate-spin" /> : <Save />}Simpan Profil</button>
              </form>
           </div>
-
-          {/* Bagian Maintenance (Selalu Muncul di Tab Profil) */}
+          
           <div className="bg-slate-50 border border-slate-200 p-8 rounded-3xl space-y-4">
              <div className="flex items-center gap-3 mb-2">
                 <div className="bg-slate-900 text-white p-2 rounded-xl"><ShieldCheck size={20}/></div>

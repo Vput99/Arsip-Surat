@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React;
 
 export enum MailType {
   INCOMING = 'Masuk',
@@ -93,6 +93,15 @@ export interface SchoolConfig {
   address: string;
   email: string;
   npsn: string;
+  nss: string;
+  phone: string;
+  village: string;
+  district: string;
+  city: string;
+  province: string;
+  accreditation: string;
+  accreditationYear: string;
+  gugus: string;
   headerLine1: string;
   headerLine2: string;
   logoUrl: string;

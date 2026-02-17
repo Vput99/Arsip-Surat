@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, QrCode, Sparkles, Zap, Trash2, ShieldCheck, 
   TrendingUp, Activity, CreditCard, Banknote, PenTool, CheckCircle,
   ToggleLeft, ToggleRight, Info, UserCheck, ChevronDown, MapPin, Search, UserMinus, UserPlus,
-  Users, Percent, Hash, FileText, PieChart
+  Users, Percent, Hash, FileText, PieChart, Calendar
 } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail, subscribeToAttendance } from '../services/storage';
 import { analyzePayroll } from '../services/geminiService';
@@ -25,6 +25,7 @@ const HonorManager: React.FC = () => {
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [month, setMonth] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
+  const [docDate, setDocDate] = useState(new Date().toISOString().split('T')[0]);
   const [rates, setRates] = useState<Record<string, number>>({});
   const [manualVolumes, setManualVolumes] = useState<Record<string, number>>({});
   const [taxTiers, setTaxTiers] = useState<Record<string, number>>({});
@@ -182,8 +183,8 @@ const HonorManager: React.FC = () => {
         id: Date.now().toString(),
         type: MailType.OUTGOING,
         referenceNumber: `${activeCategory.toUpperCase()}/${month+1}/${year}`,
-        date: new Date().toISOString().split('T')[0],
-        receivedDate: new Date().toISOString().split('T')[0],
+        date: docDate,
+        receivedDate: docDate,
         createdAt: new Date().toISOString(),
         sender: 'Bendahara BOS',
         subject: `Daftar ${catTitle} - ${period}`,
@@ -237,7 +238,7 @@ const HonorManager: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-[1600px] mx-auto">
         {/* Panel Pengaturan */}
-        <div className="lg:col-span-3 space-y-6 print:hidden">
+        <div className="lg:col-span-3 space-y-6 print:hidden h-[calc(100vh-200px)] overflow-y-auto pr-2 custom-scrollbar">
           <div className="bg-white p-7 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-7">
             <div className="space-y-4">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block">Kategori Dokumen</label>
@@ -251,6 +252,40 @@ const HonorManager: React.FC = () => {
                 <button onClick={() => setActiveCategory('sppd')} className={`py-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border ${activeCategory === 'sppd' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 border-emerald-700' : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100'}`}>
                   <MapPin size={20} /><span className="text-[9px] font-black uppercase">SPPD</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Tanggal Pembuatan Surat */}
+            <div className="p-5 bg-indigo-50/30 rounded-[2rem] border border-indigo-100/50 space-y-3">
+               <label className="text-[10px] font-black text-indigo-700 uppercase tracking-widest block flex items-center gap-2.5">
+                 <Calendar size={16} /> Tanggal Pembuatan Surat
+               </label>
+               <input 
+                 type="date" 
+                 value={docDate} 
+                 onChange={(e) => setDocDate(e.target.value)}
+                 className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+               />
+            </div>
+
+            <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-200/60 space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Periode Laporan</label>
+              <div className="grid grid-cols-2 gap-3">
+                <select 
+                  value={month} 
+                  onChange={(e) => setMonth(parseInt(e.target.value))}
+                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold outline-none"
+                >
+                  {Array.from({length: 12}).map((_, i) => (
+                    <option key={i} value={i}>{format(new Date(2022, i, 1), 'MMMM', {locale: id})}</option>
+                  ))}
+                </select>
+                <input 
+                  type="number" 
+                  value={year} 
+                  onChange={(e) => setYear(parseInt(e.target.value))}
+                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold outline-none"
+                />
               </div>
             </div>
 
@@ -496,7 +531,7 @@ const HonorManager: React.FC = () => {
                  </div>
                  
                  <div className="text-center w-[280px] ml-auto">
-                    <p className="mb-1">Kediri, {format(new Date(), 'dd MMMM yyyy', { locale: id })}</p>
+                    <p className="mb-1">Kediri, {format(new Date(docDate), 'dd MMMM yyyy', { locale: id })}</p>
                     <div className="h-[1.5em] mb-8"></div>
                     <p className="font-bold uppercase tracking-tight">Bendahara BOS</p>
                     <div className="h-[30mm] flex items-center justify-center my-2"></div>

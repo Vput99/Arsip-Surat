@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight, Clock, MapPin, Activity, CalendarCheck, HandCoins } from 'lucide-react';
+import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight, Clock, MapPin, Activity, CalendarCheck, HandCoins, PenTool, ClipboardCheck, Settings, LayoutGrid } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { subscribeToMails, subscribeToConfig } from '../services/storage';
 import { SchoolConfig, Mail as MailType, MailType as MType } from '../types';
@@ -51,6 +51,13 @@ const Dashboard: React.FC = () => {
     { title: 'Perlu Tindakan', value: stats.urgent, icon: <AlertTriangle size={22} />, color: 'from-rose-500 to-rose-600', shadow: 'shadow-rose-200' },
   ];
 
+  const quickActions = [
+    { path: '/create', label: 'Input Naskah', icon: <PenTool size={20} />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { path: '/attendance', label: 'Absensi', icon: <CalendarCheck size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { path: '/monthly-report', label: 'Lapor Bulan', icon: <ClipboardCheck size={20} />, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { path: '/settings', label: 'Pengaturan', icon: <Settings size={20} />, color: 'text-slate-600', bg: 'bg-slate-100' },
+  ];
+
   const chartData = [
     { name: 'Masuk', value: stats.incoming },
     { name: 'Keluar', value: stats.outgoing },
@@ -82,48 +89,59 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Menu Cepat */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Link to="/attendance" className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:border-emerald-200 transition-all duration-500 flex items-center gap-8 group relative overflow-hidden">
-          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
-          <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-emerald-100">
-            <CalendarCheck size={36} />
-          </div>
-          <div className="relative z-10">
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-1">Input Absensi</h3>
-            <p className="text-slate-400 font-bold text-sm italic">Otomasi kehadiran Guru, Pegawai, & Tukang.</p>
-          </div>
-          <ArrowUpRight className="ml-auto text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all relative z-10" size={28} />
-        </Link>
-        <Link to="/honor" className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:border-amber-200 transition-all duration-500 flex items-center gap-8 group relative overflow-hidden">
-          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-amber-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
-          <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-amber-100">
-            <HandCoins size={36} />
-          </div>
-          <div className="relative z-10">
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-1">Penerimaan Honor</h3>
-            <p className="text-slate-400 font-bold text-sm italic">Format Juknis BOS & Perhitungan Pajak Otomatis.</p>
-          </div>
-          <ArrowUpRight className="ml-auto text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all relative z-10" size={28} />
-        </Link>
-      </div>
-
-      {/* Statistik Utama */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((card, idx) => (
-          <div key={idx} className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-slate-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{card.title}</p>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">{card.value}</h3>
-              </div>
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-xl ${card.shadow} group-hover:scale-110 transition-transform duration-500`}>
-                {card.icon}
-              </div>
+      {/* Menu Cepat & Statistik */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+         <div className="lg:col-span-8 space-y-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+               {quickActions.map((action, i) => (
+                  <Link key={i} to={action.path} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-3 group">
+                     <div className={`w-12 h-12 ${action.bg} ${action.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                        {action.icon}
+                     </div>
+                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-indigo-600">{action.label}</span>
+                  </Link>
+               ))}
             </div>
-            <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-slate-50 rounded-full opacity-50"></div>
-          </div>
-        ))}
+
+            <div className="grid grid-cols-2 gap-6">
+               {statCards.map((card, idx) => (
+                  <div key={idx} className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
+                     <div className="flex items-start justify-between relative z-10">
+                        <div>
+                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{card.title}</p>
+                           <h3 className="text-3xl font-black text-slate-900 tracking-tight">{card.value}</h3>
+                        </div>
+                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-xl ${card.shadow} group-hover:scale-110 transition-transform duration-500`}>
+                           {card.icon}
+                        </div>
+                     </div>
+                  </div>
+               ))}
+            </div>
+         </div>
+
+         <div className="lg:col-span-4 bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col">
+            <div className="flex items-center gap-3 mb-8">
+               <div className="bg-indigo-600 p-2 rounded-xl text-white"><LayoutGrid size={20}/></div>
+               <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Navigasi Utama</h3>
+            </div>
+            <div className="space-y-3 flex-1">
+               <Link to="/attendance" className="flex items-center gap-4 p-5 bg-emerald-50 border border-emerald-100 rounded-[2rem] group hover:bg-emerald-600 transition-all">
+                  <div className="bg-white p-3 rounded-2xl text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white"><CalendarCheck size={24}/></div>
+                  <div>
+                     <p className="text-sm font-black text-emerald-900 group-hover:text-white uppercase">Absensi Realtime</p>
+                     <p className="text-[10px] text-emerald-600 group-hover:text-emerald-100 font-bold uppercase">Guru & Pegawai</p>
+                  </div>
+               </Link>
+               <Link to="/honor" className="flex items-center gap-4 p-5 bg-amber-50 border border-amber-100 rounded-[2rem] group hover:bg-amber-600 transition-all">
+                  <div className="bg-white p-3 rounded-2xl text-amber-600 group-hover:bg-amber-500 group-hover:text-white"><HandCoins size={24}/></div>
+                  <div>
+                     <p className="text-sm font-black text-amber-900 group-hover:text-white uppercase">Penerimaan Honor</p>
+                     <p className="text-[10px] text-amber-600 group-hover:text-amber-100 font-bold uppercase">Dana BOS & Pajak</p>
+                  </div>
+               </Link>
+            </div>
+         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

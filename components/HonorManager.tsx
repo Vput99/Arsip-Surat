@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, QrCode, Sparkles, Zap, Trash2, ShieldCheck, 
   TrendingUp, Activity, CreditCard, Banknote, PenTool, CheckCircle,
   ToggleLeft, ToggleRight, Info, UserCheck, ChevronDown, MapPin, Search, UserMinus, UserPlus,
-  Users, Percent, Hash, FileText
+  Users, Percent, Hash, FileText, PieChart
 } from 'lucide-react';
 import { subscribeToConfig, subscribeToStaff, StaffMember, saveMail, subscribeToAttendance } from '../services/storage';
 import { analyzePayroll } from '../services/geminiService';
@@ -73,7 +73,9 @@ const HonorManager: React.FC = () => {
     return () => unsubscribe();
   }, [year, month, activeCategory]);
 
-  const currentStaffList = allStaff.filter(s => s.category === activeCategory);
+  const currentStaffList = activeCategory === 'sppd' 
+    ? allStaff.filter(s => (s.category === 'reg' || s.category === 'pppk') && selectedSppdStaffIds.includes(s.id))
+    : allStaff.filter(s => s.category === activeCategory);
   
   const treasurerCandidates = allStaff.filter(s => s.category === 'reg' || s.category === 'pppk');
 
@@ -119,12 +121,24 @@ const HonorManager: React.FC = () => {
   const calculateTax = (staffId: string) => {
     if (!isTaxActive) return 0;
     const gross = calculateGross(staffId);
-    // Gunakan tier khusus jika sudah dipilih, jika belum gunakan default
-    const tier = taxTiers[staffId] !== undefined ? taxTiers[staffId] : DEFAULT_TAX_RATE;
+    const tier = taxTiers[staffId] !== undefined ? taxTiers[staffId] : (activeCategory === 'extra' ? DEFAULT_TAX_RATE : 0);
     return Math.floor(gross * tier);
   };
 
   const calculateNet = (staffId: string) => calculateGross(staffId) - calculateTax(staffId);
+
+  const getTaxBreakdown = () => {
+    const breakdown = { p0: 0, p5: 0, p15: 0, p6: 0 };
+    currentStaffList.forEach(s => {
+      const tier = taxTiers[s.id] ?? (activeCategory === 'extra' ? DEFAULT_TAX_RATE : 0);
+      const tax = calculateTax(s.id);
+      if (tier === 0) breakdown.p0 += tax;
+      else if (tier === 0.05) breakdown.p5 += tax;
+      else if (tier === 0.15) breakdown.p15 += tax;
+      else if (tier === 0.06) breakdown.p6 += tax;
+    });
+    return breakdown;
+  };
 
   const handleAiAnalysis = async () => {
     setAiAnalyzing(true);
@@ -198,6 +212,7 @@ const HonorManager: React.FC = () => {
   const totalBruto = currentStaffList.reduce((acc, s) => acc + calculateGross(s.id), 0);
   const totalPajak = currentStaffList.reduce((acc, s) => acc + calculateTax(s.id), 0);
   const totalNetto = totalBruto - totalPajak;
+  const taxBreakdown = getTaxBreakdown();
 
   return (
     <div className="space-y-6 animate-fade-in pb-10 bg-[#F8FAFC] min-h-screen p-4 overflow-hidden">
@@ -238,6 +253,22 @@ const HonorManager: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Rekapitulasi Pajak */}
+            {isTaxActive && currentStaffList.length > 0 && (
+              <div className="p-5 bg-rose-50/50 rounded-[2rem] border border-rose-100 space-y-3 animate-fade-in">
+                 <div className="flex items-center gap-2.5 mb-1">
+                    <PieChart size={16} className="text-rose-600" />
+                    <label className="text-[10px] font-black text-rose-800 uppercase tracking-widest block">Rekap PPh 21</label>
+                 </div>
+                 <div className="space-y-1.5">
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase"><span>Tarif 5%</span><span className="text-rose-600">Rp {taxBreakdown.p5.toLocaleString('id-ID')}</span></div>
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase"><span>Tarif 15%</span><span className="text-rose-600">Rp {taxBreakdown.p15.toLocaleString('id-ID')}</span></div>
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase"><span>Tarif 6%</span><span className="text-rose-600">Rp {taxBreakdown.p6.toLocaleString('id-ID')}</span></div>
+                    <div className="pt-2 mt-2 border-t border-rose-100 flex justify-between items-center text-[10px] font-black text-rose-800 uppercase"><span>Total Pajak</span><span>Rp {totalPajak.toLocaleString('id-ID')}</span></div>
+                 </div>
+              </div>
+            )}
 
             {/* SELEKSI PEGAWAI SPPD */}
             {activeCategory === 'sppd' && (
@@ -335,6 +366,7 @@ const HonorManager: React.FC = () => {
                           >
                             <option value={0}>PPh 0% (Gol I, II / PPPK Paruh Waktu)</option>
                             <option value={0.05}>PPh 5% (Gol III / PPPK Penuh)</option>
+                            <option value={0.05}>PPh 5% (Non ASN dengan NPWP)</option>
                             <option value={0.15}>PPh 15% (Gol IV)</option>
                             <option value={0.06}>PPh 6% (Non ASN Tanpa NPWP)</option>
                           </select>

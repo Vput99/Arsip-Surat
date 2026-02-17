@@ -3,13 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
 import { subscribeToMails, deleteMail, subscribeToConfig, saveMail } from '../services/storage';
 import { format } from 'date-fns';
-// Fix: Import Indonesian locale from the specific subpath to avoid index export issues
 import { id } from 'date-fns/locale/id';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2, PenTool, Upload, MapPin, Wand2, FileCheck, ClipboardList, Loader2, Share2 } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2, PenTool, Upload, MapPin, Wand2, FileCheck, ClipboardList, Loader2, Share2, FileSpreadsheet } from 'lucide-react';
 import MailForm from './MailForm';
 import { analyzeLetter, generateSPTFromInvitation, generateSPPDFromSPT, generateLaporanDanNotulen } from '../services/geminiService';
 import { SchoolConfig } from '../types';
-// Correct named import for useNavigate from react-router-dom
 import { useNavigate } from 'react-router-dom';
 
 interface MailListProps {
@@ -43,6 +41,37 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     const unsubscribeConfig = subscribeToConfig(setSchoolConfig);
     return () => { unsubscribeMails(); unsubscribeConfig(); };
   }, [type]);
+
+  const filteredMails = mails.filter(mail => {
+    const matchesSearch = mail.subject.toLowerCase().includes(searchTerm.toLowerCase()) || mail.sender.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'Semua' || mail.category === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const exportToCSV = () => {
+    const headers = ["Tanggal", "Nomor Surat", "Pengirim/Tujuan", "Perihal", "Kategori", "Urgensi", "Status"];
+    const rows = filteredMails.map(m => [
+      m.date,
+      `"${m.referenceNumber}"`,
+      `"${m.sender}"`,
+      `"${m.subject}"`,
+      m.category,
+      m.urgency,
+      m.status
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n" 
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `REKAP_ARSIP_${type.toUpperCase()}_${format(new Date(), 'yyyyMMdd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleSelectMail = (mail: Mail) => {
     setSelectedMail(mail);
@@ -226,12 +255,6 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     </div>
   );
 
-  const filteredMails = mails.filter(mail => {
-    const matchesSearch = mail.subject.toLowerCase().includes(searchTerm.toLowerCase()) || mail.sender.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'Semua' || mail.category === filterCategory;
-    return matchesSearch && matchesCategory;
-  });
-
   return (
     <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col relative animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
@@ -239,9 +262,14 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
           <h2 className="text-4xl font-black text-slate-900 tracking-tight">{type === MailType.INCOMING ? 'Surat Masuk' : 'Surat Keluar'}</h2>
           <p className="text-slate-500 font-bold text-sm">Kelola arsip sekolah dengan bantuan kecerdasan buatan.</p>
         </div>
-        <button onClick={() => { setEditData(null); setShowForm(true); }} className="px-8 py-3.5 bg-indigo-600 text-white rounded-2xl shadow-xl font-black text-sm flex items-center gap-3">
-          <Plus size={20} /> TAMBAH ARSIP
-        </button>
+        <div className="flex gap-3">
+           <button onClick={exportToCSV} className="px-6 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-2xl shadow-sm font-black text-sm flex items-center gap-3 hover:bg-slate-50">
+             <FileSpreadsheet size={20} className="text-emerald-600" /> EKSPOR EXCEL
+           </button>
+           <button onClick={() => { setEditData(null); setShowForm(true); }} className="px-8 py-3.5 bg-indigo-600 text-white rounded-2xl shadow-xl font-black text-sm flex items-center gap-3">
+             <Plus size={20} /> TAMBAH ARSIP
+           </button>
+        </div>
       </div>
       <div className="bg-white p-3.5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 px-6">
         <div className="relative flex-1">

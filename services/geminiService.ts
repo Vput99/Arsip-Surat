@@ -130,14 +130,43 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
 };
 
 /**
- * Pembuatan SPPD - Fokus pada body saja
+ * Pembuatan SPPD - Mengotomatisasi durasi hari berdasarkan analisis tanggal di SPT
  */
 export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
   try {
-    const prompt = `Berdasarkan SPT Nomor ${spt.referenceNumber} perihal "${spt.subject}", buatkan naskah SPPD. 
-    Detail: "${spt.description}"
-    Hanya berikan isi poin-poin naskah SPPD saja, jangan sertakan Judul Surat atau Nama Sekolah. 
-    Pastikan menggunakan label titik dua yang rapi.`;
+    const prompt = `Bertindaklah sebagai staf administrasi sekolah yang sangat teliti. 
+    Buatkan naskah SPPD berdasarkan data SPT berikut:
+    Subjek SPT: ${spt.subject}
+    Detail Tugas: ${spt.description}
+    Nomor SPT: ${spt.referenceNumber}
+    
+    TUGAS UTAMA:
+    1. Analisis deskripsi di atas untuk mencari rentang tanggal kegiatan.
+    2. Hitung jumlah hari (DURASI). 
+       - Jika tertulis hanya satu tanggal (misal: "23 Februari"), maka durasi = 1 (Satu) Hari.
+       - Jika tertulis rentang (misal: "28 Februari - 1 Maret"), hitung selisih harinya termasuk hari berangkat (dalam contoh ini durasi = 2 (Dua) Hari).
+    
+    FORMAT OUTPUT (WAJIB 1-10):
+    1. Pejabat Pemberi Perintah : Kepala Sekolah
+    2. Nama Pegawai yang diperintah : [NAMA_PETUGAS]
+    3. a. Pangkat dan Golongan : [PANGKAT_GOL]
+       b. Jabatan / Instansi : [JABATAN_PETUGAS]
+       c. Tingkat Biaya Perjalanan : -
+    4. Maksud Perjalanan Dinas : ${spt.subject}
+    5. Alat angkut yang dipergunakan : Kendaraan Pribadi
+    6. a. Tempat Berangkat : SDN Tempurejo 1
+       b. Tempat Tujuan : [Ekstrak tujuan dari deskripsi]
+    7. a. Lamanya Perjalanan Dinas : [X] ([Terbilang]) Hari
+       b. Tanggal Berangkat : [Ekstrak tanggal awal]
+       c. Tanggal Kembali : [Ekstrak tanggal akhir]
+    8. Pengikut : Nama
+       1. -
+    9. Pembebanan Anggaran :
+       a. Instansi : SDN Tempurejo 1
+       b. Akun / Mata Anggaran : Dana BOS
+    10. Keterangan lain-lain : -
+
+    Hanya berikan isi poin 1 sampai 10 tersebut. Jangan sertakan judul surat atau kop sekolah.`;
     
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",

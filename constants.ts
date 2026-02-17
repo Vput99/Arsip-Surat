@@ -108,22 +108,25 @@ Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baikny
     name: 'Surat Perintah Perjalanan Dinas (SPPD)',
     subject: 'SURAT PERINTAH PERJALANAN DINAS',
     category: 'Dinas',
-    layout: 'centered',
-    content: `Pejabat Pemberi Perintah : Kepala Sekolah
-Nama Pegawai yang diperintah : [NAMA_PETUGAS]
-NIP : [NIP_PETUGAS]
-Pangkat dan Golongan : [PANGKAT_GOL]
-Jabatan : [JABATAN_PETUGAS]
-Maksud Perjalanan Dinas : [PERIHAL_TUGAS]
-Alat Angkut yang dipergunakan : Kendaraan Pribadi
-Tempat Berangkat : SDN Tempurejo 1
-Tempat Tujuan : [TUJUAN]
-Lamanya Perjalanan Dinas : 1 (Satu) Hari
-Tanggal Berangkat : [TANGGAL]
-Tanggal Kembali : [TANGGAL]
-Dasar Perintah : SPT Nomor [NOMOR_SPT] Tanggal [TANGGAL_SPT]
-Instansi / Akun : Dana BOS / Sekolah
-Keterangan Lain-lain : -`
+    layout: 'standard',
+    content: `1. Pejabat Pemberi Perintah : Kepala Sekolah
+2. Nama Pegawai yang diperintah : [NAMA_PETUGAS]
+3. a. Pangkat dan Golongan : [PANGKAT_GOL]
+   b. Jabatan / Instansi : [JABATAN_PETUGAS]
+   c. Tingkat Biaya Perjalanan : -
+4. Maksud Perjalanan Dinas : [PERIHAL_TUGAS]
+5. Alat angkut yang dipergunakan : Kendaraan Pribadi
+6. a. Tempat Berangkat : SDN Tempurejo 1
+   b. Tempat Tujuan : [TUJUAN]
+7. a. Lamanya Perjalanan Dinas : 1 (Satu) Hari
+   b. Tanggal Berangkat : [TANGGAL]
+   c. Tanggal Kembali : [TANGGAL]
+8. Pengikut : Nama
+   1. -
+9. Pembebanan Anggaran :
+   a. Instansi : SDN Tempurejo 1
+   b. Akun / Mata Anggaran : Dana BOS
+10. Keterangan lain-lain : -`
   },
   {
     id: 't_laporan_sppd',

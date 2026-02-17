@@ -14,13 +14,11 @@ import { generateNotulenContent, generateLaporanSPPDContent } from '../services/
 const SmartContentRenderer = ({ text, subject }: { text: string, subject: string }) => {
   if (!text) return null;
   
-  // Membersihkan teks dari kata-kata pengantar AI dan duplikasi judul
   const cleanText = (t: string) => {
     let result = t.replace(/^(Berikut adalah|Ini adalah|Sesuai dengan|Tentu, ini|Berikut ini).*(:|surat|naskah|berikut):/i, '')
             .replace(/\*\*/g, '')
             .trim();
     
-    // Cegah duplikasi judul jika AI menyertakan judul di baris pertama
     const subjectClean = subject.toLowerCase().replace(/[^a-z0-9]/g, '');
     const firstLine = result.split('\n')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
     
@@ -108,14 +106,18 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
       let label = line.substring(0, firstColonIdx).trim();
       let value = line.substring(firstColonIdx + 1).trim();
       
-      const isIntroSentence = label.length > 45 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa') || label.toLowerCase().includes('akan di beri tugas');
+      const isIntroSentence = label.length > 55 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa') || label.toLowerCase().includes('akan di beri tugas');
       
       if (isIntroSentence) {
          renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
       } else {
+         // Khusus format kedinasan/SPPD yang menggunakan nomor, berikan lebar label yang lebih luas
+         const isDinasItem = /^\d+\./.test(label) || /^[a-z]\./.test(label);
+         const labelWidth = isDinasItem ? 'w-[230px]' : 'w-[140px]';
+
          renderedBlocks.push(
-            <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.6]">
-              <span className="w-[125px] shrink-0">{label}</span>
+            <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.5]">
+              <span className={`${labelWidth} shrink-0`}>{label}</span>
               <span className="w-[20px] text-center shrink-0">:</span>
               <span className="flex-1 text-justify">{value}</span>
             </div>
@@ -159,7 +161,7 @@ const LetterCreator: React.FC = () => {
   const [useQRCode, setUseQRCode] = useState(true);
 
   const [formData, setFormData] = useState({
-    refNumber: `422/..../419.42.03.135/${new Date().getFullYear()}`,
+    refNumber: `094/..../419.42.03.135/${new Date().getFullYear()}`,
     date: new Date().toISOString().split('T')[0],
     recipient: '',
     signatureTitle: 'Kepala Sekolah',
@@ -186,7 +188,6 @@ const LetterCreator: React.FC = () => {
       setTemplates(data);
       if (isInitialized.current) return;
 
-      // Prioritas 1: Jika ada data content dari AI (Chain Process)
       if (state && state.content) {
         const targetTemplate = data.find(t => t.id === state.templateId) || data[0];
         if (targetTemplate) {
@@ -202,7 +203,6 @@ const LetterCreator: React.FC = () => {
         }
       }
 
-      // Prioritas 2: Jika hanya ada ID templat saja
       if (state && state.templateId) {
         const targetTemplate = data.find(t => t.id === state.templateId);
         if (targetTemplate) {
@@ -218,7 +218,6 @@ const LetterCreator: React.FC = () => {
         }
       } 
       
-      // Default: Ambil templat pertama
       if (data.length > 0) {
         const firstTemplate = data[0];
         setSelectedTemplate(firstTemplate);

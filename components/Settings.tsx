@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, School, Loader2, Info, Building2, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, ListOrdered, FileText, Layout, Type, RefreshCw, Zap, ShieldCheck } from 'lucide-react';
-import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember, subscribeToTemplates, saveTemplate, deleteTemplate, LetterTemplate, initializeDefaultData } from '../services/storage';
-import { SchoolConfig } from '../types';
+import { Save, Upload, School, Loader2, Info, Building2, Database, AlertCircle, CheckCircle2, Users, Plus, Trash2, Search, ListOrdered, FileText, Layout, Type, RefreshCw, Zap, ShieldCheck, Download, History, ClipboardList, Clock } from 'lucide-react';
+import { subscribeToConfig, saveSchoolConfig, subscribeToConnectionStatus, subscribeToStaff, saveStaff, deleteStaff, StaffMember, subscribeToTemplates, saveTemplate, deleteTemplate, LetterTemplate, initializeDefaultData, exportFullBackup, subscribeToLogs } from '../services/storage';
+import { SchoolConfig, ActivityLog } from '../types';
 import { CATEGORIES } from '../constants';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale/id';
 
-type SettingsTab = 'profile' | 'staff' | 'templates';
+type SettingsTab = 'profile' | 'staff' | 'templates' | 'maintenance';
 type StaffCategory = 'reg' | 'pppk' | 'extra' | 'tukang';
 
 const Settings: React.FC = () => {
@@ -14,7 +16,9 @@ const Settings: React.FC = () => {
   const [dbStatus, setDbStatus] = useState({ turso: false, firebase: false });
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
 
   // Staff State
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
@@ -36,12 +40,14 @@ const Settings: React.FC = () => {
     const unsubscribeTemplates = subscribeToTemplates((data) => {
       if (!isEditingRef.current) setAllTemplates(data);
     });
+    const unsubscribeLogs = subscribeToLogs(setLogs);
 
     return () => {
       unsubscribeConfig();
       unsubscribeDb();
       unsubscribeStaff();
       unsubscribeTemplates();
+      unsubscribeLogs();
     };
   }, []);
 
@@ -57,6 +63,18 @@ const Settings: React.FC = () => {
       setMessage({ text: `Gagal inisialisasi: ${err.message}. Pastikan koneksi internet stabil.`, type: 'error' });
     } finally {
       setInitLoading(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    try {
+      await exportFullBackup();
+      setMessage({ text: 'Backup berhasil diunduh.', type: 'success' });
+    } catch (e) {
+      setMessage({ text: 'Gagal melakukan backup.', type: 'error' });
+    } finally {
+      setBackupLoading(false);
     }
   };
 
@@ -226,6 +244,7 @@ const Settings: React.FC = () => {
           <button onClick={() => setActiveTab('profile')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'profile' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><School size={18} /> Profil</button>
           <button onClick={() => setActiveTab('templates')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'templates' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><FileText size={18} /> Template</button>
           <button onClick={() => setActiveTab('staff')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'staff' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><Users size={18} /> Personil</button>
+          <button onClick={() => setActiveTab('maintenance')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'maintenance' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><ShieldCheck size={18} /> Pemeliharaan</button>
         </div>
       </div>
 
@@ -305,30 +324,54 @@ const Settings: React.FC = () => {
                <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">{loading ? <Loader2 className="animate-spin" /> : <Save />}Simpan Profil</button>
              </form>
           </div>
-          
-          <div className="bg-slate-50 border border-slate-200 p-8 rounded-3xl space-y-4">
-             <div className="flex items-center gap-3 mb-2">
-                <div className="bg-slate-900 text-white p-2 rounded-xl"><ShieldCheck size={20}/></div>
-                <div>
-                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Pemeliharaan & Sinkronisasi</h3>
-                   <p className="text-xs text-slate-500 font-medium">Gunakan tombol di bawah untuk memperbarui data templat sistem terbaru ke database Anda.</p>
-                </div>
-             </div>
-             <div className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1">
-                   <h4 className="text-xs font-black text-indigo-600 uppercase mb-1">Update Templat Sistem</h4>
-                   <p className="text-[11px] text-slate-500 leading-relaxed">Menambahkan templat surat dinas baru (seperti SPPD, Undangan Rapat, dll) yang baru saja ditambahkan oleh pengembang ke database cloud Anda.</p>
-                </div>
-                <button 
-                   onClick={handleInitDb} 
-                   disabled={initLoading} 
-                   className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-indigo-600 transition-all shrink-0"
-                >
-                   {initLoading ? <Loader2 className="animate-spin" size={16}/> : <RefreshCw size={16}/>}
-                   Inisialisasi Data Awal
-                </button>
-             </div>
-          </div>
+        </div>
+      )}
+
+      {/* CONTENT: MAINTENANCE TAB */}
+      {activeTab === 'maintenance' && (
+        <div className="space-y-6 animate-fade-in">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
+                 <div className="bg-indigo-100 text-indigo-600 p-4 rounded-2xl w-fit"><Download size={28}/></div>
+                 <h3 className="text-xl font-black text-slate-800">Ekspor Backup Utama</h3>
+                 <p className="text-sm text-slate-500 leading-relaxed">Unduh seluruh database (Profil, Personil, Templat, dan Arsip Surat) ke dalam file JSON tunggal untuk cadangan offline di komputer sekolah.</p>
+                 <button onClick={handleBackup} disabled={backupLoading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-indigo-100">
+                    {backupLoading ? <Loader2 className="animate-spin" /> : <Download size={18}/>} Unduh Backup (.json)
+                 </button>
+              </div>
+
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
+                 <div className="bg-emerald-100 text-emerald-600 p-4 rounded-2xl w-fit"><RefreshCw size={28}/></div>
+                 <h3 className="text-xl font-black text-slate-800">Kalibrasi Templat</h3>
+                 <p className="text-sm text-slate-500 leading-relaxed">Gunakan fitur ini jika templat surat standar (SPT, SPPD, Notulen) hilang atau rusak. Sistem akan mengunduh ulang versi terbaru dari cloud.</p>
+                 <button onClick={handleInitDb} disabled={initLoading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-emerald-100">
+                    {initLoading ? <Loader2 className="animate-spin" /> : <RefreshCw size={18}/>} Sinkron Ulang Templat
+                 </button>
+              </div>
+           </div>
+
+           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3 mb-8">
+                 <div className="bg-slate-900 text-white p-2 rounded-xl"><History size={20}/></div>
+                 <h3 className="text-xl font-black text-slate-800">Histori Audit Sistem</h3>
+              </div>
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
+                 {logs.map(log => (
+                    <div key={log.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-4">
+                       <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-400 shrink-0"><Clock size={20}/></div>
+                       <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">{log.module}</span>
+                             <span className="text-[10px] font-bold text-slate-400">{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm', { locale: id })}</span>
+                          </div>
+                          <p className="text-sm font-black text-slate-800 mt-1">{log.action}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{log.details}</p>
+                       </div>
+                    </div>
+                 ))}
+                 {logs.length === 0 && <p className="text-center py-10 text-slate-400 font-bold uppercase text-xs">Belum ada catatan aktivitas.</p>}
+              </div>
+           </div>
         </div>
       )}
 

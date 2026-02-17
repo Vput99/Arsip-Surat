@@ -9,9 +9,11 @@ import {
   query, 
   orderBy, 
   setDoc, 
-  deleteDoc
+  deleteDoc,
+  limit,
+  getDocs
 } from "firebase/firestore";
-import { Mail, SchoolConfig, MonthlyReport } from '../types';
+import { Mail, SchoolConfig, MonthlyReport, ActivityLog } from '../types';
 import { LETTER_TEMPLATES } from '../constants';
 
 export interface StaffMember {
@@ -54,6 +56,23 @@ const DEFAULT_CONFIG: SchoolConfig = {
   logoDaerahUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Kota_Kediri.png/900px-Logo_Kota_Kediri.png',
   principalName: 'Nita Ekaningkarti Adji, S.Pd',
   principalNip: '19860213 201409 2 002'
+};
+
+// --- ACTIVITY LOGGING ---
+export const logActivity = async (log: Omit<ActivityLog, 'id' | 'timestamp'>) => {
+  const newLog: ActivityLog = {
+    ...log,
+    id: `log_${Date.now()}`,
+    timestamp: new Date().toISOString()
+  };
+  await setDoc(doc(db, "activity_logs", newLog.id), newLog);
+};
+
+export const subscribeToLogs = (onData: (logs: ActivityLog[]) => void) => {
+  const q = query(collection(db, "activity_logs"), orderBy("timestamp", "desc"), limit(20));
+  return onSnapshot(q, (snap) => {
+    onData(snap.docs.map(d => d.data() as ActivityLog));
+  });
 };
 
 // --- STATUS TRACKING ---
@@ -121,11 +140,46 @@ export const initializeDefaultData = async () => {
       };
       await setDoc(doc(db, "letter_templates", t.id), templateData);
     }
+    await logActivity({ action: 'Inisialisasi', module: 'Sistem', details: 'Database dikalibrasi ulang ke pengaturan standar.' });
     return true;
   } catch (e) {
     console.error("Initialization failed:", e);
     throw e;
   }
+};
+
+// --- BACKUP LOGIC ---
+export const exportFullBackup = async () => {
+  // Ambil semua data Firebase utama
+  const staffSnap = await getDocs(collection(db, "staff"));
+  const configSnap = await getDoc(doc(db, COLLECTIONS.CONFIG, "main_settings"));
+  const templatesSnap = await getDocs(collection(db, "letter_templates"));
+  
+  // Ambil data SQL (Mails)
+  let mails: Mail[] = [];
+  if (turso) {
+    const rs = await turso.execute("SELECT * FROM mails");
+    mails = rs.rows.map(row => ({ ...row } as unknown as Mail));
+  }
+
+  const backupData = {
+    schoolConfig: configSnap.data(),
+    staff: staffSnap.docs.map(d => d.data()),
+    templates: templatesSnap.docs.map(d => d.data()),
+    mails: mails,
+    exportDate: new Date().toISOString(),
+    version: '2.0-WORK'
+  };
+
+  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `BACKUP_SD_PINTAR_${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  
+  await logActivity({ action: 'Backup', module: 'Sistem', details: 'Admin melakukan pencadangan data ke file lokal.' });
 };
 
 // --- TURSO: MAILS ---
@@ -167,12 +221,14 @@ export const saveMail = async (mail: Mail): Promise<void> => {
       mail.urgency, mail.status, mail.aiSummary || null, mail.disposition || null
     ]
   });
+  await logActivity({ action: 'Simpan', module: `Arsip ${mail.type}`, details: `Surat: ${mail.subject} (${mail.referenceNumber})` });
   fetchMails();
 };
 
 export const deleteMail = async (id: string): Promise<void> => {
   if (turso) {
     await turso.execute({ sql: "DELETE FROM mails WHERE id = ?", args: [id] });
+    await logActivity({ action: 'Hapus', module: 'Arsip', details: `Menghapus arsip ID: ${id}` });
     fetchMails();
   }
 };
@@ -193,16 +249,19 @@ export const subscribeToStaff = (onData: (staff: StaffMember[]) => void) => {
 
 export const saveStaff = async (member: StaffMember): Promise<void> => {
   await setDoc(doc(db, "staff", member.id), { ...member }, { merge: true });
+  await logActivity({ action: 'Update', module: 'Personil', details: `Data pegawai: ${member.name} diperbarui.` });
 };
 
 export const deleteStaff = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, "staff", id));
+  await logActivity({ action: 'Hapus', module: 'Personil', details: `Menghapus personil ID: ${id}` });
 };
 
 // --- MONTHLY REPORTS ---
 export const saveMonthlyReport = async (report: MonthlyReport) => {
   const docId = `rep_${report.year}_${report.month}`;
   await setDoc(doc(db, "monthly_reports", docId), report);
+  await logActivity({ action: 'Simpan', module: 'Lapor Bulan', details: `Laporan F-SEK bulan ke-${report.month + 1} tahun ${report.year} disimpan.` });
 };
 
 export const subscribeToMonthlyReport = (year: number, month: number, onData: (data: MonthlyReport | null) => void) => {
@@ -235,6 +294,7 @@ export const saveAttendance = async (year: number, month: number, category: stri
     ...data, 
     updatedAt: new Date().toISOString() 
   }, { merge: true });
+  // Debounce log agar tidak spam setiap klik cell
 };
 
 export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
@@ -254,6 +314,7 @@ export const subscribeToConfig = (onData: (config: SchoolConfig) => void) => {
 
 export const saveSchoolConfig = async (config: SchoolConfig): Promise<void> => {
   await setDoc(doc(db, COLLECTIONS.CONFIG, "main_settings"), config);
+  await logActivity({ action: 'Update', module: 'Profil', details: 'Identitas utama sekolah diperbarui.' });
 };
 
 export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => void) => {
@@ -269,10 +330,12 @@ export const subscribeToTemplates = (onData: (templates: LetterTemplate[]) => vo
 
 export const saveTemplate = async (t: LetterTemplate): Promise<void> => {
   await setDoc(doc(db, "letter_templates", t.id), { ...t });
+  await logActivity({ action: 'Update', module: 'Templat', details: `Naskah templat: ${t.name} diubah.` });
 };
 
 export const deleteTemplate = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, "letter_templates", id));
+  await logActivity({ action: 'Hapus', module: 'Templat', details: `Menghapus templat ID: ${id}` });
 };
 
 forceCheckConnections();

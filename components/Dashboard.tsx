@@ -1,16 +1,16 @@
 
 import React, { useEffect, useState } from 'react';
-import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight, Clock, MapPin, Activity, CalendarCheck, HandCoins, PenTool, ClipboardCheck, Settings, LayoutGrid } from 'lucide-react';
+import { Mail, Send, AlertTriangle, FileText, TrendingUp, ArrowUpRight, Clock, MapPin, Activity, CalendarCheck, HandCoins, PenTool, ClipboardCheck, Settings, LayoutGrid, Zap } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { subscribeToMails, subscribeToConfig } from '../services/storage';
-import { SchoolConfig, Mail as MailType, MailType as MType } from '../types';
+import { subscribeToMails, subscribeToConfig, subscribeToLogs } from '../services/storage';
+import { SchoolConfig, Mail as MailType, MailType as MType, ActivityLog } from '../types';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({ total: 0, incoming: 0, outgoing: 0, urgent: 0 });
-  const [latestMails, setLatestMails] = useState<MailType[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig | null>(null);
 
   useEffect(() => {
@@ -21,14 +21,15 @@ const Dashboard: React.FC = () => {
         outgoing: mails.filter(m => m.type === MType.OUTGOING).length,
         urgent: mails.filter(m => m.urgency === 'Segera').length
       });
-      setLatestMails(mails.slice(0, 5));
     });
 
     const unsubscribeConfig = subscribeToConfig(setSchoolConfig);
+    const unsubscribeLogs = subscribeToLogs(setLogs);
     
     return () => {
       unsubscribeMails();
       unsubscribeConfig();
+      unsubscribeLogs();
     };
   }, []);
 
@@ -173,23 +174,24 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
               <div className="bg-indigo-600 p-2 rounded-xl"><Activity size={20} className="text-white animate-pulse" /></div>
-              Aktivitas Terkini
+              Aktivitas Sistem
             </h3>
-            <Link to="/inbox" className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] hover:text-white transition-colors">View All</Link>
+            <Link to="/settings" className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] hover:text-white transition-colors">Audit Trail</Link>
           </div>
           <div className="space-y-4 flex-1 overflow-y-auto max-h-[380px] pr-2 custom-scrollbar">
-            {latestMails.length > 0 ? latestMails.map((mail) => (
-              <div key={mail.id} className="p-5 bg-white/5 hover:bg-white/10 rounded-[2rem] border border-white/5 hover:border-white/10 transition-all duration-300 group/item">
+            {logs.length > 0 ? logs.map((log) => (
+              <div key={log.id} className="p-5 bg-white/5 hover:bg-white/10 rounded-[2rem] border border-white/5 hover:border-white/10 transition-all duration-300 group/item">
                 <div className="flex justify-between items-start mb-2">
-                  <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${mail.type === MType.INCOMING ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-400'}`}>{mail.type}</span>
-                  <span className="text-[9px] font-bold text-slate-500 flex items-center gap-2"><Clock size={12} /> {format(new Date(mail.createdAt), 'dd/MM HH:mm')}</span>
+                  <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest bg-white/10 text-white/70`}>{log.module}</span>
+                  <span className="text-[9px] font-bold text-slate-500 flex items-center gap-2"><Clock size={12} /> {format(new Date(log.timestamp), 'dd/MM HH:mm')}</span>
                 </div>
-                <h4 className="text-[13px] font-black text-slate-200 uppercase line-clamp-2 leading-relaxed group-hover/item:text-white transition-colors">{mail.subject}</h4>
+                <h4 className="text-[12px] font-black text-slate-200 uppercase leading-snug group-hover/item:text-indigo-400 transition-colors">{log.action}</h4>
+                <p className="text-[11px] text-slate-500 mt-1 line-clamp-1 italic">{log.details}</p>
               </div>
             )) : (
               <div className="py-20 text-center opacity-30 flex flex-col items-center">
                  <FileText size={40} className="text-slate-500 mb-4" />
-                 <p className="text-xs font-black uppercase tracking-widest">Belum ada arsip</p>
+                 <p className="text-xs font-black uppercase tracking-widest">Belum ada aktivitas</p>
               </div>
             )}
           </div>

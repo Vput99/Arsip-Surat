@@ -35,6 +35,15 @@ export interface Mail {
   disposition?: string;
 }
 
+export interface ActivityLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  module: string;
+  details: string;
+  icon?: string;
+}
+
 export interface AIAnalysisResult {
   summary: string;
   category: string;

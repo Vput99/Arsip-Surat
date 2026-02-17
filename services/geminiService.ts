@@ -3,13 +3,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysisResult, UrgencyLevel, Mail } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 /**
  * Analisis Surat Masuk
  */
 export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const parts: any[] = [{
       text: `Bertindaklah sebagai staf administrasi sekolah. Ekstrak data dari dokumen ini:
       1. referenceNumber (Nomor Surat)
@@ -62,6 +61,7 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
  */
 export const analyzePayroll = async (data: any): Promise<string> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Analisis data pembayaran honor sekolah berikut dan buatkan ringkasan eksekutif profesional untuk laporan BOS:
     Kategori: ${data.category}
     Bulan: ${data.period}
@@ -88,6 +88,7 @@ export const analyzePayroll = async (data: any): Promise<string> => {
  */
 export const generateSPTFromInvitation = async (invitation: Mail): Promise<string> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data surat masuk berikut:
     Dari: ${invitation.sender}
     Nomor: ${invitation.referenceNumber}
@@ -134,19 +135,25 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
  */
 export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
   try {
-    const prompt = `Bertindaklah sebagai staf administrasi sekolah yang sangat teliti. 
-    Buatkan naskah SPPD berdasarkan data SPT berikut:
-    Subjek SPT: ${spt.subject}
-    Detail Tugas: ${spt.description}
-    Nomor SPT: ${spt.referenceNumber}
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Anda adalah asisten administrasi sekolah profesional.
+    Buatkan naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) dengan data pendukung dari SPT berikut:
     
-    TUGAS UTAMA:
-    1. Analisis deskripsi di atas untuk mencari rentang tanggal kegiatan.
-    2. Hitung jumlah hari (DURASI). 
-       - Jika tertulis hanya satu tanggal (misal: "23 Februari"), maka durasi = 1 (Satu) Hari.
-       - Jika tertulis rentang (misal: "28 Februari - 1 Maret"), hitung selisih harinya termasuk hari berangkat (dalam contoh ini durasi = 2 (Dua) Hari).
-    
-    FORMAT OUTPUT (WAJIB 1-10):
+    DATA SPT ASAL:
+    - Perihal: ${spt.subject}
+    - Deskripsi/Isi: ${spt.description}
+    - Nomor SPT: ${spt.referenceNumber}
+    - Tanggal Surat: ${spt.date}
+
+    INSTRUKSI PERHITUNGAN TANGGAL (KRITIKAL):
+    1. Cari informasi tanggal pelaksanaan kegiatan di dalam 'Deskripsi/Isi'.
+    2. Hitung jumlah harinya dengan teliti:
+       - Jika hanya 1 tanggal (misal "23 Februari"), maka "1 (Satu) Hari".
+       - Jika rentang tanggal (misal "28 Februari s.d 1 Maret"), hitung selisihnya termasuk hari pertama. Dalam hal ini "2 (Dua) Hari".
+       - Jika kegiatan melintasi akhir bulan, pastikan hitungan harinya benar.
+    3. Tentukan "Tanggal Berangkat" dan "Tanggal Kembali".
+
+    FORMAT OUTPUT (WAJIB POIN 1-10):
     1. Pejabat Pemberi Perintah : Kepala Sekolah
     2. Nama Pegawai yang diperintah : [NAMA_PETUGAS]
     3. a. Pangkat dan Golongan : [PANGKAT_GOL]
@@ -155,10 +162,10 @@ export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
     4. Maksud Perjalanan Dinas : ${spt.subject}
     5. Alat angkut yang dipergunakan : Kendaraan Pribadi
     6. a. Tempat Berangkat : SDN Tempurejo 1
-       b. Tempat Tujuan : [Ekstrak tujuan dari deskripsi]
-    7. a. Lamanya Perjalanan Dinas : [X] ([Terbilang]) Hari
-       b. Tanggal Berangkat : [Ekstrak tanggal awal]
-       c. Tanggal Kembali : [Ekstrak tanggal akhir]
+       b. Tempat Tujuan : [Ekstrak nama tempat/lokasi tujuan dari deskripsi]
+    7. a. Lamanya Perjalanan Dinas : [Hasil Hitung Durasi] Hari
+       b. Tanggal Berangkat : [Tanggal Mulai]
+       c. Tanggal Kembali : [Tanggal Selesai]
     8. Pengikut : Nama
        1. -
     9. Pembebanan Anggaran :
@@ -166,14 +173,16 @@ export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
        b. Akun / Mata Anggaran : Dana BOS
     10. Keterangan lain-lain : -
 
-    Hanya berikan isi poin 1 sampai 10 tersebut. Jangan sertakan judul surat atau kop sekolah.`;
+    HANYA BERIKAN POIN 1 SAMPAI 10. Jangan berikan kalimat pembuka/penutup atau judul surat.`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview", // Menggunakan model Pro untuk logika tanggal yang lebih kompleks
       contents: { parts: [{ text: prompt }] }
     });
-    return response.text || "Gagal menghasilkan teks.";
+    
+    return response.text?.trim() || "Gagal menghasilkan teks.";
   } catch (e) {
+    console.error("SPPD Gen Error:", e);
     return "Gagal generate SPPD secara otomatis.";
   }
 };
@@ -183,6 +192,7 @@ export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
  */
 export const generateLaporanDanNotulen = async (mailContext: Mail, type: 'LAPORAN' | 'NOTULEN'): Promise<string> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = type === 'LAPORAN' 
       ? `Buatkan naskah LAPORAN HASIL PERJALANAN DINAS (Hanya isinya saja). Perihal: "${mailContext.subject}". Deskripsi awal: "${mailContext.description}". Tulis 3 paragraf tanpa judul.`
       : `Buatkan naskah NOTULEN RAPAT (Hanya isinya saja). Perihal: "${mailContext.subject}". Pembahasan: "${mailContext.description}". Tulis dalam poin-poin tanpa judul.`;
@@ -202,6 +212,7 @@ export const generateLaporanDanNotulen = async (mailContext: Mail, type: 'LAPORA
  */
 export const generateNotulenContent = async (context: string): Promise<string> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: { parts: [{ text: `Rapikan catatan rapat berikut menjadi naskah notulen resmi Dana BOS (Hanya berikan isinya saja, tanpa judul): "${context}"` }] }
@@ -212,6 +223,7 @@ export const generateNotulenContent = async (context: string): Promise<string> =
 
 export const generateLaporanSPPDContent = async (context: string): Promise<string> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: { parts: [{ text: `Buat narasi laporan perjalanan dinas dari poin-poin ini (Hanya berikan isinya saja, tanpa judul): "${context}"` }] }

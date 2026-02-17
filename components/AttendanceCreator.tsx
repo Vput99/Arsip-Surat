@@ -4,7 +4,7 @@ import {
   Users, Calendar, Loader2, Music, Hammer, ChevronLeft, 
   ArrowRight, Save, ZoomIn, ZoomOut, CheckCircle, 
   BarChart3, CalendarDays, UserCheck, CalendarOff, 
-  ShieldCheck, List, Eye, Trash2, Plus
+  ShieldCheck, List, Eye, Trash2, Plus, CalendarSearch
 } from 'lucide-react';
 import { 
   subscribeToConfig, subscribeToStaff, StaffMember, 
@@ -51,6 +51,9 @@ const AttendanceCreator: React.FC = () => {
         if (data) {
           setAttendance(data.attendance || {});
           setHolidays(data.holidays || []);
+        } else {
+          setAttendance({});
+          setHolidays([]);
         }
         setSyncing(false);
       });
@@ -147,6 +150,31 @@ const AttendanceCreator: React.FC = () => {
 
   if (!config) return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin text-indigo-600" /></div>;
 
+  // Render Pemilih Periode (Month/Year)
+  const PeriodSelector = () => (
+    <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 items-center ring-1 ring-slate-200/50">
+      <div className="flex items-center px-3 text-slate-400">
+        <CalendarSearch size={16} />
+      </div>
+      <select 
+        value={month} 
+        onChange={(e) => setMonth(parseInt(e.target.value))} 
+        className="bg-transparent text-[11px] font-black px-2 py-1.5 outline-none text-slate-700 cursor-pointer"
+      >
+        {Array.from({ length: 12 }).map((_, i) => (
+          <option key={i} value={i}>{format(new Date(2022, i, 1), 'MMMM', { locale: id })}</option>
+        ))}
+      </select>
+      <div className="h-4 w-px bg-slate-300 mx-1"></div>
+      <input 
+        type="number" 
+        value={year} 
+        onChange={(e) => setYear(parseInt(e.target.value))} 
+        className="bg-transparent text-[11px] font-black w-16 text-center outline-none text-indigo-600 px-2"
+      />
+    </div>
+  );
+
   // --- RENDERING CATEGORY MENU ---
   if (view === 'category_menu') {
     return (
@@ -190,9 +218,12 @@ const AttendanceCreator: React.FC = () => {
     const catLabel = activeCategory === 'reg' ? 'ASN' : activeCategory.toUpperCase();
     return (
       <div className="max-w-4xl mx-auto py-12 px-6 animate-fade-in">
-        <button onClick={() => setView('category_menu')} className="mb-8 flex items-center gap-2 text-indigo-600 font-black uppercase text-xs hover:gap-3 transition-all">
-          <ChevronLeft size={16}/> Kembali ke Kategori
-        </button>
+        <div className="flex justify-between items-start mb-8">
+          <button onClick={() => setView('category_menu')} className="flex items-center gap-2 text-indigo-600 font-black uppercase text-xs hover:gap-3 transition-all">
+            <ChevronLeft size={16}/> Kembali ke Kategori
+          </button>
+          <PeriodSelector />
+        </div>
         <div className="mb-10">
           <h2 className="text-3xl font-black text-slate-900 uppercase">Menu Absensi {catLabel}</h2>
           <p className="text-slate-400 font-bold text-sm">Kelola data, kalender libur, dan preview laporan.</p>
@@ -270,9 +301,12 @@ const AttendanceCreator: React.FC = () => {
 
     return (
       <div className="max-w-4xl mx-auto py-12 px-6 animate-fade-in">
-        <button onClick={() => setView('sub_menu')} className="mb-8 flex items-center gap-2 text-indigo-600 font-black uppercase text-xs">
-          <ChevronLeft size={16}/> Kembali ke Menu
-        </button>
+        <div className="flex justify-between items-center mb-8">
+          <button onClick={() => setView('sub_menu')} className="flex items-center gap-2 text-indigo-600 font-black uppercase text-xs">
+            <ChevronLeft size={16}/> Kembali ke Menu
+          </button>
+          <PeriodSelector />
+        </div>
         <div className="mb-8 text-center">
            <h2 className="text-2xl font-black text-slate-900 uppercase">Atur Hari Libur</h2>
            <p className="text-slate-400 font-bold text-sm uppercase">{format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</p>
@@ -321,8 +355,9 @@ const AttendanceCreator: React.FC = () => {
            </div>
          </div>
          
-         <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200 gap-1 mx-4">
+         <div className="flex items-center gap-4">
+            <PeriodSelector />
+            <div className="hidden md:flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200 gap-1 mx-2">
                {['P', 'S', 'I', 'A', 'C', 'DL'].map(st => (
                  <button 
                   key={st} 
@@ -340,6 +375,12 @@ const AttendanceCreator: React.FC = () => {
       </div>
       
       <div className="flex-1 overflow-auto p-12 print:p-0 flex flex-col items-center">
+         {syncing && (
+           <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-6 py-3 rounded-full border shadow-xl flex items-center gap-3 z-50 animate-bounce">
+              <Loader2 className="animate-spin text-indigo-600" size={16} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Sinkronisasi Data Realtime...</span>
+           </div>
+         )}
          <div 
            ref={paperRef} 
            className="attendance-paper-landscape bg-white shadow-2xl relative print:shadow-none flex flex-col p-[10mm] text-black font-serif transition-transform" 
@@ -435,13 +476,13 @@ const AttendanceCreator: React.FC = () => {
                </table>
             </div>
 
-            {/* Tanda Tangan Tanpa Barcode */}
+            {/* Tanda Tangan */}
             <div className="mt-6 flex justify-end px-4 text-[9pt] leading-[1.2] font-serif">
                <div className="text-center w-[250px] flex flex-col items-center">
                   <p className="mb-0.5">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p>
                   <p className="font-bold">Kepala Sekolah,</p>
                   <div className="h-[25mm] flex items-center justify-center my-1">
-                     {/* QR Code Dihilangkan */}
+                     {/* QR Code Dihilangkan Sesuai Kode Asal */}
                   </div>
                   <p className="font-bold underline uppercase leading-none">{config.principalName}</p>
                   <p className="text-[8.5pt]">NIP. {config.principalNip}</p>

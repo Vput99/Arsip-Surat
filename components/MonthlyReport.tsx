@@ -279,6 +279,11 @@ const MonthlyReport: React.FC = () => {
                              <div><label className={labelClass}>NSS</label><input value={config.nss} onChange={(e) => setConfig({...config, nss: e.target.value})} className={inputClass} /></div>
                              <div><label className={labelClass}>NPSN</label><input value={config.npsn} onChange={(e) => setConfig({...config, npsn: e.target.value})} className={inputClass} /></div>
                           </div>
+                          <div className="grid grid-cols-3 gap-3">
+                             <div><label className={labelClass}>Akreditasi</label><input value={config.accreditation || ''} onChange={(e) => setConfig({...config, accreditation: e.target.value})} className={inputClass} placeholder="A" /></div>
+                             <div><label className={labelClass}>Thn Akreditasi</label><input value={config.accreditationYear || ''} onChange={(e) => setConfig({...config, accreditationYear: e.target.value})} className={inputClass} placeholder="2020" /></div>
+                             <div><label className={labelClass}>Gugus</label><input value={config.gugus || ''} onChange={(e) => setConfig({...config, gugus: e.target.value})} className={inputClass} placeholder="Gugus..." /></div>
+                          </div>
                           <div><label className={labelClass}>Alamat Lengkap</label><textarea value={config.address} onChange={(e) => setConfig({...config, address: e.target.value})} className={`${inputClass} h-16 resize-none`} /></div>
                           <div className="grid grid-cols-2 gap-4">
                              <div><label className={labelClass}>Kelurahan</label><input value={config.village} onChange={(e) => setConfig({...config, village: e.target.value})} className={inputClass} /></div>

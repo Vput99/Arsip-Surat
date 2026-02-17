@@ -366,6 +366,10 @@ const MonthlyReport: React.FC = () => {
                                       <div><label className="text-[8px] font-black text-slate-400 uppercase">Jabatan</label><input value={data.jabatan || s.rank || ''} onChange={(e) => updatePtkDetail(s.id, 'jabatan', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
                                       <div><label className="text-[8px] font-black text-slate-400 uppercase">Unit Kerja</label><input value={data.unitKerja || config?.name || ''} onChange={(e) => updatePtkDetail(s.id, 'unitKerja', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
                                    </div>
+                                   <div className="grid grid-cols-2 gap-4">
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Pendidikan / Th. Lulus</label><input value={data.pendidikan || ''} onChange={(e) => updatePtkDetail(s.id, 'pendidikan', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" placeholder="S1 PGSD / 2010" /></div>
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Nomor HP</label><input value={data.phone || ''} onChange={(e) => updatePtkDetail(s.id, 'phone', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" placeholder="08..." /></div>
+                                   </div>
                                    <div className="bg-slate-50 p-4 rounded-2xl">
                                       <label className="text-[8px] font-black text-slate-500 uppercase block mb-3">Ketidakhadiran (Hari)</label>
                                       <div className="grid grid-cols-6 gap-2">

@@ -84,7 +84,7 @@ export const analyzePayroll = async (data: any): Promise<string> => {
 };
 
 /**
- * Pembuatan SPT - Perbaikan duplikasi "Dasar" dan Judul, serta penambahan penutup
+ * Pembuatan SPT dari Surat Undangan Masuk
  */
 export const generateSPTFromInvitation = async (invitation: Mail): Promise<string> => {
   try {
@@ -95,28 +95,11 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
     Perihal: ${invitation.subject}
     Deskripsi: ${invitation.description}
     
-    ATURAN PENTING:
-    1. JANGAN sertakan Judul Surat (seperti "SURAT PERINTAH TUGAS") karena sudah ada di sistem.
-    2. JANGAN sertakan KOP Sekolah atau bagian Tanda Tangan.
-    3. Mulai langsung dari naskah 'Dasar :'.
-    4. Gunakan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], dan [JABATAN_PETUGAS].
-    5. AKHIRI naskah dengan kalimat penutup: "Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan penuh tanggung jawab."
-    
-    Format Naskah:
-    Dasar: Surat dari ${invitation.sender} Nomor ${invitation.referenceNumber} Tanggal ${invitation.date} perihal ${invitation.subject}.
-    Dasar: Program Kerja Sekolah Tahun Pelajaran 2024/2025.
-
-    MEMERINTAHKAN :
-    Kepada :
-    Nama : [NAMA_PETUGAS]
-    NIP : [NIP_PETUGAS]
-    Jabatan : [JABATAN_PETUGAS]
-
-    Untuk menghadiri kegiatan tersebut pada :
-    Tanggal : [Ekstrak tanggal kegiatan saja dari konteks]
-    Tempat : [Ekstrak tempat kegiatan saja dari konteks]
-
-    Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan penuh tanggung jawab.`;
+    ATURAN:
+    1. Mulai langsung dari naskah 'Dasar :'.
+    2. Gunakan placeholder [NAMA_PETUGAS], [NIP_PETUGAS], dan [JABATAN_PETUGAS].
+    3. Sertakan detail Waktu dan Tempat dari deskripsi undangan.
+    4. Akhiri dengan kalimat penutup tanggung jawab.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -125,75 +108,74 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
     
     return response.text || "Gagal menghasilkan teks.";
   } catch (e) {
-    console.error("SPT Gen Error:", e);
-    return "Gagal generate SPT secara otomatis. Silakan isi manual.";
+    return "Gagal generate SPT secara otomatis.";
   }
 };
 
 /**
- * Pembuatan SPPD - Mengotomatisasi durasi hari berdasarkan analisis tanggal di SPT
+ * Pembuatan SPPD dari naskah SPT
+ * FUNGSI KRITIKAL: Membedah SPT untuk menjadi 10 poin SPPD
  */
 export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Anda adalah asisten administrasi sekolah profesional yang ahli dalam menghitung kalender.
-    Tugas Anda adalah membuat naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) dari naskah SPT di bawah ini.
+    const prompt = `Tugas: Konversi naskah SURAT PERINTAH TUGAS (SPT) menjadi naskah SURAT PERINTAH PERJALANAN DINAS (SPPD).
 
-    NASKAH SPT ASAL:
-    "${spt.description}"
-    Subjek: ${spt.subject}
+DATA SPT:
+Subjek: ${spt.subject}
+Naskah SPT: "${spt.description}"
+Tanggal SPT: ${spt.date}
 
-    ATURAN PERHITUNGAN HARI (SANGAT PENTING):
-    1. Temukan TANGGAL KEGIATAN di dalam naskah di atas.
-    2. Hitung jumlah harinya:
-       - Jika tertulis hanya satu tanggal (misal: "23 Februari"), maka Lamanya Perjalanan Dinas = 1 (Satu) Hari.
-       - Jika tertulis rentang (misal: "28 Februari s.d 1 Maret"), Anda harus menghitung jumlah harinya dengan benar. Dalam contoh ini, ada 2 hari (28 Feb dan 1 Mar). Jadi Lamanya Perjalanan Dinas = 2 (Dua) Hari.
-       - Masukkan angka dan terbilang dalam format: [Angka] ([Terbilang]) Hari. Contoh: 2 (Dua) Hari.
-    3. Tentukan Tanggal Berangkat (tanggal awal) dan Tanggal Kembali (tanggal akhir).
+INSTRUKSI KHUSUS:
+1. Identifikasi Nama, NIP, dan Jabatan. Jika masih berupa placeholder [NAMA_PETUGAS], biarkan tetap sebagai placeholder.
+2. Hitung 'Lamanya Perjalanan Dinas'. Jika kegiatan berlangsung di tanggal yang sama, tulis "1 (Satu) Hari". Jika rentang, hitung selisih harinya.
+3. Ekstrak 'Tempat Tujuan' dari bagian 'Tempat :' pada naskah SPT.
+4. HASIL HARUS BERUPA 10 POIN BERIKUT (HANYA POINNYA SAJA):
 
-    FORMAT OUTPUT (WAJIB POIN 1-10):
-    1. Pejabat Pemberi Perintah : Kepala Sekolah
-    2. Nama Pegawai yang diperintah : [NAMA_PETUGAS]
-    3. a. Pangkat dan Golongan : [PANGKAT_GOL]
-       b. Jabatan / Instansi : [JABATAN_PETUGAS]
-       c. Tingkat Biaya Perjalanan : -
-    4. Maksud Perjalanan Dinas : ${spt.subject}
-    5. Alat angkut yang dipergunakan : Kendaraan Pribadi
-    6. a. Tempat Berangkat : SDN Tempurejo 1
-       b. Tempat Tujuan : [Ekstrak tempat tujuan dari naskah]
-    7. a. Lamanya Perjalanan Dinas : [X] ([Terbilang]) Hari
-       b. Tanggal Berangkat : [Tanggal Mulai]
-       c. Tanggal Kembali : [Tanggal Selesai]
-    8. Pengikut : Nama
-       1. -
-    9. Pembebanan Anggaran :
-       a. Instansi : SDN Tempurejo 1
-       b. Akun / Mata Anggaran : Dana BOS
-    10. Keterangan lain-lain : -
+1. Pejabat Pemberi Perintah : Kepala Sekolah
+2. Nama Pegawai yang diperintah : [Isi Nama]
+3. a. Pangkat dan Golongan : [Isi Pangkat]
+   b. Jabatan / Instansi : [Isi Jabatan]
+   c. Tingkat Biaya Perjalanan : -
+4. Maksud Perjalanan Dinas : ${spt.subject}
+5. Alat angkut yang dipergunakan : Kendaraan Pribadi
+6. a. Tempat Berangkat : SDN Tempurejo 1
+   b. Tempat Tujuan : [Isi Tujuan]
+7. a. Lamanya Perjalanan Dinas : [X] Hari
+   b. Tanggal Berangkat : [Tgl Mulai]
+   c. Tanggal Kembali : [Tgl Selesai]
+8. Pengikut : Nama
+   1. -
+9. Pembebanan Anggaran :
+   a. Instansi : SDN Tempurejo 1
+   b. Akun / Mata Anggaran : Dana BOS
+10. Keterangan lain-lain : -`;
 
-    HANYA BERIKAN POIN 1 SAMPAI 10. JANGAN BERIKAN TEKS TAMBAHAN LAIN.`;
-    
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview", // Gunakan model Pro untuk penalaran tanggal yang lebih baik
-      contents: { parts: [{ text: prompt }] }
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: "Anda adalah asisten administrasi sekolah yang presisi. Tugas Anda adalah mengekstrak data dari SPT dan memformatnya menjadi 10 poin SPPD standar. Jangan memberikan teks narasi selain 10 poin tersebut.",
+        temperature: 0.1, // Rendah agar konsisten
+      }
     });
     
-    return response.text?.trim() || "Gagal menghasilkan teks.";
+    return response.text?.trim() || "Gagal menghasilkan naskah SPPD.";
   } catch (e) {
     console.error("SPPD Gen Error:", e);
-    return "Gagal generate SPPD secara otomatis.";
+    return "Gagal memproses AI untuk SPPD. Silakan periksa koneksi atau naskah SPT asal.";
   }
 };
 
 /**
- * Pembuatan Laporan/Notulen - Fokus pada body saja
+ * Pembuatan Laporan/Notulen
  */
 export const generateLaporanDanNotulen = async (mailContext: Mail, type: 'LAPORAN' | 'NOTULEN'): Promise<string> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = type === 'LAPORAN' 
-      ? `Buatkan naskah LAPORAN HASIL PERJALANAN DINAS (Hanya isinya saja). Perihal: "${mailContext.subject}". Deskripsi awal: "${mailContext.description}". Tulis 3 paragraf tanpa judul.`
-      : `Buatkan naskah NOTULEN RAPAT (Hanya isinya saja). Perihal: "${mailContext.subject}". Pembahasan: "${mailContext.description}". Tulis dalam poin-poin tanpa judul.`;
+      ? `Buatkan naskah LAPORAN HASIL PERJALANAN DINAS. Perihal: "${mailContext.subject}". Deskripsi awal: "${mailContext.description}". Tulis 3 paragraf naratif.`
+      : `Buatkan naskah NOTULEN RAPAT. Perihal: "${mailContext.subject}". Pembahasan: "${mailContext.description}". Tulis dalam poin-poin pembahasan.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -213,7 +195,7 @@ export const generateNotulenContent = async (context: string): Promise<string> =
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: { parts: [{ text: `Rapikan catatan rapat berikut menjadi naskah notulen resmi Dana BOS (Hanya berikan isinya saja, tanpa judul): "${context}"` }] }
+      contents: { parts: [{ text: `Rapikan catatan rapat berikut menjadi naskah notulen resmi (Hanya isi): "${context}"` }] }
     });
     return response.text || "";
   } catch (e) { return "Gagal merapikan notulen."; }
@@ -224,7 +206,7 @@ export const generateLaporanSPPDContent = async (context: string): Promise<strin
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: { parts: [{ text: `Buat narasi laporan perjalanan dinas dari poin-poin ini (Hanya berikan isinya saja, tanpa judul): "${context}"` }] }
+      contents: { parts: [{ text: `Buat narasi laporan perjalanan dinas dari poin-poin ini: "${context}"` }] }
     });
     return response.text || "";
   } catch (e) { return "Gagal merapikan laporan."; }

@@ -136,22 +136,20 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
 export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Anda adalah asisten administrasi sekolah profesional.
-    Buatkan naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) dengan data pendukung dari SPT berikut:
-    
-    DATA SPT ASAL:
-    - Perihal: ${spt.subject}
-    - Deskripsi/Isi: ${spt.description}
-    - Nomor SPT: ${spt.referenceNumber}
-    - Tanggal Surat: ${spt.date}
+    const prompt = `Anda adalah asisten administrasi sekolah profesional yang ahli dalam menghitung kalender.
+    Tugas Anda adalah membuat naskah SURAT PERINTAH PERJALANAN DINAS (SPPD) dari naskah SPT di bawah ini.
 
-    INSTRUKSI PERHITUNGAN TANGGAL (KRITIKAL):
-    1. Cari informasi tanggal pelaksanaan kegiatan di dalam 'Deskripsi/Isi'.
-    2. Hitung jumlah harinya dengan teliti:
-       - Jika hanya 1 tanggal (misal "23 Februari"), maka "1 (Satu) Hari".
-       - Jika rentang tanggal (misal "28 Februari s.d 1 Maret"), hitung selisihnya termasuk hari pertama. Dalam hal ini "2 (Dua) Hari".
-       - Jika kegiatan melintasi akhir bulan, pastikan hitungan harinya benar.
-    3. Tentukan "Tanggal Berangkat" dan "Tanggal Kembali".
+    NASKAH SPT ASAL:
+    "${spt.description}"
+    Subjek: ${spt.subject}
+
+    ATURAN PERHITUNGAN HARI (SANGAT PENTING):
+    1. Temukan TANGGAL KEGIATAN di dalam naskah di atas.
+    2. Hitung jumlah harinya:
+       - Jika tertulis hanya satu tanggal (misal: "23 Februari"), maka Lamanya Perjalanan Dinas = 1 (Satu) Hari.
+       - Jika tertulis rentang (misal: "28 Februari s.d 1 Maret"), Anda harus menghitung jumlah harinya dengan benar. Dalam contoh ini, ada 2 hari (28 Feb dan 1 Mar). Jadi Lamanya Perjalanan Dinas = 2 (Dua) Hari.
+       - Masukkan angka dan terbilang dalam format: [Angka] ([Terbilang]) Hari. Contoh: 2 (Dua) Hari.
+    3. Tentukan Tanggal Berangkat (tanggal awal) dan Tanggal Kembali (tanggal akhir).
 
     FORMAT OUTPUT (WAJIB POIN 1-10):
     1. Pejabat Pemberi Perintah : Kepala Sekolah
@@ -162,8 +160,8 @@ export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
     4. Maksud Perjalanan Dinas : ${spt.subject}
     5. Alat angkut yang dipergunakan : Kendaraan Pribadi
     6. a. Tempat Berangkat : SDN Tempurejo 1
-       b. Tempat Tujuan : [Ekstrak nama tempat/lokasi tujuan dari deskripsi]
-    7. a. Lamanya Perjalanan Dinas : [Hasil Hitung Durasi] Hari
+       b. Tempat Tujuan : [Ekstrak tempat tujuan dari naskah]
+    7. a. Lamanya Perjalanan Dinas : [X] ([Terbilang]) Hari
        b. Tanggal Berangkat : [Tanggal Mulai]
        c. Tanggal Kembali : [Tanggal Selesai]
     8. Pengikut : Nama
@@ -173,10 +171,10 @@ export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
        b. Akun / Mata Anggaran : Dana BOS
     10. Keterangan lain-lain : -
 
-    HANYA BERIKAN POIN 1 SAMPAI 10. Jangan berikan kalimat pembuka/penutup atau judul surat.`;
+    HANYA BERIKAN POIN 1 SAMPAI 10. JANGAN BERIKAN TEKS TAMBAHAN LAIN.`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview", // Menggunakan model Pro untuk logika tanggal yang lebih kompleks
+      model: "gemini-3-pro-preview", // Gunakan model Pro untuk penalaran tanggal yang lebih baik
       contents: { parts: [{ text: prompt }] }
     });
     

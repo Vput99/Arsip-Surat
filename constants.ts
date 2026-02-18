@@ -18,6 +18,34 @@ export const CATEGORIES = [
 
 export const LETTER_TEMPLATES = [
   {
+    id: 't_undangan_ortu',
+    name: 'Undangan Wali Murid',
+    subject: 'UNDANGAN RAPAT WALI MURID',
+    category: 'Undangan',
+    layout: 'standard',
+    content: `Nomor    : [NOMOR_SURAT]
+Lampiran : -
+Perihal  : Undangan Rapat Wali Murid
+
+Yth. Bapak/Ibu Wali Murid
+Kelas [KELAS]
+SDN Tempurejo 1
+di Tempat
+
+Dengan hormat,
+
+Sehubungan dengan akan dilaksanakannya program kerja sekolah, kami mengharap kehadiran Bapak/Ibu Wali Murid pada :
+
+Hari / Tanggal : [HARI_TANGGAL]
+Waktu          : [WAKTU]
+Tempat         : [TEMPAT_RAPAT]
+Acara          : [AGENDA_RAPAT]
+
+Mengingat pentingnya acara tersebut dan demi kelancaran program sekolah, kami mengharap kehadiran Bapak/Ibu dapat hadir tepat pada waktunya.
+
+Demikian undangan ini kami sampaikan, atas perhatian dan kerja samanya diucapkan terima kasih.`
+  },
+  {
     id: 't_mou_ekskul',
     name: 'MOU Pengajar Ekskul',
     subject: 'PERJANJIAN KERJA SAMA TENAGA PENGAJAR EKSTRAKURIKULER',

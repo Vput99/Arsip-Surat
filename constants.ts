@@ -51,47 +51,78 @@ Catatan:
   {
     id: 't_mou_ekskul',
     name: 'MOU Pengajar Ekskul',
-    subject: 'PERJANJIAN KERJA SAMA TENAGA PENGAJAR EKSTRAKURIKULER',
+    subject: 'PERJANJIAN KERJA SAMA (PKS) TENAGA PENGAJAR EKSTRAKURIKULER',
     category: 'Kerjasama',
-    layout: 'standard',
-    content: `Yang bertanda tangan di bawah ini :
+    layout: 'centered',
+    content: `PERJANJIAN KERJA SAMA (PKS)
+ANTARA
+SD NEGERI TEMPUREJO 1
+DENGAN
+PENGAJAR EKSTRAKURIKULER [NAMA_EKSKUL]
 
-Nama : [NAMA_KEPSEK]
-Jabatan : Kepala SDN Tempurejo 1
-Pihak Pertama
+Pada hari ini [HARI], tanggal [TANGGAL_SEKARANG], bertempat di SDN Tempurejo 1, kami yang bertanda tangan di bawah ini:
 
-Nama : [NAMA_PENGAJAR]
-Alamat : [ALAMAT_PENGAJAR]
-Pihak Kedua
+I. Nama : [NAMA_KEPSEK]
+   NIP : [NIP_KEPSEK]
+   Jabatan : Kepala Sekolah
+   Alamat : [ALAMAT_SEKOLAH]
+   Selanjutnya disebut sebagai PIHAK PERTAMA.
 
-Kedua belah pihak sepakat melakukan kerja sama pembinaan ekstrakurikuler [NAMA_EKSKUL] dengan ketentuan:
-1. Pihak Kedua melaksanakan pembinaan sesuai jadwal yang ditetapkan.
-2. Pihak Pertama memberikan honorarium sebesar Rp. [NOMINAL] per pertemuan.
-3. Perjanjian ini berlaku sejak [TANGGAL_MULAI] sampai [TANGGAL_SELESAI].
+II. Nama : [NAMA_PENGAJAR]
+    NIK : [NIK_PENGAJAR]
+    Alamat : [ALAMAT_PENGAJAR]
+    Selanjutnya disebut sebagai PIHAK KEDUA.
 
-Demikian perjanjian ini dibuat untuk ditaati.`
+Kedua belah pihak telah sepakat untuk mengadakan Perjanjian Kerja Sama pembinaan kegiatan ekstrakurikuler dengan ketentuan sebagai berikut:
+
+Pasal 1
+TUGAS DAN TANGGUNG JAWAB
+PIHAK KEDUA bertugas sebagai Tenaga Pengajar Ekstrakurikuler [NAMA_EKSKUL] pada SDN Tempurejo 1 dan bertanggung jawab penuh atas pelaksanaan kegiatan serta pengembangan minat bakat siswa.
+
+Pasal 2
+HONORARIUM
+PIHAK PERTAMA memberikan honorarium kepada PIHAK KEDUA sebesar Rp. [NOMINAL] per pertemuan, yang bersumber dari dana [SUMBER_DANA] sesuai dengan peraturan yang berlaku.
+
+Pasal 3
+JANGKA WAKTU
+Perjanjian ini berlaku terhitung sejak tanggal [TANGGAL_MULAI] sampai dengan [TANGGAL_SELESAI].
+
+Pasal 4
+PENUTUP
+Demikian perjanjian ini dibuat dalam rangkap 2 (dua) untuk dilaksanakan dengan penuh tanggung jawab oleh kedua belah pihak.`
   },
   {
     id: 't_spk_tukang',
     name: 'SPK Tenaga Tukang',
-    subject: 'SURAT PERJANJIAN KERJA (SPK) PEMELIHARAAN SARPRAS',
+    subject: 'SURAT PERINTAH KERJA (SPK) PEMELIHARAAN SARANA PRASARANA',
     category: 'Kerjasama',
-    layout: 'standard',
-    content: `Pada hari ini [HARI], Tanggal [TANGGAL_SEKARANG], telah disepakati kerja sama antara:
+    layout: 'centered',
+    content: `SURAT PERINTAH KERJA (SPK)
 
-Jabatan : Kepala SDN Tempurejo 1 (Pihak Pertama)
-Nama Pekerja : [NAMA_TUKANG] (Pihak Kedua)
+Yang bertanda tangan di bawah ini:
 
-Pihak Pertama memberikan tugas kepada Pihak Kedua untuk melaksanakan pekerjaan:
-Pekerjaan : [JENIS_PERBAIKAN]
-Lokasi : SDN Tempurejo 1
+Nama : [NAMA_KEPSEK]
+NIP : [NIP_KEPSEK]
+Jabatan : Kepala SDN Tempurejo 1
+Alamat : [ALAMAT_SEKOLAH]
 
-Ketentuan Pembayaran:
-- Upah harian disepakati sebesar Rp. [UPAH_HARIAN].
-- Pembayaran dilakukan setelah pekerjaan selesai/sesuai progres.
-- Durasi pekerjaan diperkirakan selama [DURASI_HARI] hari.
+MEMBERIKAN PERINTAH KEPADA:
 
-Surat perintah kerja ini diberikan untuk dilaksanakan dengan penuh tanggung jawab.`
+Nama : [NAMA_TUKANG]
+NIK/KTP : [NIK_TUKANG]
+Alamat : [ALAMAT_TUKANG]
+
+Untuk melaksanakan pekerjaan pemeliharaan sarana dan prasarana sekolah dengan ketentuan sebagai berikut:
+
+1. Jenis Pekerjaan : [JENIS_PERBAIKAN]
+2. Lokasi Pekerjaan : SDN Tempurejo 1
+3. Jangka Waktu : [DURASI_HARI] hari kerja (Mulai [MULAI] s/d [SELESAI])
+4. Nilai Pekerjaan : Rp. [TOTAL_BIAYA]
+5. Sistem Pembayaran : [SISTEM_BAYAR]
+
+Pekerjaan harus dilaksanakan sesuai dengan standar kualitas dan spesifikasi yang telah disepakati. Seluruh hasil pekerjaan menjadi tanggung jawab PIHAK KEDUA sampai dengan serah terima dilakukan.
+
+Demikian Surat Perintah Kerja ini dibuat untuk dilaksanakan dengan sebaik-baiknya.`
   },
   {
     id: 't_sptjm_uang_makan',
@@ -139,7 +170,7 @@ Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baikny
     name: 'Surat Perintah Perjalanan Dinas (SPPD)',
     subject: 'SURAT PERINTAH PERJALANAN DINAS',
     category: 'Dinas',
-    layout: 'standard',
+    layout: 'centered',
     content: `1. Pejabat Pemberi Perintah : Kepala Sekolah
 2. Nama Pegawai yang diperintah : [NAMA_PETUGAS]
 3. a. Pangkat dan Golongan : [PANGKAT_GOL]
@@ -164,7 +195,7 @@ Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baikny
     name: 'Laporan Hasil SPPD',
     subject: 'LAPORAN HASIL PERJALANAN DINAS',
     category: 'Dinas',
-    layout: 'standard',
+    layout: 'centered',
     content: `Kepada Yth.
 Kepala SDN Tempurejo 1
 di Tempat
@@ -185,7 +216,7 @@ Demikian laporan perjalanan dinas ini kami sampaikan sebagai laporan pertanggung
     name: 'Notulen Rapat (BOS)',
     subject: 'NOTULEN RAPAT',
     category: 'Dinas',
-    layout: 'standard',
+    layout: 'centered',
     content: `Hari / Tanggal : [HARI_TANGGAL]
 Waktu : [WAKTU]
 Tempat : [TEMPAT]

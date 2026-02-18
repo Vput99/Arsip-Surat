@@ -350,7 +350,7 @@ const LetterCreator: React.FC = () => {
   const contentParts = formData.content.split('[PAGE_BREAK]');
   const qrValue = `DOKUMEN SAH SDN ${config.name.toUpperCase()}\nNomor: ${formData.refNumber}\nPejabat: ${formData.signerName}\nTanggal: ${formData.date}`;
 
-  // Cek apakah layout menggunakan format "standard" (Official Style) seperti Loyola
+  // Hanya surat Undangan yang menggunakan layout 'standard' (Official Style)
   const isOfficialLayout = selectedTemplate?.layout === 'standard';
 
   return (
@@ -384,7 +384,9 @@ const LetterCreator: React.FC = () => {
              </div>
              <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Hal Surat (Edit Disini)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {isOfficialLayout ? 'HAL SURAT (Edit Disini)' : 'PERIHAL / JUDUL'}
+                  </label>
                   <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black uppercase text-indigo-900" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">

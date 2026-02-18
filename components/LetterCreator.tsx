@@ -19,13 +19,6 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
             .replace(/\*\*/g, '')
             .trim();
     
-    const subjectClean = subject.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const firstLine = result.split('\n')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    if (firstLine.includes(subjectClean) || (subjectClean.length > 5 && firstLine.length > 5 && subjectClean.includes(firstLine))) {
-       result = result.split('\n').slice(1).join('\n').trim();
-    }
-
     return result;
   };
 
@@ -87,7 +80,7 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
     }
 
     const columns = line.split(':');
-    const isActuallyDataTable = columns.length >= 3 && !['Dasar', 'Untuk', 'Kepada'].some(k => trimmed.startsWith(k));
+    const isActuallyDataTable = columns.length >= 3 && !['Dasar', 'Untuk', 'Kepada', 'Hari', 'Waktu', 'Tempat', 'Pukul'].some(k => trimmed.startsWith(k));
     const isNumberedData = /^\d+\./.test(trimmed);
 
     if (isActuallyDataTable || (isInTableMode && isNumberedData)) {
@@ -98,23 +91,22 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
 
     flushTable();
 
+    // Deteksi Judul Tengah (Uppercase)
     if (trimmed === trimmed.toUpperCase() && trimmed.length < 80 && !trimmed.includes(':') && trimmed.length > 4) {
       renderedBlocks.push(<div key={`title-${index}`} className="mt-4 mb-3 font-bold text-center uppercase tracking-wide underline underline-offset-4">{trimmed}</div>);
     } 
+    // Deteksi Label: Value (Format Kedinasan)
     else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
       const firstColonIdx = line.indexOf(':');
       let label = line.substring(0, firstColonIdx).trim();
       let value = line.substring(firstColonIdx + 1).trim();
       
-      const isIntroSentence = label.length > 55 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa') || label.toLowerCase().includes('akan di beri tugas');
+      const isIntroSentence = label.length > 55 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa');
       
       if (isIntroSentence) {
          renderedBlocks.push(<p key={`p-${index}`} className="mb-2 text-justify leading-[1.6] indent-[3rem]">{trimmed}</p>);
       } else {
-         // Khusus format kedinasan/SPPD yang menggunakan nomor, berikan lebar label yang lebih luas
-         const isDinasItem = /^\d+\./.test(label) || /^[a-z]\./.test(label);
-         const labelWidth = isDinasItem ? 'w-[230px]' : 'w-[140px]';
-
+         const labelWidth = 'w-[140px]';
          renderedBlocks.push(
             <div key={`info-${index}`} className="flex mb-1.5 break-inside-avoid leading-[1.5]">
               <span className={`${labelWidth} shrink-0`}>{label}</span>
@@ -124,11 +116,12 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
          );
       }
     } 
+    // Deteksi List Nomor (Agenda/Catatan)
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
-        <div key={`list-${index}`} className="flex mb-1.5 pl-[3rem] leading-[1.6] relative">
-          <span className="absolute left-[0.5rem] w-8 text-right pr-2">{match ? match[1] : ''}</span>
+        <div key={`list-${index}`} className="flex mb-1.5 pl-[1rem] leading-[1.6] relative">
+          <span className="w-6 text-left shrink-0">{match ? match[1] : ''}</span>
           <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
         </div>
       );
@@ -356,6 +349,9 @@ const LetterCreator: React.FC = () => {
   const contentParts = formData.content.split('[PAGE_BREAK]');
   const qrValue = `DOKUMEN SAH SDN ${config.name.toUpperCase()}\nNomor: ${formData.refNumber}\nPejabat: ${formData.signerName}\nTanggal: ${formData.date}`;
 
+  // Cek apakah layout menggunakan format "standard" (Official Style) seperti Loyola
+  const isOfficialLayout = selectedTemplate?.layout === 'standard';
+
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in text-slate-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm print:hidden">
@@ -449,31 +445,50 @@ const LetterCreator: React.FC = () => {
                 )}
                 <div className="flex-1 flex flex-col pt-2">
                    {pIdx === 0 && (
-                     <div className="text-center mb-8">
-                       <h2 className="text-[12pt] font-bold uppercase underline decoration-2">{formData.subject}</h2>
-                       <p className="text-[12pt] mt-1">Nomor: {formData.refNumber}</p>
-                     </div>
+                     <>
+                       {isOfficialLayout ? (
+                         <div className="grid grid-cols-2 mb-8 text-[12pt]">
+                            <div className="space-y-0.5">
+                               <div className="flex"><span className="w-16">No.</span><span className="w-4">:</span><span>{formData.refNumber}</span></div>
+                               <div className="flex"><span className="w-16">Hal</span><span className="w-4">:</span><span className="font-bold underline">Undangan Pertemuan Wali Murid</span></div>
+                            </div>
+                            <div className="text-right">
+                               <p>Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
+                            </div>
+                         </div>
+                       ) : (
+                         <div className="text-center mb-8">
+                           <h2 className="text-[12pt] font-bold uppercase underline decoration-2">{formData.subject}</h2>
+                           <p className="text-[12pt] mt-1">Nomor: {formData.refNumber}</p>
+                         </div>
+                       )}
+                     </>
                    )}
                    <div className="flex-1">
                      <SmartContentRenderer text={part} subject={formData.subject} />
                    </div>
                    {pIdx === contentParts.length - 1 && (
                      <div className="mt-8 ml-auto w-[350px] flex flex-col text-center">
-                        <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
+                        {!isOfficialLayout && <p className="mb-1">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
                         <p className="font-bold">{formData.signatureTitle}</p>
-                        <div className="h-28 flex items-center justify-center my-1">
+                        <div className="h-28 flex items-center justify-center my-1 relative">
                           {useQRCode && (
-                            <QRCodeSVG 
-                              value={qrValue} 
-                              size={90} 
-                              level="H" 
-                              imageSettings={{
-                                src: config.logoDaerahUrl,
-                                height: 20,
-                                width: 20,
-                                excavate: true,
-                              }}
-                            />
+                            <div className="relative">
+                               <QRCodeSVG 
+                                value={qrValue} 
+                                size={90} 
+                                level="H" 
+                                imageSettings={{
+                                    src: config.logoDaerahUrl,
+                                    height: 20,
+                                    width: 20,
+                                    excavate: true,
+                                }}
+                                />
+                                <div className="absolute -bottom-2 -right-4 rotate-12 opacity-40">
+                                   <div className="border-4 border-indigo-700 text-indigo-700 p-1 font-black text-[8pt] rounded uppercase border-double">TERARSIP DIGITAL</div>
+                                </div>
+                            </div>
                           )}
                         </div>
                         <p className="font-bold underline uppercase">{formData.signerName}</p>

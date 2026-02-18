@@ -25,25 +25,32 @@ export const LETTER_TEMPLATES = [
     layout: 'standard',
     content: `Nomor    : [NOMOR_SURAT]
 Lampiran : -
-Perihal  : Undangan Rapat Wali Murid
+Hal      : Undangan Pertemuan Orang Tua
 
-Yth. Bapak/Ibu Wali Murid
+Yth. Orang Tua/Wali Murid
 Kelas [KELAS]
 SDN Tempurejo 1
 di Tempat
 
 Dengan hormat,
 
-Sehubungan dengan akan dilaksanakannya program kerja sekolah, kami mengharap kehadiran Bapak/Ibu Wali Murid pada :
+Mengharap kehadiran Bapak/Ibu orang tua/wali murid SDN Tempurejo 1 untuk hadir dalam pertemuan orang tua murid yang akan diadakan pada:
 
-Hari / Tanggal : [HARI_TANGGAL]
-Waktu          : [WAKTU]
-Tempat         : [TEMPAT_RAPAT]
-Acara          : [AGENDA_RAPAT]
+Hari, tanggal : [HARI_TANGGAL]
+Pukul         : [WAKTU]
+Tempat        : [TEMPAT_RAPAT]
 
-Mengingat pentingnya acara tersebut dan demi kelancaran program sekolah, kami mengharap kehadiran Bapak/Ibu dapat hadir tepat pada waktunya.
+Agenda pertemuan:
+1. Sosialisasi agenda kegiatan pembelajaran dan program sekolah.
+2. Pemilihan pengurus paguyuban wali murid.
+3. Pertemuan orang tua murid dengan wali kelas.
 
-Demikian undangan ini kami sampaikan, atas perhatian dan kerja samanya diucapkan terima kasih.`
+Mengingat pentingnya acara ini, kehadiran Bapak/Ibu mohon tidak diwakilkan dan hadir tepat waktu. Demikian surat undangan ini kami sampaikan. Atas kehadiran dan kerja sama Bapak/Ibu, kami mengucapkan banyak terima kasih.
+
+Catatan:
+1. Bapak/Ibu mohon menggunakan pakaian yang rapi dan sopan.
+2. Bapak/Ibu mohon membawa botol minum (tumbler) sendiri.
+3. Mohon hadir 15 menit sebelum acara dimulai.`
   },
   {
     id: 't_mou_ekskul',
@@ -104,7 +111,7 @@ Jabatan : Kepala SDN Tempurejo 1
 
 Dengan ini menyatakan dengan sebenarnya bahwa :
 
-1. Perhitungan yang terdapat pada Daftar Perhitungan uang makan bulan [BULAN] [TAHUN] SDN Tempurejo 1 telah dihitung dengan benar dan berdasarkan daftar kerja Pegawai Negeri Sipil pada SDN Tempurejo 1.
+1. Perhitungan yang terdapat pada Daftar Perhitungan uang makan bulan [BULAN] [TAHUN] SDN Tempurejo 1 telah dihitung dengan benar and berdasarkan daftar kerja Pegawai Negeri Sipil pada SDN Tempurejo 1.
 2. Apabila dikemudian hari terdapat kelebihan atas pembayaran uang makan tersebut kami bersedia untuk menyetorkan kelebihan ke Kas Negara.
 
 Demikian pernyataan ini kami buat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.`

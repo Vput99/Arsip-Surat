@@ -156,6 +156,7 @@ const LetterCreator: React.FC = () => {
   const [formData, setFormData] = useState({
     refNumber: `094/..../419.42.03.135/${new Date().getFullYear()}`,
     date: new Date().toISOString().split('T')[0],
+    attachment: '-',
     recipient: '',
     signatureTitle: 'Kepala Sekolah',
     signerName: '',
@@ -383,7 +384,7 @@ const LetterCreator: React.FC = () => {
              </div>
              <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Perihal Surat</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Judul/Hal Surat (Edit Disini)</label>
                   <input name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black uppercase text-indigo-900" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -392,9 +393,13 @@ const LetterCreator: React.FC = () => {
                      <input name="refNumber" value={formData.refNumber} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono" />
                    </div>
                    <div className="space-y-1">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
-                     <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lampiran</label>
+                     <input name="attachment" value={formData.attachment} onChange={handleInputChange} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
                    </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
+                  <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" />
                 </div>
              </div>
              <div className="pt-4 border-t border-slate-100 space-y-4">
@@ -449,8 +454,9 @@ const LetterCreator: React.FC = () => {
                        {isOfficialLayout ? (
                          <div className="grid grid-cols-2 mb-8 text-[12pt]">
                             <div className="space-y-0.5">
-                               <div className="flex"><span className="w-16">No.</span><span className="w-4">:</span><span>{formData.refNumber}</span></div>
-                               <div className="flex"><span className="w-16">Hal</span><span className="w-4">:</span><span className="font-bold underline">Undangan Pertemuan Wali Murid</span></div>
+                               <div className="flex"><span className="w-16">Nomor</span><span className="w-4">:</span><span>{formData.refNumber}</span></div>
+                               <div className="flex"><span className="w-16">Lampiran</span><span className="w-4">:</span><span>{formData.attachment}</span></div>
+                               <div className="flex"><span className="w-16">Hal</span><span className="w-4">:</span><span className="font-bold underline">{formData.subject}</span></div>
                             </div>
                             <div className="text-right">
                                <p>Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
@@ -485,9 +491,6 @@ const LetterCreator: React.FC = () => {
                                     excavate: true,
                                 }}
                                 />
-                                <div className="absolute -bottom-2 -right-4 rotate-12 opacity-40">
-                                   <div className="border-4 border-indigo-700 text-indigo-700 p-1 font-black text-[8pt] rounded uppercase border-double">TERARSIP DIGITAL</div>
-                                </div>
                             </div>
                           )}
                         </div>

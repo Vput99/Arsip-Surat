@@ -20,14 +20,10 @@ export const LETTER_TEMPLATES = [
   {
     id: 't_undangan_ortu',
     name: 'Undangan Wali Murid',
-    subject: 'UNDANGAN RAPAT WALI MURID',
+    subject: 'Undangan Pertemuan Orang Tua',
     category: 'Undangan',
     layout: 'standard',
-    content: `Nomor    : [NOMOR_SURAT]
-Lampiran : -
-Hal      : Undangan Pertemuan Orang Tua
-
-Yth. Orang Tua/Wali Murid
+    content: `Yth. Orang Tua/Wali Murid
 Kelas [KELAS]
 SDN Tempurejo 1
 di Tempat

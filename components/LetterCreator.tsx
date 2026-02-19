@@ -35,13 +35,13 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
       );
       
       renderedBlocks.push(
-        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-6 break-inside-avoid px-0 w-full overflow-x-auto">
+        <div key={`table-wrapper-${renderedBlocks.length}`} className="mb-4 break-inside-avoid px-0 w-full overflow-x-auto">
           <table className="w-full border-collapse border border-black text-[11pt]">
             <thead>
               {hasHeader && (
                 <tr className="bg-transparent">
                   {tableRows[0].map((cell, idx) => (
-                    <th key={idx} className="border border-black p-2 text-center font-bold align-middle uppercase bg-slate-50/50">{cell.trim()}</th>
+                    <th key={idx} className="border border-black p-1.5 text-center font-bold align-middle uppercase bg-slate-50/50">{cell.trim()}</th>
                   ))}
                 </tr>
               )}
@@ -50,7 +50,7 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
               {tableRows.slice(hasHeader ? 1 : 0).map((row, rowIdx) => (
                 <tr key={rowIdx} className="break-inside-avoid">
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className={`border border-black px-3 py-2 align-top leading-normal ${cellIdx === 0 ? 'text-center w-12' : ''}`}>
+                    <td key={cellIdx} className={`border border-black px-2 py-1 align-top leading-normal ${cellIdx === 0 ? 'text-center w-10' : ''}`}>
                       {cell.trim() || ' '}
                     </td>
                   ))}
@@ -69,13 +69,7 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
     const trimmed = line.trim();
     if (trimmed === '') {
       flushTable();
-      renderedBlocks.push(<div className="h-4" key={`br-${index}`}></div>);
-      return;
-    }
-
-    if (trimmed === '[PAGE_BREAK]') {
-      flushTable();
-      renderedBlocks.push(<div key={`pb-${index}`} className="page-breaker print:break-after-page h-0 my-8 relative border-t border-dashed border-slate-300 print:border-none print:my-0"></div>);
+      renderedBlocks.push(<div className="h-2" key={`br-${index}`}></div>);
       return;
     }
 
@@ -93,7 +87,7 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
 
     // Deteksi Judul Tengah (Uppercase)
     if (trimmed === trimmed.toUpperCase() && trimmed.length < 100 && !trimmed.includes(':') && trimmed.length > 4) {
-      renderedBlocks.push(<div key={`title-${index}`} className="mt-6 mb-4 font-bold text-center uppercase tracking-wide underline underline-offset-4 text-[13pt] break-inside-avoid">{trimmed}</div>);
+      renderedBlocks.push(<div key={`title-${index}`} className="mt-4 mb-2 font-bold text-center uppercase tracking-wide underline underline-offset-4 text-[12pt] break-inside-avoid">{trimmed}</div>);
     } 
     // Deteksi Label: Value (Format Kedinasan)
     else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
@@ -104,30 +98,30 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
       const isIntroSentence = label.length > 60 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa');
       
       if (isIntroSentence) {
-         renderedBlocks.push(<p key={`p-${index}`} className="mb-3 text-justify leading-[1.6] indent-[4rem]">{trimmed}</p>);
+         renderedBlocks.push(<p key={`p-${index}`} className="my-[5px] text-justify leading-[1.6] indent-[3.5rem]">{trimmed}</p>);
       } else {
-         const labelWidth = 'w-[160px]';
+         const labelWidth = 'w-[150px]';
          renderedBlocks.push(
-            <div key={`info-${index}`} className="flex mb-2 break-inside-avoid leading-[1.6]">
+            <div key={`info-${index}`} className="flex my-[2px] break-inside-avoid leading-[1.6]">
               <span className={`${labelWidth} shrink-0 font-medium`}>{label}</span>
-              <span className="w-[24px] text-center shrink-0">:</span>
+              <span className="w-[20px] text-center shrink-0">:</span>
               <span className="flex-1 text-justify">{value}</span>
             </div>
          );
       }
     } 
-    // Deteksi List Nomor (Agenda/Catatan)
+    // Deteksi List Nomor
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
-        <div key={`list-${index}`} className="flex mb-2 pl-[1.5rem] leading-[1.6] relative break-inside-avoid">
-          <span className="w-8 text-left shrink-0 font-medium">{match ? match[1] : ''}</span>
+        <div key={`list-${index}`} className="flex my-[4px] pl-[1rem] leading-[1.6] relative break-inside-avoid">
+          <span className="w-6 text-left shrink-0 font-medium">{match ? match[1] : ''}</span>
           <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
         </div>
       );
     }
     else {
-      renderedBlocks.push(<p key={`p-${index}`} className="mb-3 text-justify leading-[1.6] indent-[4rem]">{trimmed}</p>);
+      renderedBlocks.push(<p key={`p-${index}`} className="my-[5px] text-justify leading-[1.6] indent-[3.5rem]">{trimmed}</p>);
     }
   });
   
@@ -352,6 +346,7 @@ const LetterCreator: React.FC = () => {
 
   if (!config || templates.length === 0) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
 
+  // Split content by [PAGE_BREAK] for manual pagination
   const contentParts = formData.content.split('[PAGE_BREAK]');
   const qrValue = `DOKUMEN SAH SDN ${config.name.toUpperCase()}\nNomor: ${formData.refNumber}\nPejabat: ${formData.signerName}\nTanggal: ${formData.date}`;
 
@@ -365,7 +360,7 @@ const LetterCreator: React.FC = () => {
           <button onClick={() => navigate(-1)} className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-2xl text-slate-500 transition-all"><ChevronLeft size={20}/></button>
           <div>
             <h2 className="text-xl font-black text-slate-800">Editor Naskah Dinas</h2>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-0.5">Format Standar F4 (Folio) • Auto Layout</p>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-0.5">Format Standar F4 (Folio) • Simulasi Presisi</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -441,24 +436,24 @@ const LetterCreator: React.FC = () => {
                    <button onClick={() => setShowStaffPicker(true)} className="text-[9px] font-black bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl border border-emerald-100 flex items-center gap-2 hover:bg-emerald-100 transition-colors shadow-sm"><Users size={12} /> PERSONIL</button>
                 </div>
              </div>
-             <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-5 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none font-mono text-[12px] leading-relaxed resize-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all" placeholder="Gunakan [PAGE_BREAK] untuk pindah halaman baru..." />
+             <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-5 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none font-mono text-[12px] leading-relaxed resize-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all" placeholder="Gunakan [PAGE_BREAK] untuk pindah halaman baru secara manual jika naskah terlalu panjang..." />
              <div className="mt-3 text-[9px] text-slate-400 font-bold uppercase text-center italic">Tip: Gunakan [PAGE_BREAK] untuk membagi surat jadi 2 halaman secara rapi.</div>
           </div>
         </div>
 
         {/* Preview Paper Area */}
-        <div className="flex-1 bg-slate-200/40 rounded-[3rem] overflow-y-auto p-12 flex flex-col items-center gap-12 print:p-0 print:bg-white print:block custom-scrollbar shadow-inner relative">
+        <div ref={letterContainerRef} className="flex-1 bg-slate-200/40 rounded-[3rem] overflow-y-auto p-12 flex flex-col items-center gap-12 print:p-0 print:bg-white print:block custom-scrollbar shadow-inner relative">
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none flex flex-col text-black mb-16 print:mb-0 transition-transform origin-top" style={{ transform: `scale(${scale})` }}>
                 {pIdx === 0 && (
-                  <div className="border-b-[4px] border-double border-black pb-4 mb-8 grid grid-cols-[30mm_1fr_30mm] items-center text-black">
+                  <div className="border-b-[4px] border-double border-black pb-4 mb-6 grid grid-cols-[30mm_1fr_30mm] items-center text-black">
                      <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-full h-auto object-contain" />}</div>
                      <div className="text-center w-full px-4">
-                        <h3 className="text-[14pt] uppercase font-bold leading-tight">{config.headerLine1}</h3>
-                        <h3 className="text-[14pt] font-bold uppercase leading-tight">{config.headerLine2}</h3>
-                        <h1 className="text-[20pt] font-black uppercase my-1.5 tracking-tight">{config.name}</h1>
-                        <p className="text-[10pt] font-bold leading-tight italic">{config.address}</p>
-                        <p className="text-[9.5pt] font-bold mt-0.5">NPSN: {config.npsn} | Email: {config.email}</p>
+                        <h3 className="text-[13pt] uppercase font-bold leading-tight">{config.headerLine1}</h3>
+                        <h3 className="text-[13pt] font-bold uppercase leading-tight">{config.headerLine2}</h3>
+                        <h1 className="text-[18pt] font-black uppercase my-1 tracking-tight">{config.name}</h1>
+                        <p className="text-[9pt] font-bold leading-tight italic">{config.address}</p>
+                        <p className="text-[9pt] font-bold mt-0.5">NPSN: {config.npsn} | Email: {config.email}</p>
                      </div>
                      <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-full h-auto object-contain" />}</div>
                   </div>
@@ -468,20 +463,20 @@ const LetterCreator: React.FC = () => {
                    {pIdx === 0 && (
                      <>
                        {isOfficialLayout ? (
-                         <div className="grid grid-cols-2 mb-10 text-[12pt] font-serif">
-                            <div className="space-y-1">
-                               <div className="flex"><span className="w-24 font-bold">Nomor</span><span className="w-6 text-center">:</span><span className="flex-1">{formData.refNumber}</span></div>
-                               <div className="flex"><span className="w-24 font-bold">Lampiran</span><span className="w-6 text-center">:</span><span className="flex-1">{formData.attachment}</span></div>
-                               <div className="flex"><span className="w-24 font-bold">Perihal</span><span className="w-6 text-center">:</span><span className="flex-1 font-bold underline leading-tight">{formData.subject}</span></div>
+                         <div className="grid grid-cols-2 mb-8 text-[12pt] font-serif">
+                            <div className="space-y-0.5">
+                               <div className="flex"><span className="w-24 font-bold">Nomor</span><span className="w-4 text-center">:</span><span className="flex-1">{formData.refNumber}</span></div>
+                               <div className="flex"><span className="w-24 font-bold">Lampiran</span><span className="w-4 text-center">:</span><span className="flex-1">{formData.attachment}</span></div>
+                               <div className="flex"><span className="w-24 font-bold">Perihal</span><span className="w-4 text-center">:</span><span className="flex-1 font-bold underline leading-tight">{formData.subject}</span></div>
                             </div>
                             <div className="text-right">
                                <p className="font-medium">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
                             </div>
                          </div>
                        ) : (
-                         <div className="text-center mb-10 break-inside-avoid">
-                           <h2 className="text-[14pt] font-bold uppercase underline underline-offset-4 decoration-2">{formData.subject}</h2>
-                           <p className="text-[12pt] mt-2 font-bold uppercase">NOMOR: {formData.refNumber}</p>
+                         <div className="text-center mb-8 break-inside-avoid">
+                           <h2 className="text-[13pt] font-bold uppercase underline underline-offset-4 decoration-2">{formData.subject}</h2>
+                           <p className="text-[12pt] mt-1 font-bold uppercase">NOMOR: {formData.refNumber}</p>
                          </div>
                        )}
                      </>
@@ -491,22 +486,22 @@ const LetterCreator: React.FC = () => {
                      <SmartContentRenderer text={part} subject={formData.subject} />
                    </div>
 
-                   {/* Footer Signer Block - Always Avoid Break Inside */}
+                   {/* Footer Signer Block */}
                    {pIdx === contentParts.length - 1 && (
-                     <div className="mt-12 ml-auto w-[350px] flex flex-col text-center break-inside-avoid signature-block">
-                        {!isOfficialLayout && <p className="mb-2 font-medium">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
+                     <div className="mt-8 ml-auto w-[350px] flex flex-col text-center break-inside-avoid signature-block">
+                        {!isOfficialLayout && <p className="mb-1 font-medium">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
                         <p className="font-bold text-[12pt]">{formData.signatureTitle}</p>
-                        <div className="h-32 flex items-center justify-center my-2 relative">
+                        <div className="h-32 flex items-center justify-center my-1 relative">
                           {useQRCode && (
-                            <div className="relative p-2 bg-white rounded-xl shadow-sm border border-slate-50">
+                            <div className="relative p-1 bg-white rounded-lg shadow-sm border border-slate-50">
                                <QRCodeSVG 
                                 value={qrValue} 
-                                size={90} 
+                                size={85} 
                                 level="H" 
                                 imageSettings={{
                                     src: config.logoDaerahUrl,
-                                    height: 20,
-                                    width: 20,
+                                    height: 18,
+                                    width: 18,
                                     excavate: true,
                                 }}
                                 />
@@ -519,8 +514,8 @@ const LetterCreator: React.FC = () => {
                    )}
                 </div>
                 
-                {/* Halaman Footer Visual */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[9pt] font-black text-slate-300 uppercase tracking-widest pointer-events-none print:hidden">
+                {/* Visual Page Footer Indicator */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[8pt] font-black text-slate-300 uppercase tracking-widest pointer-events-none print:hidden">
                    HALAMAN {pIdx + 1}
                 </div>
              </div>
@@ -561,15 +556,13 @@ const LetterCreator: React.FC = () => {
       <style>{`
         .letter-paper { 
           width: 215mm; 
-          height: 330mm;
           min-height: 330mm;
-          max-height: 330mm; 
-          padding: 25mm 20mm 25mm 30mm; /* Standar Dinas: Kiri 3cm, Lainnya 2cm (Atas dilebihkan sedikit 2.5cm) */
+          height: auto;
+          padding: 25mm 20mm 25mm 30mm; /* Atas 2.5, Kanan 2, Bawah 2.5, Kiri 3 */
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
           line-height: 1.6;
           box-sizing: border-box;
-          overflow: hidden;
           position: relative;
           color: black;
           background-color: white;
@@ -601,6 +594,7 @@ const LetterCreator: React.FC = () => {
             top: 0 !important; 
             width: 215mm !important; 
             height: 330mm !important; 
+            max-height: 330mm !important;
             margin: 0 !important; 
             padding: 25mm 20mm 25mm 30mm !important; 
             display: flex !important; 
@@ -609,6 +603,7 @@ const LetterCreator: React.FC = () => {
             transform: none !important;
             box-shadow: none !important;
             border: none !important;
+            overflow: hidden !important;
           } 
           .print\\:hidden { display: none !important; }
         }

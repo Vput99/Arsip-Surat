@@ -50,48 +50,92 @@ Catatan:
   },
   {
     id: 't_sertijab_rekening',
-    name: 'Sertijab & Buku Rekening',
-    subject: 'BERITA ACARA SERAH TERIMA JABATAN DAN BUKU REKENING',
+    name: 'Serah Terima Jabatan',
+    subject: 'BERITA ACARA SERAH TERIMA JABATAN',
     category: 'Mutasi',
     layout: 'centered',
-    content: `BERITA ACARA SERTIJAB JABATAN
+    content: `BERITA ACARA SERAH TERIMA JABATAN
 
-Pada hari ini: [HARI_TANGGAL]
-Bertempat di: SDN Tempurejo 1
+NOMOR: [NO_SURAT]
 
-Kami yang bertanda tangan di bawah ini:
+Pada hari ini, [HARI] tanggal [TANGGAL_ANGKA] bulan [BULAN] tahun [TAHUN], bertempat di SDN Tempurejo 1, kami yang bertanda tangan di bawah ini:
 
-Nama : [NAMA_PEJABAT_LAMA]
-Jabatan : [JABATAN_LAMA] Lama
-Selanjutnya disebut PIHAK KESATU
+Nama : [NAMA_LAMA]
+NIP : [NIP_LAMA]
+Pangkat/Golongan : [PANGKAT_LAMA]
+Jabatan : [JABATAN] Lama
+Selanjutnya disebut sebagai PIHAK KESATU.
 
-Nama : [NAMA_PEJABAT_BARU]
-Jabatan : [JABATAN_BARU] Baru
-Selanjutnya disebut PIHAK KEDUA
+Nama : [NAMA_BARU]
+NIP : [NIP_BARU]
+Pangkat/Golongan : [PANGKAT_BARU]
+Jabatan : [JABATAN] Baru
+Selanjutnya disebut sebagai PIHAK KEDUA.
 
-PIHAK KESATU menyerahkan kepada PIHAK KEDUA segala wewenang dan tanggung jawab jabatan selaku [JABATAN] pada SDN Tempurejo 1 beserta seluruh inventaris dan administrasi terkait.
+Berdasarkan [DASAR_SERTIJAB], kedua belah pihak sepakat mengadakan serah terima jabatan dengan ketentuan sebagai berikut:
 
-PIHAK KEDUA menerima penyerahan tersebut dengan penuh tanggung jawab sejak tanggal penandatanganan berita acara ini.
+Pasal 1
+PIHAK KESATU menyerahkan kepada PIHAK KEDUA tugas, wewenang, dan tanggung jawab jabatan [JABATAN] pada SDN Tempurejo 1 berikut seluruh dokumen, arsip, keuangan, dan inventaris organisasi yang menjadi tanggung jawabnya.
 
-BERITA ACARA SERAH TERIMA BUKU REKENING
+Pasal 2
+PIHAK KEDUA menerima penyerahan tersebut dengan baik dan bertanggung jawab penuh atas segala sesuatu yang berkaitan dengan jabatan tersebut terhitung sejak tanggal penandatanganan Berita Acara ini.
 
-Nomor Rekening : [NO_REKENING]
-Nama Bank : [NAMA_BANK]
+Pasal 3
+Segala administrasi dan inventaris yang menyertai serah terima jabatan ini merupakan bagian yang tidak terpisahkan dari Berita Acara ini.
 
-Telah dilakukan serah terima Buku Tabungan dan hak akses operasional rekening atas nama SDN Tempurejo 1 dari PIHAK KESATU kepada PIHAK KEDUA.
-
-Catatan:
-1. Saldo terakhir saat serah terima: Rp [JUMLAH_SALDO]
-2. Status buku tabungan: [SANGAT_BAIK_LENGKAP]
-
-Tanda Tangan:
+Demikian Berita Acara ini dibuat dengan sebenarnya dalam rangkap [JUMLAH_RANGKAP] untuk dipergunakan sebagaimana mestinya.
 
 PIHAK KESATU ( .......................... )
 
 PIHAK KEDUA ( .......................... )
 
 Mengetahui,
-Atasan Langsung ( .......................... )`
+Pengawas Gugus VI (6) ( .......................... )`
+  },
+  {
+    id: 't_ba_buku_rekening',
+    name: 'BA Sertijab Buku Rekening',
+    subject: 'BERITA ACARA SERAH TERIMA BUKU REKENING DAN KEUANGAN',
+    category: 'Mutasi',
+    layout: 'centered',
+    content: `BERITA ACARA SERAH TERIMA BUKU REKENING DAN KEUANGAN
+NOMOR: [NO_SURAT]
+
+Pada hari ini, [HARI] tanggal [TANGGAL_LENGKAP], bertempat di SDN Tempurejo 1, kami yang bertanda tangan di bawah ini:
+
+Nama : [NAMA_LAMA]
+NIP : [NIP_LAMA]
+Jabatan : [JABATAN] Lama
+Selanjutnya disebut sebagai PIHAK KESATU.
+
+Nama : [NAMA_BARU]
+NIP : [NIP_BARU]
+Jabatan : [JABATAN] Baru
+Selanjutnya disebut sebagai PIHAK KEDUA.
+
+PIHAK KESATU menyerahkan kepada PIHAK KEDUA, dan PIHAK KEDUA menerima penyerahan dari PIHAK KESATU berupa Dokumen Keuangan/Buku Tabungan dengan rincian sebagai berikut:
+
+Rincian Rekening:
+Nama Bank : [NAMA_BANK]
+Cabang : [NAMA_CABANG]
+Nomor Rekening : [NO_REKENING]
+Atas Nama : [ATAS_NAMA_REKENING]
+Saldo Terakhir : Rp [SALDO]
+(Terbilang: [TERBILANG])
+
+Ketentuan Serah Terima:
+1. PIHAK KESATU telah menyerahkan Buku Tabungan asli beserta akses operasionalnya kepada PIHAK KEDUA.
+2. Terhitung sejak penandatanganan Berita Acara ini, segala hak, kewajiban, dan tanggung jawab pengelolaan rekening tersebut beralih sepenuhnya dari PIHAK KESATU kepada PIHAK KEDUA.
+3. Berita Acara ini dibuat sebagai dasar proses Perubahan Spesimen Tanda Tangan pada pihak Bank terkait.
+
+Demikian Berita Acara ini dibuat dengan sebenarnya untuk dipergunakan sebagaimana mestinya.
+
+PIHAK KESATU ( .......................... )
+
+PIHAK KEDUA ( .......................... )
+
+Mengetahui,
+Kepala Sekolah ( .......................... )`
   },
   {
     id: 't_spesimen_rekening',
@@ -124,7 +168,7 @@ NIP : [NIP_BENDAHARA]
 Terhitung sejak tanggal surat ini dibuat, maka spesimen tanda tangan pejabat lama dinyatakan tidak berlaku lagi untuk transaksi pada rekening tersebut di atas. Sebagai kelengkapan administrasi, kami lampirkan dokumen pendukung sesuai persyaratan yang ditentukan :
 
 1. Fotokopi NPWP Sekolah.
-2. Fotokopi & Asli E-KTP serta NPWP (Kepala Sekolah & Bendahara lama dan baru).
+2. Fotokopi & Asli E-KTP serta NPWP (Kepala Sekolah & Bendahara lama and baru).
 3. Fotokopi SK Kepala Sekolah (Legalisir).
 4. Surat Tugas (ST) Bendahara (Asli/Legalisir).
 5. Berita Acara Sertijab (Mengetahui Atasan).
@@ -206,7 +250,7 @@ Untuk melaksanakan pekerjaan pemeliharaan sarana dan prasarana sekolah dengan ke
 4. Nilai Pekerjaan : Rp. [TOTAL_BIAYA]
 5. Sistem Pembayaran : [SISTEM_BAYAR]
 
-Pekerjaan harus dilaksanakan sesuai dengan standar kualitas dan spesifikasi yang telah disepakati. Seluruh hasil pekerjaan menjadi tanggung jawab PIHAK KEDUA sampai dengan serah terima dilakukan.
+Pekerjaan harus dilaksanakan sesuai dengan standar kualitas and spesifikasi yang telah disepakati. Seluruh hasil pekerjaan menjadi tanggung jawab PIHAK KEDUA sampai dengan serah terima dilakukan.
 
 Demikian Surat Perintah Kerja ini dibuat untuk dilaksanakan dengan sebaik-baiknya.`
   },

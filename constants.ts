@@ -49,6 +49,89 @@ Catatan:
 3. Mohon hadir 15 menit sebelum acara dimulai.`
   },
   {
+    id: 't_sertijab_rekening',
+    name: 'Sertijab & Buku Rekening',
+    subject: 'BERITA ACARA SERAH TERIMA JABATAN DAN BUKU REKENING',
+    category: 'Mutasi',
+    layout: 'centered',
+    content: `BERITA ACARA SERTIJAB JABATAN
+
+Pada hari ini: [HARI_TANGGAL]
+Bertempat di: SDN Tempurejo 1
+
+Kami yang bertanda tangan di bawah ini:
+
+Nama : [NAMA_PEJABAT_LAMA]
+Jabatan : [JABATAN_LAMA] Lama
+Selanjutnya disebut PIHAK KESATU
+
+Nama : [NAMA_PEJABAT_BARU]
+Jabatan : [JABATAN_BARU] Baru
+Selanjutnya disebut PIHAK KEDUA
+
+PIHAK KESATU menyerahkan kepada PIHAK KEDUA segala wewenang dan tanggung jawab jabatan selaku [JABATAN] pada SDN Tempurejo 1 beserta seluruh inventaris dan administrasi terkait.
+
+PIHAK KEDUA menerima penyerahan tersebut dengan penuh tanggung jawab sejak tanggal penandatanganan berita acara ini.
+
+BERITA ACARA SERAH TERIMA BUKU REKENING
+
+Nomor Rekening : [NO_REKENING]
+Nama Bank : [NAMA_BANK]
+
+Telah dilakukan serah terima Buku Tabungan dan hak akses operasional rekening atas nama SDN Tempurejo 1 dari PIHAK KESATU kepada PIHAK KEDUA.
+
+Catatan:
+1. Saldo terakhir saat serah terima: Rp [JUMLAH_SALDO]
+2. Status buku tabungan: [SANGAT_BAIK_LENGKAP]
+
+Tanda Tangan:
+
+PIHAK KESATU ( .......................... )
+
+PIHAK KEDUA ( .......................... )
+
+Mengetahui,
+Atasan Langsung ( .......................... )`
+  },
+  {
+    id: 't_spesimen_rekening',
+    name: 'Permohonan Perubahan Spesimen',
+    subject: 'SURAT PERMOHONAN PERUBAHAN SPESIMEN REKENING',
+    category: 'Permohonan',
+    layout: 'centered',
+    content: `Kepada Yth.
+Pimpinan Bank [NAMA_BANK]
+Cabang [NAMA_CABANG]
+di Tempat
+
+Dengan hormat,
+
+Yang bertanda tangan di bawah ini:
+
+Nama : [NAMA_KEPSEK]
+Jabatan : Kepala SDN Tempurejo 1
+NIP : [NIP_KEPSEK]
+
+Bersama surat ini, kami mengajukan permohonan Perubahan Spesimen Tanda Tangan pada rekening operasional sekolah kami dengan rincian sebagai berikut:
+
+Nama Pemilik Rekening : SDN Tempurejo 1
+Nomor Rekening : [NO_REKENING]
+
+Perubahan tersebut dikarenakan adanya pergantian pejabat Kepala Sekolah / Bendahara (pilih salah satu atau keduanya). Adapun spesimen tanda tangan yang baru adalah sebagai berikut:
+
+1. Kepala Sekolah (Baru)
+   Nama: [NAMA_KEPSEK]
+   NIP: [NIP_KEPSEK]
+   (Tanda Tangan di atas Materai 10.000)
+
+2. Bendahara (Baru)
+   Nama: [NAMA_BENDAHARA]
+   NIP: [NIP_BENDAHARA]
+   (Tanda Tangan)
+
+Demikian surat permohonan ini kami sampaikan agar dapat segera diproses. Atas perhatian dan kerja samanya, kami ucapkan terima kasih.`
+  },
+  {
     id: 't_mou_ekskul',
     name: 'MOU Pengajar Ekskul',
     subject: 'PERJANJIAN KERJA SAMA (PKS) TENAGA PENGAJAR EKSTRAKURIKULER',
@@ -163,7 +246,7 @@ Untuk menghadiri kegiatan tersebut pada :
 Tanggal : [TANGGAL_KEGIATAN]
 Tempat : [TEMPAT_KEGIATAN]
 
-Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya dan penuh tanggung jawab.`
+Demikian surat perintah tugas ini dibuat untuk dilaksanakan dengan sebaik-baiknya and penuh tanggung jawab.`
   },
   {
     id: 't_sppd',

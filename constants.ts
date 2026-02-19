@@ -44,7 +44,7 @@ Agenda pertemuan:
 Mengingat pentingnya acara ini, kehadiran Bapak/Ibu mohon tidak diwakilkan dan hadir tepat waktu. Demikian surat undangan ini kami sampaikan. Atas kehadiran dan kerja sama Bapak/Ibu, kami mengucapkan banyak terima kasih.
 
 Catatan:
-1. Bapak/Ibu mohon menggunakan pakaian yang rapi dan sopan.
+1. Bapak/Ibu mohon menggunakan pakaian yang rapi and sopan.
 2. Bapak/Ibu mohon membawa botol minum (tumbler) sendiri.
 3. Mohon hadir 15 menit sebelum acara dimulai.`
   },
@@ -96,40 +96,43 @@ Atasan Langsung ( .......................... )`
   {
     id: 't_spesimen_rekening',
     name: 'Permohonan Perubahan Spesimen',
-    subject: 'SURAT PERMOHONAN PERUBAHAN SPESIMEN REKENING',
+    subject: 'Permohonan Perubahan Spesimen Tanda Tangan Rekening',
     category: 'Permohonan',
-    layout: 'centered',
-    content: `Kepada Yth.
-Pimpinan Bank [NAMA_BANK]
-Cabang [NAMA_CABANG]
-di Tempat
+    layout: 'standard',
+    content: `Yth. Pimpinan Bank [NAMA_BANK]
+Kantor Cabang [NAMA_CABANG]
+di -
+[KOTA]
 
 Dengan hormat,
 
-Yang bertanda tangan di bawah ini:
+Sehubungan dengan adanya pergantian pejabat di lingkungan SDN Tempurejo 1, maka bersama surat ini kami sampaikan permohonan perubahan spesimen tanda tangan pada rekening operasional sekolah kami sebagai berikut:
 
-Nama : [NAMA_KEPSEK]
-Jabatan : Kepala SDN Tempurejo 1
-NIP : [NIP_KEPSEK]
-
-Bersama surat ini, kami mengajukan permohonan Perubahan Spesimen Tanda Tangan pada rekening operasional sekolah kami dengan rincian sebagai berikut:
-
-Nama Pemilik Rekening : SDN Tempurejo 1
+Identitas Rekening:
+Nama Rekening : SDN Tempurejo 1
 Nomor Rekening : [NO_REKENING]
 
-Perubahan tersebut dikarenakan adanya pergantian pejabat Kepala Sekolah / Bendahara (pilih salah satu atau keduanya). Adapun spesimen tanda tangan yang baru adalah sebagai berikut:
+Pejabat yang Berwenang (Baru):
+Kepala Sekolah
+Nama : [NAMA_KEPSEK]
+NIP : [NIP_KEPSEK]
 
-1. Kepala Sekolah (Baru)
-   Nama: [NAMA_KEPSEK]
-   NIP: [NIP_KEPSEK]
-   (Tanda Tangan di atas Materai 10.000)
+Bendahara
+Nama : [NAMA_BENDAHARA]
+NIP : [NIP_BENDAHARA]
 
-2. Bendahara (Baru)
-   Nama: [NAMA_BENDAHARA]
-   NIP: [NIP_BENDAHARA]
-   (Tanda Tangan)
+Terhitung sejak tanggal surat ini dibuat, maka spesimen tanda tangan pejabat lama dinyatakan tidak berlaku lagi untuk transaksi pada rekening tersebut di atas. Sebagai kelengkapan administrasi, kami lampirkan dokumen pendukung sesuai persyaratan yang ditentukan :
 
-Demikian surat permohonan ini kami sampaikan agar dapat segera diproses. Atas perhatian dan kerja samanya, kami ucapkan terima kasih.`
+1. Fotokopi NPWP Sekolah.
+2. Fotokopi & Asli E-KTP serta NPWP (Kepala Sekolah & Bendahara lama dan baru).
+3. Fotokopi SK Kepala Sekolah (Legalisir).
+4. Surat Tugas (ST) Bendahara (Asli/Legalisir).
+5. Berita Acara Sertijab (Mengetahui Atasan).
+6. Berita Acara Buku Rekening.
+7. Pas Foto 4x6 berwarna (Kepala Sekolah & Bendahara baru).
+8. Buku Tabungan Asli.
+
+Demikian permohonan ini kami sampaikan. Atas kerja sama dan bantuan Bapak/Ibu, kami ucapkan terima kasih.`
   },
   {
     id: 't_mou_ekskul',

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
 import { Printer, Loader2, FileText, Layout, UserPlus, Info, QrCode, Save, Users, Search, Check, FileDown, RotateCcw, Sparkles, Wand2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import { subscribeToConfig, subscribeToTemplates, LetterTemplate, subscribeToStaff, StaffMember, saveMail } from '../services/storage';
 import { SchoolConfig, MailType, MailStatus, UrgencyLevel, Mail } from '../types';
 import { format } from 'date-fns';
@@ -278,14 +278,14 @@ const LetterCreator: React.FC = () => {
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
         const canvas = await html2canvas(page, {
-          scale: 2, 
+          scale: 2.5, 
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
           windowWidth: 1200
         });
         
-        const imgData = canvas.toDataURL('image/jpeg', 0.80);
+        const imgData = canvas.toDataURL('image/jpeg', 0.90);
         if (i > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, 0, 215, 330);
       }
@@ -360,7 +360,7 @@ const LetterCreator: React.FC = () => {
           <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg"><FileText size={20} /></div>
           <div>
             <h2 className="text-xl font-black text-slate-800">Editor Surat Digital</h2>
-            <p className="text-slate-500 text-xs font-medium">Naskah otomatis tersimpan ke arsip Keluar.</p>
+            <p className="text-slate-500 text-xs font-medium">Naskah otomatis tersimpan ke arsip Keluar (Format F4).</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -434,7 +434,7 @@ const LetterCreator: React.FC = () => {
              <textarea name="content" value={formData.content} onChange={handleInputChange} className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-[11px] resize-none" />
           </div>
         </div>
-        <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:bg-white print:block">
+        <div ref={letterContainerRef} className="flex-1 bg-slate-200/50 rounded-3xl overflow-y-auto p-8 flex flex-col items-center gap-10 print:p-0 print:bg-white print:block custom-scrollbar">
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none flex flex-col text-black mb-10 print:mb-0">
                 {pIdx === 0 && (
@@ -456,9 +456,9 @@ const LetterCreator: React.FC = () => {
                        {isOfficialLayout ? (
                          <div className="grid grid-cols-2 mb-8 text-[12pt]">
                             <div className="space-y-0.5">
-                               <div className="flex"><span className="w-16">Nomor</span><span className="w-4">:</span><span>{formData.refNumber}</span></div>
-                               <div className="flex"><span className="w-16">Lampiran</span><span className="w-4">:</span><span>{formData.attachment}</span></div>
-                               <div className="flex"><span className="w-16">Hal</span><span className="w-4">:</span><span className="font-bold underline">{formData.subject}</span></div>
+                               <div className="flex"><span className="w-20">Nomor</span><span className="w-4">:</span><span>{formData.refNumber}</span></div>
+                               <div className="flex"><span className="w-20">Lampiran</span><span className="w-4">:</span><span>{formData.attachment}</span></div>
+                               <div className="flex"><span className="w-20">Hal</span><span className="w-4">:</span><span className="font-bold underline">{formData.subject}</span></div>
                             </div>
                             <div className="text-right">
                                <p>Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>
@@ -484,12 +484,12 @@ const LetterCreator: React.FC = () => {
                             <div className="relative">
                                <QRCodeSVG 
                                 value={qrValue} 
-                                size={90} 
+                                size={80} 
                                 level="H" 
                                 imageSettings={{
                                     src: config.logoDaerahUrl,
-                                    height: 20,
-                                    width: 20,
+                                    height: 18,
+                                    width: 18,
                                     excavate: true,
                                 }}
                                 />
@@ -530,21 +530,39 @@ const LetterCreator: React.FC = () => {
       <style>{`
         .letter-paper { 
           width: 215mm; 
-          min-height: 330mm; 
-          padding: 20mm 25mm 20mm 25mm; 
+          min-height: 330mm;
+          max-height: 330mm; 
+          padding: 25mm 20mm 25mm 30mm; /* Atas 2.5cm, Kanan 2cm, Bawah 2.5cm, Kiri 3cm (Standard Binding) */
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
           line-height: 1.5;
+          box-sizing: border-box;
+          overflow: hidden;
+          position: relative;
         } 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
         @media print { 
-          @page { size: 215mm 330mm portrait; margin: 0; } 
+          @page { 
+            size: 215mm 330mm portrait; 
+            margin: 0; 
+          } 
           body * { visibility: hidden; } 
           .letter-paper, .letter-paper * { visibility: visible !important; } 
-          .letter-paper { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 330mm !important; margin: 0 !important; padding: 20mm 25mm 20mm 25mm !important; display: flex !important; flex-direction: column !important; } 
+          .letter-paper { 
+            position: absolute !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 215mm !important; 
+            height: 330mm !important; 
+            margin: 0 !important; 
+            padding: 25mm 20mm 25mm 30mm !important; 
+            display: flex !important; 
+            flex-direction: column !important; 
+            page-break-after: always;
+          } 
         }
       `}</style>
     </div>

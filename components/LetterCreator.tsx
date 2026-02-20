@@ -355,12 +355,12 @@ const LetterCreator: React.FC = () => {
     let currentLines = 0;
     
     // Page 1 has header (approx 10 lines) + date/subject (approx 5 lines)
-    const MAX_LINES_PAGE_1 = 22; 
-    const MAX_LINES_PAGE_2 = 38;
+    const MAX_LINES_PAGE_1 = 30; 
+    const MAX_LINES_PAGE_2 = 45;
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const estimatedLines = Math.max(1, Math.ceil(line.length / 80));
+      const estimatedLines = Math.max(1, Math.ceil(line.length / 85));
       
       const maxLines = pages.length === 0 ? MAX_LINES_PAGE_1 : MAX_LINES_PAGE_2;
       
@@ -376,7 +376,7 @@ const LetterCreator: React.FC = () => {
     
     if (currentPage || pages.length === 0) {
       const maxLines = pages.length === 0 ? MAX_LINES_PAGE_1 : MAX_LINES_PAGE_2;
-      if (currentLines + 10 > maxLines) {
+      if (currentLines + 8 > maxLines) {
         pages.push(currentPage);
         pages.push('');
       } else {

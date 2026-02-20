@@ -113,7 +113,7 @@ const MonthlyReport: React.FC = () => {
       const detailed = prev.staffDetailedData || {};
       const current = detailed[staffId] || { 
         absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 }, 
-        note: '', birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: ''
+        note: '', birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: '', rank: ''
       };
       return { ...prev, staffDetailedData: { ...detailed, [staffId]: { ...current, [field]: value } } };
     });
@@ -350,7 +350,7 @@ const MonthlyReport: React.FC = () => {
                           {ptkStaff.map((s, idx) => {
                              const data = (reportData.staffDetailedData || {})[s.id] || { 
                                absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 }, 
-                               birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: '', note: ''
+                               birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: '', rank: '', note: ''
                              };
                              return (
                                 <div key={s.id} className="p-6 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm space-y-4 hover:border-indigo-400 transition-all">
@@ -369,6 +369,13 @@ const MonthlyReport: React.FC = () => {
                                    </div>
                                    <div className="grid grid-cols-2 gap-4">
                                       <div><label className="text-[8px] font-black text-slate-400 uppercase">Jabatan</label><input value={data.jabatan || s.rank || ''} onChange={(e) => updatePtkDetail(s.id, 'jabatan', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
+                                      <div><label className="text-[8px] font-black text-slate-400 uppercase">Status Kepeg.</label>
+                                         <select value={data.status || ''} onChange={(e) => updatePtkDetail(s.id, 'status', e.target.value)} className="w-full p-2 border rounded-xl text-[10px] bg-white">
+                                            <option value="">-- Pilih --</option>
+                                            <option value="ASN">ASN</option>
+                                            <option value="Non ASN">Non ASN</option>
+                                         </select>
+                                      </div>
                                       <div><label className="text-[8px] font-black text-slate-400 uppercase">Unit Kerja</label><input value={data.unitKerja || config?.name || ''} onChange={(e) => updatePtkDetail(s.id, 'unitKerja', e.target.value)} className="w-full p-2 border rounded-xl text-[10px]" /></div>
                                    </div>
                                    <div className="grid grid-cols-2 gap-4">
@@ -590,7 +597,7 @@ const MonthlyReport: React.FC = () => {
                         absent: { s: 0, i: 0, a: 0, ch: 0, cd: 0, dl: 0 },
                         birthInfo: '', tmtCpns: '', tmtGol: '', masaKerja: '', jabatan: '', status: '', pendidikan: '', phone: '', unitKerja: '', rank: '', note: ''
                       }; 
-                      return (<tr key={s.id} className="h-9"><td className="border border-black">{idx + 1}</td><td className="border border-black text-left px-1 font-bold leading-tight uppercase">{s.name}</td><td className="border border-black">{d.birthInfo || '-'}</td><td className="border border-black">{s.nip || '-'}</td><td className="border border-black">{d.rank || s.rank || '-'}</td><td className="border border-black">{d.tmtCpns || '-'}</td><td className="border border-black">{d.tmtGol || '-'}</td><td className="border border-black">{d.masaKerja || '-'}</td><td className="border border-black">{d.jabatan || s.rank || '-'}</td><td className="border border-black">{s.category === 'reg' ? 'PNS' : 'NON PNS'}</td><td className="border border-black">{d.pendidikan || '-'}</td><td className="border border-black">{d.phone || '-'}</td><td className="border border-black">{d.unitKerja || config?.name || '-'}</td>{['s','i', 'a', 'ch', 'cd', 'dl'].map(type => (<td key={type} className="border border-black">{(d.absent as any)?.[type] || ''}</td>))}<td className="border border-black">{d.note || ''}</td></tr>) })}</tbody>
+                      return (<tr key={s.id} className="h-9"><td className="border border-black">{idx + 1}</td><td className="border border-black text-left px-1 font-bold leading-tight uppercase">{s.name}</td><td className="border border-black">{d.birthInfo || '-'}</td><td className="border border-black">{s.nip || '-'}</td><td className="border border-black">{d.rank || s.rank || '-'}</td><td className="border border-black">{d.tmtCpns || '-'}</td><td className="border border-black">{d.tmtGol || '-'}</td><td className="border border-black">{d.masaKerja || '-'}</td><td className="border border-black">{d.jabatan || s.rank || '-'}</td><td className="border border-black">{d.status || (s.category === 'reg' ? 'ASN' : 'NON ASN')}</td><td className="border border-black">{d.pendidikan || '-'}</td><td className="border border-black">{d.phone || '-'}</td><td className="border border-black">{d.unitKerja || config?.name || '-'}</td>{['s','i', 'a', 'ch', 'cd', 'dl'].map(type => (<td key={type} className="border border-black">{(d.absent as any)?.[type] || ''}</td>))}<td className="border border-black">{d.note || ''}</td></tr>) })}</tbody>
                  </table>
                  <div className="mt-8 flex justify-end"><div className="text-center w-[60mm] font-serif leading-snug"><p className="text-[7.5pt] mb-1 font-bold">Kediri, {format(new Date(year, month + 1, 0), 'dd MMMM yyyy', { locale: id })}</p><p className="text-[7.5pt] mb-12 font-black uppercase">KEPALA SEKOLAH</p><p className="text-[7.5pt] font-black underline uppercase">{config?.principalName}</p><p className="text-[7pt] font-bold">NIP. {config?.principalNip}</p></div></div>
               </div>

@@ -487,16 +487,25 @@ const LetterCreator: React.FC = () => {
            {contentParts.map((part, pIdx) => (
              <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none flex flex-col text-black mb-16 print:mb-0 transition-transform origin-top" style={{ transform: `scale(${scale})` }}>
                 {pIdx === 0 && (
-                  <div className="border-b-[4px] border-double border-black pb-4 mb-6 grid grid-cols-[30mm_1fr_30mm] items-center text-black">
-                     <div className="flex justify-center">{config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="w-full h-auto object-contain" />}</div>
-                     <div className="text-center w-full px-4">
-                        <h3 className="text-[13pt] uppercase font-bold leading-tight">{config.headerLine1}</h3>
-                        <h3 className="text-[13pt] font-bold uppercase leading-tight">{config.headerLine2}</h3>
-                        <h1 className="text-[18pt] font-black uppercase my-1 tracking-tight">{config.name}</h1>
-                        <p className="text-[9pt] font-bold leading-tight italic">{config.address}</p>
-                        <p className="text-[9pt] font-bold mt-0.5">NPSN: {config.npsn} | Email: {config.email}</p>
-                     </div>
-                     <div className="flex justify-center">{config.logoUrl && <img src={config.logoUrl} className="w-full h-auto object-contain" />}</div>
+                  <div className="mb-6 relative">
+                    <div className="grid grid-cols-[28mm_1fr_28mm] items-center text-black pb-2">
+                       <div className="flex justify-center items-center">
+                         {config.logoDaerahUrl && <img src={config.logoDaerahUrl} className="h-[28mm] w-auto object-contain" />}
+                       </div>
+                       <div className="text-center w-full px-2">
+                          <h3 className="text-[14pt] uppercase font-bold leading-tight tracking-wider">{config.headerLine1}</h3>
+                          <h3 className="text-[14pt] font-bold uppercase leading-tight tracking-wider">{config.headerLine2}</h3>
+                          <h1 className="text-[20pt] font-black uppercase my-0.5 tracking-tight leading-none">{config.name}</h1>
+                          <p className="text-[10pt] leading-tight font-medium mt-1">{config.address}</p>
+                          <p className="text-[10pt] font-medium">NPSN: {config.npsn} | Email: {config.email}</p>
+                       </div>
+                       <div className="flex justify-center items-center">
+                         {config.logoUrl && <img src={config.logoUrl} className="h-[28mm] w-auto object-contain" />}
+                       </div>
+                    </div>
+                    {/* Official Double Line: Thick then Thin */}
+                    <div className="border-b-[3px] border-black w-full"></div>
+                    <div className="border-b-[1px] border-black w-full mt-[2px]"></div>
                   </div>
                 )}
                 

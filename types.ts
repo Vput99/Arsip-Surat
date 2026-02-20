@@ -95,6 +95,7 @@ export interface MonthlyReport {
     tmtGol?: string,
     masaKerja?: string,
     jabatan?: string,
+    status?: string,
     unitKerja?: string,
     pendidikan?: string,
     phone?: string,

@@ -90,6 +90,15 @@ export interface MonthlyReport {
   // BAGIAN DATA PTK (Halaman Belakang Detail - Per Orang)
   staffDetailedData?: Record<string, {
     absent: { s: number, i: number, a: number, ch: number, cd: number, dl: number },
+    birthInfo?: string,
+    tmtCpns?: string,
+    tmtGol?: string,
+    masaKerja?: string,
+    jabatan?: string,
+    unitKerja?: string,
+    pendidikan?: string,
+    phone?: string,
+    rank?: string,
     note: string
   }>;
 

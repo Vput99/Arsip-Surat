@@ -500,7 +500,7 @@ const LetterCreator: React.FC = () => {
                   </div>
                 )}
                 
-                <div className="flex-1 flex flex-col">
+                <div className="flex flex-col">
                    {pIdx === 0 && (
                      <>
                        {isOfficialLayout ? (
@@ -523,36 +523,36 @@ const LetterCreator: React.FC = () => {
                      </>
                    )}
                    
-                   <div className="flex-1 naskah-content">
+                   <div className="naskah-content">
                      <SmartContentRenderer text={part} subject={formData.subject} />
+                     
+                     {/* Footer Signer Block */}
+                     {pIdx === contentParts.length - 1 && (
+                       <div className="mt-[1.5em] ml-auto w-[350px] flex flex-col text-center break-inside-avoid signature-block">
+                          {!isOfficialLayout && <p className="mb-1 font-medium">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
+                          <p className="font-bold text-[12pt]">{formData.signatureTitle}</p>
+                          <div className="h-32 flex items-center justify-center my-1 relative">
+                            {useQRCode && (
+                              <div className="relative p-1 bg-white rounded-lg shadow-sm border border-slate-50">
+                                 <QRCodeSVG 
+                                  value={qrValue} 
+                                  size={85} 
+                                  level="H" 
+                                  imageSettings={{
+                                      src: config.logoDaerahUrl,
+                                      height: 18,
+                                      width: 18,
+                                      excavate: true,
+                                  }}
+                                  />
+                              </div>
+                            )}
+                          </div>
+                          <p className="font-bold underline uppercase text-[12pt] decoration-2">{formData.signerName}</p>
+                          <p className="font-bold text-[11pt]">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
+                       </div>
+                     )}
                    </div>
-
-                   {/* Footer Signer Block */}
-                   {pIdx === contentParts.length - 1 && (
-                     <div className="mt-8 ml-auto w-[350px] flex flex-col text-center break-inside-avoid signature-block">
-                        {!isOfficialLayout && <p className="mb-1 font-medium">Kediri, {format(new Date(formData.date), 'dd MMMM yyyy', { locale: id })}</p>}
-                        <p className="font-bold text-[12pt]">{formData.signatureTitle}</p>
-                        <div className="h-32 flex items-center justify-center my-1 relative">
-                          {useQRCode && (
-                            <div className="relative p-1 bg-white rounded-lg shadow-sm border border-slate-50">
-                               <QRCodeSVG 
-                                value={qrValue} 
-                                size={85} 
-                                level="H" 
-                                imageSettings={{
-                                    src: config.logoDaerahUrl,
-                                    height: 18,
-                                    width: 18,
-                                    excavate: true,
-                                }}
-                                />
-                            </div>
-                          )}
-                        </div>
-                        <p className="font-bold underline uppercase text-[12pt] decoration-2">{formData.signerName}</p>
-                        <p className="font-bold text-[11pt]">{formData.signerNip ? `NIP. ${formData.signerNip}` : ''}</p>
-                     </div>
-                   )}
                 </div>
                 
                 {/* Visual Page Footer Indicator */}

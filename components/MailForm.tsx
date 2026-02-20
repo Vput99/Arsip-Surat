@@ -103,7 +103,7 @@ const MailForm: React.FC<MailFormProps> = ({ type, onClose, initialData }) => {
         }
         
         if (result.category) newData.category = result.category;
-        if (result.urgency) newData.urgency = result.urgency;
+        if (result.urgency) newData.urgency = result.urgency as UrgencyLevel;
         
         return newData;
       });

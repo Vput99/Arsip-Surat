@@ -98,11 +98,11 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
       const isIntroSentence = label.length > 60 || label.toLowerCase().includes('yang bertanda tangan') || label.toLowerCase().includes('menerangkan bahwa');
       
       if (isIntroSentence) {
-         renderedBlocks.push(<p key={`p-${index}`} className="my-[5px] text-justify leading-[1.6] indent-[3.5rem]">{trimmed}</p>);
+         renderedBlocks.push(<p key={`p-${index}`} className="my-[5px] text-justify leading-[1.5] indent-[3.5rem]">{trimmed}</p>);
       } else {
          const labelWidth = 'w-[150px]';
          renderedBlocks.push(
-            <div key={`info-${index}`} className="flex my-[2px] break-inside-avoid leading-[1.6]">
+            <div key={`info-${index}`} className="flex my-[2px] break-inside-avoid leading-[1.5]">
               <span className={`${labelWidth} shrink-0 font-medium`}>{label}</span>
               <span className="w-[20px] text-center shrink-0">:</span>
               <span className="flex-1 text-justify">{value}</span>
@@ -114,14 +114,14 @@ const SmartContentRenderer = ({ text, subject }: { text: string, subject: string
     else if (isNumberedData) {
       const match = trimmed.match(/^(\d+\.)\s+(.*)/);
       renderedBlocks.push(
-        <div key={`list-${index}`} className="flex my-[4px] pl-[1rem] leading-[1.6] relative break-inside-avoid">
+        <div key={`list-${index}`} className="flex my-[4px] pl-[1rem] leading-[1.5] relative break-inside-avoid">
           <span className="w-6 text-left shrink-0 font-medium">{match ? match[1] : ''}</span>
           <span className="flex-1 text-justify">{match ? match[2] : trimmed}</span>
         </div>
       );
     }
     else {
-      renderedBlocks.push(<p key={`p-${index}`} className="my-[5px] text-justify leading-[1.6] indent-[3.5rem]">{trimmed}</p>);
+      renderedBlocks.push(<p key={`p-${index}`} className="my-[5px] text-justify leading-[1.5] indent-[3.5rem]">{trimmed}</p>);
     }
   });
   
@@ -346,8 +346,49 @@ const LetterCreator: React.FC = () => {
 
   if (!config || templates.length === 0) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600"/></div>;
 
-  // Split content by [PAGE_BREAK] for manual pagination
-  const contentParts = formData.content.split('[PAGE_BREAK]');
+  const getPaginatedContent = (text: string) => {
+    if (text.includes('[PAGE_BREAK]')) return text.split('[PAGE_BREAK]');
+    
+    const lines = text.split('\n');
+    const pages: string[] = [];
+    let currentPage = '';
+    let currentLines = 0;
+    
+    // Page 1 has header (approx 10 lines) + date/subject (approx 5 lines)
+    const MAX_LINES_PAGE_1 = 22; 
+    const MAX_LINES_PAGE_2 = 38;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const estimatedLines = Math.max(1, Math.ceil(line.length / 80));
+      
+      const maxLines = pages.length === 0 ? MAX_LINES_PAGE_1 : MAX_LINES_PAGE_2;
+      
+      if (currentLines + estimatedLines > maxLines && currentPage !== '') {
+        pages.push(currentPage);
+        currentPage = line;
+        currentLines = estimatedLines;
+      } else {
+        currentPage += (currentPage ? '\n' : '') + line;
+        currentLines += estimatedLines;
+      }
+    }
+    
+    if (currentPage || pages.length === 0) {
+      const maxLines = pages.length === 0 ? MAX_LINES_PAGE_1 : MAX_LINES_PAGE_2;
+      if (currentLines + 10 > maxLines) {
+        pages.push(currentPage);
+        pages.push('');
+      } else {
+        pages.push(currentPage);
+      }
+    }
+    
+    return pages;
+  };
+
+  // Split content by [PAGE_BREAK] for manual pagination or auto-paginate
+  const contentParts = getPaginatedContent(formData.content);
   const qrValue = `DOKUMEN SAH SDN ${config.name.toUpperCase()}\nNomor: ${formData.refNumber}\nPejabat: ${formData.signerName}\nTanggal: ${formData.date}`;
 
   const isOfficialLayout = selectedTemplate?.layout === 'standard';
@@ -558,10 +599,10 @@ const LetterCreator: React.FC = () => {
           width: 215mm; 
           min-height: 330mm;
           height: auto;
-          padding: 25mm 20mm 25mm 30mm; /* Atas 2.5, Kanan 2, Bawah 2.5, Kiri 3 */
+          padding: 2.54cm; /* Margin 1 inch */
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
-          line-height: 1.6;
+          line-height: 1.5; /* Spasi 1.5 */
           box-sizing: border-box;
           position: relative;
           color: black;
@@ -596,7 +637,7 @@ const LetterCreator: React.FC = () => {
             height: 330mm !important; 
             max-height: 330mm !important;
             margin: 0 !important; 
-            padding: 25mm 20mm 25mm 30mm !important; 
+            padding: 2.54cm !important; 
             display: flex !important; 
             flex-direction: column !important; 
             page-break-after: always;

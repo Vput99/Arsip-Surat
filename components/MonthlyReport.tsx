@@ -499,23 +499,23 @@ const MonthlyReport: React.FC = () => {
            {previewPage === 1 && (
               <div ref={reportRef} className="bg-white p-[8mm] text-black font-sans origin-top overflow-hidden border border-slate-300 shadow-[0_40px_100px_rgba(0,0,0,0.15)] mb-10" style={{ width: '330mm', height: '215mm', transform: `scale(${scale})` }}>
                 <div className="text-center font-bold text-[11pt] border-b-[1.5pt] border-black pb-0.5 mb-2 uppercase tracking-wide">LAPOR BULAN {format(new Date(year, month, 1), 'MMMM yyyy', { locale: id })}</div>
-                <div className="grid grid-cols-[1.1fr_1.8fr_1.1fr_0.6fr] gap-4 text-[6.5pt] leading-snug mb-3 uppercase font-bold text-slate-800">
-                   <div className="space-y-0.5">
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>NAMA LEMBAGA</span><span>:</span><span className="font-black">{config?.name}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>NSS / NSS</span><span>:</span><span>{config?.nss}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>NO. TELP/HP KS</span><span>:</span><span>{config?.phone}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>KELURAHAN</span><span>:</span><span>{config?.village}</span></div>
+                <div className="grid grid-cols-[1.2fr_1.8fr_1.2fr_0.8fr] gap-4 text-[7pt] leading-tight mb-4 uppercase font-bold text-slate-900 border-b border-slate-100 pb-2">
+                   <div className="space-y-1">
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>NAMA LEMBAGA</span><span>:</span><span className="font-black text-indigo-900">{config?.name}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>NSS / NSS</span><span>:</span><span>{config?.nss}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>NO. TELP/HP KS</span><span>:</span><span>{config?.phone}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>KELURAHAN</span><span>:</span><span>{config?.village}</span></div>
                    </div>
-                   <div className="space-y-0.5">
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>ALAMAT SEKOLAH</span><span>:</span><span>{config?.address}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>KECAMATAN</span><span>:</span><span>{config?.district}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>KOTA / PROVINSI</span><span>:</span><span>{config?.city} / {config?.province}</span></div>
+                   <div className="space-y-1">
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>ALAMAT SEKOLAH</span><span>:</span><span>{config?.address}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>KECAMATAN</span><span>:</span><span>{config?.district}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>KOTA / PROVINSI</span><span>:</span><span>{config?.city} / {config?.province}</span></div>
                    </div>
-                   <div className="space-y-0.5">
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>STATUS AKRE</span><span>:</span><span>{config?.accreditation}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>TAHUN AKRE</span><span>:</span><span>{config?.accreditationYear}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>GUGUS</span><span>:</span><span>{config?.gugus}</span></div>
-                      <div className="grid grid-cols-[38mm_2mm_1fr]"><span>E-MAIL</span><span>:</span><span className="lowercase font-medium">{config?.email}</span></div>
+                   <div className="space-y-1">
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>STATUS AKRE</span><span>:</span><span>{config?.accreditation}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>TAHUN AKRE</span><span>:</span><span>{config?.accreditationYear}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>GUGUS</span><span>:</span><span>{config?.gugus}</span></div>
+                      <div className="grid grid-cols-[35mm_2mm_1fr]"><span>E-MAIL</span><span>:</span><span className="lowercase font-medium">{config?.email}</span></div>
                    </div>
                    <div className="text-right flex flex-col justify-start">
                       <p className="font-black text-[9pt] tracking-tight bg-slate-100 px-2 py-1 rounded">NPSN : {config?.npsn}</p>

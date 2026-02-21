@@ -496,8 +496,8 @@ const LetterCreator: React.FC = () => {
                           <h3 className="text-[14pt] uppercase font-bold leading-tight tracking-wide">{config.headerLine1}</h3>
                           <h3 className="text-[14pt] font-bold uppercase leading-tight tracking-wide">{config.headerLine2}</h3>
                           <h1 className="text-[18pt] font-black uppercase my-1 tracking-tight leading-none">{config.name}</h1>
-                          <p className="text-[10pt] leading-tight font-medium mt-1">{config.address}</p>
-                          <div className="flex justify-center items-center gap-3 text-[10pt] font-medium">
+                          <p className="text-[9pt] leading-tight font-medium mt-1">{config.address}</p>
+                          <div className="flex justify-center items-center gap-2 text-[8pt] font-medium whitespace-nowrap">
                              <span>NPSN: {config.npsn}</span>
                              <span className="text-slate-400">|</span>
                              <span>Email: {config.email}</span>

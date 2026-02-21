@@ -394,7 +394,7 @@ const AttendanceCreator: React.FC = () => {
                   <h3 className="text-[12pt] font-bold uppercase leading-tight">{config.headerLine2}</h3>
                   <h1 className="text-[15pt] font-black uppercase my-0.5 tracking-tight">{config.name}</h1>
                   <p className="text-[8pt] font-bold leading-tight">{config.address}</p>
-                  <div className="flex justify-center items-center gap-3 text-[8pt] font-bold italic leading-tight">
+                  <div className="flex justify-center items-center gap-2 text-[7pt] font-bold italic leading-tight whitespace-nowrap">
                      <span>NPSN: {config.npsn}</span>
                      <span className="text-slate-400">|</span>
                      <span>Email: {config.email}</span>

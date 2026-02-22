@@ -4,7 +4,7 @@ import {
   Users, Calendar, Loader2, Music, Hammer, ChevronLeft, 
   ArrowRight, Save, ZoomIn, ZoomOut, CheckCircle, 
   BarChart3, CalendarDays, UserCheck, CalendarOff, 
-  ShieldCheck, List, Eye, Trash2, Plus, CalendarSearch
+  ShieldCheck, List, Eye, Trash2, Plus, CalendarSearch, Printer
 } from 'lucide-react';
 import { 
   subscribeToConfig, subscribeToStaff, StaffMember, 
@@ -368,6 +368,9 @@ const AttendanceCreator: React.FC = () => {
                  </button>
                ))}
             </div>
+            <button onClick={() => window.print()} className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-2 hover:bg-emerald-700 transition-colors">
+              <Printer size={16} /> CETAK
+            </button>
             <button onClick={handleSaveToArchive} disabled={saveLoading} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-2">
               {saveLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Arsipkan
             </button>

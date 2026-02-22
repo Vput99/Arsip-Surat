@@ -343,7 +343,7 @@ const AttendanceCreator: React.FC = () => {
 
   // --- RENDERING PREVIEW EDITOR ---
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] animate-fade-in overflow-hidden bg-slate-100">
+    <div className="flex flex-col h-[calc(100vh-100px)] animate-fade-in overflow-hidden bg-slate-100 print:h-auto print:overflow-visible">
       <div className="bg-white border-b border-slate-200 p-4 px-6 flex justify-between items-center z-40 print:hidden shrink-0">
          <div className="flex items-center gap-4">
            <button onClick={() => setView('sub_menu')} className="p-3 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors text-slate-600"><ChevronLeft size={20}/></button>
@@ -374,9 +374,9 @@ const AttendanceCreator: React.FC = () => {
          </div>
       </div>
       
-      <div className="flex-1 overflow-auto p-12 print:p-0 flex flex-col items-center">
+      <div className="flex-1 overflow-auto p-12 print:p-0 flex flex-col items-center print:h-auto print:overflow-visible print:block">
          {syncing && (
-           <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-6 py-3 rounded-full border shadow-xl flex items-center gap-3 z-50 animate-bounce">
+           <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-6 py-3 rounded-full border shadow-xl flex items-center gap-3 z-50 animate-bounce print:hidden">
               <Loader2 className="animate-spin text-indigo-600" size={16} />
               <span className="text-[10px] font-black uppercase tracking-widest">Sinkronisasi Data Realtime...</span>
            </div>
@@ -409,12 +409,24 @@ const AttendanceCreator: React.FC = () => {
             </div>
             
             <div className="w-full flex-1 overflow-hidden">
-               <table className="w-full border-collapse border-black border-[1.2pt] text-[7pt]">
+               <table className="w-full border-collapse border-black border-[1.2pt] text-[7pt] table-fixed">
+                  <colgroup>
+                    <col className="w-[8mm]" />
+                    <col className="w-[45mm]" />
+                    <col className="w-[30mm]" />
+                    {dateRange.map(d => <col key={`c-${d}`} className="w-[5.5mm]" />)}
+                    <col className="w-[5mm]" />
+                    <col className="w-[5mm]" />
+                    <col className="w-[5mm]" />
+                    <col className="w-[5mm]" />
+                    <col className="w-[5mm]" />
+                    <col className="w-[6.5mm]" />
+                  </colgroup>
                   <thead>
                     <tr className="bg-transparent">
-                      <th className="border border-black p-1 w-[8mm] text-center align-middle" rowSpan={2}>NO</th>
-                      <th className="border border-black p-1 text-center align-middle w-[45mm]" rowSpan={2}>NAMA LENGKAP / NIP</th>
-                      <th className="border border-black p-1 text-center align-middle w-[30mm]" rowSpan={2}>JABATAN</th>
+                      <th className="border border-black p-1 text-center align-middle" rowSpan={2}>NO</th>
+                      <th className="border border-black p-1 text-center align-middle" rowSpan={2}>NAMA LENGKAP / NIP</th>
+                      <th className="border border-black p-1 text-center align-middle" rowSpan={2}>JABATAN</th>
                       <th className="border border-black p-0.5 text-center uppercase tracking-tighter" colSpan={dateRange.length}>
                         TANGGAL ABSENSI (A: MASUK, B: PULANG)
                       </th>
@@ -424,17 +436,17 @@ const AttendanceCreator: React.FC = () => {
                       {dateRange.map(d => (
                         <th 
                           key={d} 
-                          className={`border border-black p-0 w-[5.5mm] text-[6.5pt] text-center ${isDayOff(d) ? 'bg-red-500 text-white font-bold' : ''}`}
+                          className={`border border-black p-0 text-[6.5pt] text-center ${isDayOff(d) ? 'bg-red-500 text-white font-bold' : ''}`}
                         >
                           {d}
                         </th>
                       ))}
-                      <th className="border border-black p-0 w-[5mm] text-[6pt] text-center">S</th>
-                      <th className="border border-black p-0 w-[5mm] text-[6pt] text-center">I</th>
-                      <th className="border border-black p-0 w-[5mm] text-[6pt] text-center">A</th>
-                      <th className="border border-black p-0 w-[5mm] text-[6pt] text-center">C</th>
-                      <th className="border border-black p-0 w-[5mm] text-[6pt] text-center">DL</th>
-                      <th className="border border-black p-0 w-[6.5mm] text-[6pt] text-center font-bold">JML</th>
+                      <th className="border border-black p-0 text-[6pt] text-center">S</th>
+                      <th className="border border-black p-0 text-[6pt] text-center">I</th>
+                      <th className="border border-black p-0 text-[6pt] text-center">A</th>
+                      <th className="border border-black p-0 text-[6pt] text-center">C</th>
+                      <th className="border border-black p-0 text-[6pt] text-center">DL</th>
+                      <th className="border border-black p-0 text-[6pt] text-center font-bold">JML</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -503,15 +515,39 @@ const AttendanceCreator: React.FC = () => {
 
       <style>{`
         .attendance-paper-landscape { box-sizing: border-box; }
+        
         @media print {
-          body * { visibility: hidden; }
-          .attendance-paper-landscape, .attendance-paper-landscape * { visibility: visible !important; }
-          .attendance-paper-landscape { 
-            position: fixed !important; left: 0 !important; top: 0 !important; 
-            width: 330mm !important; height: 215mm !important; 
-            margin: 0 !important; transform: none !important; padding: 10mm !important;
-          }
           @page { size: 330mm 215mm landscape; margin: 0; }
+          
+          html, body {
+            width: 330mm;
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white;
+          }
+
+          /* Reset visibility for all elements, rely on print:hidden utility classes */
+          body * { visibility: visible; }
+          
+          .attendance-paper-landscape { 
+            width: 330mm !important; 
+            min-height: 215mm !important;
+            height: auto !important; 
+            margin: 0 !important; 
+            padding: 10mm !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            transform: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            display: block !important;
+          }
+          
+          /* Ensure table headers repeat on new pages if supported */
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; }
         }
       `}</style>
     </div>

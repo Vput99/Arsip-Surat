@@ -38,14 +38,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-900">
+    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-900 print:h-auto print:overflow-visible">
       {/* Overlay Mobile */}
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] lg:hidden" onClick={() => setIsSidebarOpen(false)}/>
       )}
 
       {/* Sidebar Navigasi */}
-      <aside className={`fixed inset-y-0 left-0 z-[70] w-72 bg-[#0F172A] text-white shadow-2xl transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-white/5`}>
+      <aside className={`fixed inset-y-0 left-0 z-[70] w-72 bg-[#0F172A] text-white shadow-2xl transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-white/5 print:hidden`}>
         <div className="flex items-center h-24 px-8 shrink-0 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-600/10 to-transparent"></div>
           <div className="relative z-10 flex items-center">
@@ -111,7 +111,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Header Mobile */}
-        <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white border-b border-slate-200 sticky top-0 z-[50] shrink-0 shadow-sm">
+        <header className="flex items-center justify-between h-20 px-6 lg:hidden bg-white border-b border-slate-200 sticky top-0 z-[50] shrink-0 shadow-sm print:hidden">
           <div className="font-black text-slate-900 text-lg flex items-center">
             <div className="bg-indigo-600 p-1.5 rounded-lg mr-2.5 shadow-lg shadow-indigo-200">
                <School className="text-white" size={18} />
@@ -124,8 +124,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Konten Utama */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] relative">
-          <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto min-h-full">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] relative print:h-auto print:overflow-visible">
+          <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto min-h-full print:p-0 print:m-0 print:max-w-none">
             {children}
           </div>
         </main>

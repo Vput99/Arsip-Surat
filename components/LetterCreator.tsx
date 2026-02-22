@@ -394,7 +394,7 @@ const LetterCreator: React.FC = () => {
   const isOfficialLayout = selectedTemplate?.layout === 'standard';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in text-slate-900">
+    <div className="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in text-slate-900 print:h-auto print:overflow-visible">
       {/* Header Toolbar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm print:hidden">
         <div className="flex items-center gap-4">
@@ -420,7 +420,7 @@ const LetterCreator: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden print:h-auto print:overflow-visible print:block">
         {/* Editor Sidebar */}
         <div className="w-full lg:w-[420px] flex flex-col gap-5 overflow-y-auto pr-2 print:hidden shrink-0 custom-scrollbar">
           <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
@@ -464,7 +464,7 @@ const LetterCreator: React.FC = () => {
                 </div>
              </div>
           </div>
-          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 flex-1 flex flex-col min-h-[400px]">
+          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 flex-1 flex flex-col min-h-[400px] print:hidden">
              <div className="flex justify-between items-center mb-4">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Editor Naskah</label>
                 <div className="flex gap-2">
@@ -483,9 +483,9 @@ const LetterCreator: React.FC = () => {
         </div>
 
         {/* Preview Paper Area */}
-        <div ref={letterContainerRef} className="flex-1 bg-slate-200/40 rounded-[3rem] overflow-y-auto p-12 flex flex-col items-center gap-12 print:p-0 print:bg-white print:block custom-scrollbar shadow-inner relative">
+        <div ref={letterContainerRef} className="flex-1 bg-slate-200/40 rounded-[3rem] overflow-y-auto p-12 flex flex-col items-center gap-12 print:p-0 print:m-0 print:bg-white print:block custom-scrollbar shadow-inner relative print:overflow-visible print:h-auto print:w-full">
            {contentParts.map((part, pIdx) => (
-             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none flex flex-col text-black mb-16 print:mb-0 transition-transform origin-top" style={{ transform: `scale(${scale})` }}>
+             <div key={pIdx} className="letter-paper bg-white shadow-2xl relative print:shadow-none flex flex-col text-black mb-16 print:mb-0 transition-transform origin-top print:transform-none" style={{ transform: `scale(${scale})` }}>
                 {pIdx === 0 && (
                   <div className="mb-6 relative">
                     <div className="grid grid-cols-[32mm_1fr_32mm] items-center text-black pb-1">
@@ -639,27 +639,46 @@ const LetterCreator: React.FC = () => {
           @page { 
             size: 215mm 330mm; 
             margin: 0; 
-          } 
-          body * { visibility: hidden; } 
-          .letter-paper, .letter-paper * { visibility: visible !important; } 
+          }
+          
+          html, body {
+            width: 215mm;
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white;
+          }
+
+          /* Hide everything by default is handled by print:hidden classes on parents */
+          /* We just need to ensure the visible parts flow correctly */
+
           .letter-paper { 
-            position: relative !important; 
-            left: 0 !important; 
-            top: 0 !important; 
             width: 215mm !important; 
             height: 330mm !important; 
-            max-height: 330mm !important;
             margin: 0 !important; 
             padding: 2.54cm !important; 
-            display: flex !important; 
-            flex-direction: column !important; 
             page-break-after: always;
+            break-after: page;
             transform: none !important;
             box-shadow: none !important;
             border: none !important;
             overflow: hidden !important;
-          } 
-          .print\\:hidden { display: none !important; }
+            display: block !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+          }
+          
+          .letter-paper:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
+
+          /* Ensure proper text rendering */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
     </div>

@@ -551,6 +551,12 @@ const AttendanceCreator: React.FC = () => {
           /* Ensure table headers repeat on new pages if supported */
           thead { display: table-header-group; }
           tr { page-break-inside: avoid; }
+
+          /* Force background colors to print */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
     </div>

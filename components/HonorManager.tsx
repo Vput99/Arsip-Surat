@@ -216,7 +216,7 @@ const HonorManager: React.FC = () => {
   const taxBreakdown = getTaxBreakdown();
 
   return (
-    <div className="space-y-6 animate-fade-in pb-10 bg-[#F8FAFC] min-h-screen p-4 overflow-hidden">
+    <div className="space-y-6 animate-fade-in pb-10 bg-[#F8FAFC] min-h-screen p-4 overflow-hidden print:h-auto print:overflow-visible">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-2 max-w-[1600px] mx-auto print:hidden">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none">Manajemen Keuangan</h2>
@@ -425,7 +425,7 @@ const HonorManager: React.FC = () => {
         </div>
 
         {/* Area Preview Dokument - Landscape */}
-        <div className="lg:col-span-9 overflow-x-auto bg-[#F1F5F9] rounded-[3rem] p-10 flex justify-center print:bg-white print:p-0 print:block">
+        <div className="lg:col-span-9 overflow-x-auto bg-[#F1F5F9] rounded-[3rem] p-10 flex justify-center print:bg-white print:p-0 print:block print:h-auto print:overflow-visible">
            <div 
              ref={receiptRef}
              className="honor-paper-landscape bg-white p-[20mm] text-black font-serif flex flex-col shadow-2xl origin-top print:shadow-none print:transform-none"
@@ -569,15 +569,46 @@ const HonorManager: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
+        .honor-paper-landscape { box-sizing: border-box; }
+
         @media print {
-          body * { visibility: hidden; }
-          .honor-paper-landscape, .honor-paper-landscape * { visibility: visible !important; }
-          .honor-paper-landscape { 
-            position: fixed !important; left: 0 !important; top: 0 !important; 
-            width: 330mm !important; height: 215mm !important; 
-            margin: 0 !important; transform: none !important; padding: 20mm !important;
-          }
           @page { size: 330mm 215mm landscape; margin: 0; }
+          
+          html, body {
+            width: 330mm;
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white;
+          }
+
+          /* Reset visibility for all elements, rely on print:hidden utility classes */
+          body * { visibility: visible; }
+          
+          .honor-paper-landscape { 
+            width: 330mm !important; 
+            min-height: 215mm !important;
+            height: auto !important; 
+            margin: 0 !important; 
+            padding: 20mm !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            transform: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            display: block !important;
+          }
+          
+          /* Ensure table headers repeat on new pages if supported */
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; }
+
+          /* Force background colors to print */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
     </div>

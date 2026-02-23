@@ -612,15 +612,20 @@ const LetterCreator: React.FC = () => {
           width: 215mm; 
           min-height: 330mm;
           height: auto;
-          padding: 2.54cm; /* Margin 1 inch */
+          padding: 1.7cm 2.33cm 0.49cm 2.33cm; /* Top Right Bottom Left */
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
-          line-height: 1.5; /* Spasi 1.5 */
+          line-height: 1.0; /* Spasi 1.0 */
           box-sizing: border-box;
           position: relative;
           color: black;
           background-color: white;
         } 
+        
+        .letter-paper p {
+          margin-top: 0;
+          margin-bottom: 0;
+        }
         
         .naskah-content {
           text-align: justify;
@@ -656,7 +661,7 @@ const LetterCreator: React.FC = () => {
             width: 215mm !important; 
             height: 330mm !important; 
             margin: 0 !important; 
-            padding: 2.54cm !important; 
+            padding: 1.7cm 2.33cm 0.49cm 2.33cm !important; 
             page-break-after: always;
             break-after: page;
             transform: none !important;

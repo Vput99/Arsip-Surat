@@ -67,23 +67,24 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-10 animate-fade-in pb-16">
       {/* Banner Utama */}
-      <div className="relative overflow-hidden rounded-[3rem] bg-slate-900 shadow-2xl text-white p-10 md:p-14 border border-white/5 group">
-        <div className="absolute top-0 right-0 -mt-24 -mr-24 w-96 h-96 bg-indigo-600 opacity-20 rounded-full blur-[120px] group-hover:opacity-30 transition-opacity duration-700"></div>
-        <div className="absolute bottom-0 left-0 -mb-24 -ml-24 w-96 h-96 bg-emerald-600 opacity-10 rounded-full blur-[100px]"></div>
+      <div className="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-premium-900 via-premium-800 to-indigo-900 shadow-2xl text-white p-10 md:p-14 border border-white/10 group transform transition-all duration-700 hover:shadow-[0_20px_60px_-15px_rgba(148,64,255,0.4)]">
+        <div className="absolute top-0 right-0 -mt-24 -mr-24 w-[35rem] h-[35rem] bg-gradient-to-bl from-premium-400/40 to-transparent rounded-full blur-[80px] group-hover:scale-110 transition-transform duration-1000 ease-out"></div>
+        <div className="absolute bottom-0 left-0 -mb-24 -ml-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-[100px] group-hover:bg-emerald-400/30 transition-colors duration-1000"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-          <div className="w-40 h-40 bg-white/10 backdrop-blur-2xl rounded-[2.5rem] flex items-center justify-center border border-white/20 shadow-2xl flex-shrink-0 ring-4 ring-white/5 hover:scale-105 transition-transform duration-500">
-             <img src={schoolConfig.logoUrl} alt="Logo" className="w-28 h-28 object-contain" />
+          <div className="w-40 h-40 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] flex items-center justify-center border border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex-shrink-0 ring-1 ring-white/30 transform group-hover:scale-105 group-hover:rotate-6 transition-all duration-700">
+             <img src={schoolConfig.logoUrl} alt="Logo" className="w-28 h-28 object-contain drop-shadow-2xl group-hover:animate-float" />
           </div>
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4 uppercase leading-tight drop-shadow-lg">{schoolConfig.name}</h1>
-            <p className="text-indigo-200 text-lg md:text-xl font-bold opacity-80 mb-8 tracking-wide max-w-2xl mx-auto md:mx-0">Sistem Informasi Manajemen Arsip Sekolah Berbasis Realtime & Intelligence.</p>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 uppercase leading-tight drop-shadow-lg bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-premium-200">{schoolConfig.name}</h1>
+            <p className="text-premium-100 text-lg md:text-xl font-medium opacity-90 mb-8 tracking-wide max-w-2xl mx-auto md:mx-0 drop-shadow-md">Sistem Informasi Manajemen Arsip Sekolah Berbasis Realtime & Intelligence.</p>
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
-              <span className="px-5 py-2.5 rounded-2xl bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2.5 backdrop-blur-md">
-                <MapPin size={14} className="text-indigo-400" /> {schoolConfig.address}
+              <span className="px-6 py-3 rounded-2xl bg-white/10 border border-white/20 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2.5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 cursor-default">
+                <MapPin size={14} className="text-premium-300" /> {schoolConfig.address}
               </span>
-              <span className="px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 flex items-center gap-2.5 backdrop-blur-md">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div> Realtime Sync
+              <span className="px-6 py-3 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 flex items-center gap-2.5 backdrop-blur-md shadow-[0_0_15px_rgba(52,211,153,0.2)] transition-transform hover:scale-105 cursor-default">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div> Realtime Sync
               </span>
             </div>
           </div>
@@ -93,26 +94,28 @@ const Dashboard: React.FC = () => {
       {/* Menu Cepat & Statistik */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
          <div className="lg:col-span-8 space-y-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                {quickActions.map((action, i) => (
-                  <Link key={i} to={action.path} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-3 group">
-                     <div className={`w-12 h-12 ${action.bg} ${action.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  <Link key={i} to={action.path} className="bg-white/80 backdrop-blur-xl p-6 rounded-[2rem] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1.5 hover:bg-white transition-all duration-500 flex flex-col items-center justify-center gap-4 group relative overflow-hidden">
+                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                     <div className={`w-14 h-14 ${action.bg} ${action.color} rounded-[1.25rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 shadow-inner z-10`}>
                         {action.icon}
                      </div>
-                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-indigo-600">{action.label}</span>
+                     <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 group-hover:text-premium-600 z-10 transition-colors">{action.label}</span>
                   </Link>
                ))}
             </div>
 
             <div className="grid grid-cols-2 gap-6">
                {statCards.map((card, idx) => (
-                  <div key={idx} className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
+                  <div key={idx} className="bg-white/90 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:border-premium-100 transition-all duration-700 group relative overflow-hidden group-hover:-translate-y-2">
+                     <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.color} opacity-5 rounded-full blur-2xl group-hover:opacity-20 transition-opacity duration-700`}></div>
                      <div className="flex items-start justify-between relative z-10">
                         <div>
-                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{card.title}</p>
-                           <h3 className="text-3xl font-black text-slate-900 tracking-tight">{card.value}</h3>
+                           <p className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">{card.title}</p>
+                           <h3 className="text-4xl font-black text-slate-800 tracking-tighter drop-shadow-sm">{card.value}</h3>
                         </div>
-                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-xl ${card.shadow} group-hover:scale-110 transition-transform duration-500`}>
+                        <div className={`w-16 h-16 rounded-[1.5rem] bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-xl ${card.shadow} group-hover:scale-110 group-hover:rotate-3 transition-transform duration-700`}>
                            {card.icon}
                         </div>
                      </div>
@@ -121,24 +124,30 @@ const Dashboard: React.FC = () => {
             </div>
          </div>
 
-         <div className="lg:col-span-4 bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col">
-            <div className="flex items-center gap-3 mb-8">
-               <div className="bg-indigo-600 p-2 rounded-xl text-white"><LayoutGrid size={20}/></div>
-               <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Navigasi Utama</h3>
+         <div className="lg:col-span-4 bg-white/80 backdrop-blur-xl p-8 rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 via-amber-400 to-indigo-400"></div>
+            <div className="flex items-center gap-4 mb-8 mt-2">
+               <div className="bg-gradient-to-br from-indigo-50 to-premium-50 p-2.5 rounded-2xl text-premium-600 shadow-inner border border-premium-100/50"><LayoutGrid size={22}/></div>
+               <div>
+                  <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Pintasan Fitur</h3>
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-0.5">Modular Access</p>
+               </div>
             </div>
-            <div className="space-y-3 flex-1">
-               <Link to="/attendance" className="flex items-center gap-4 p-5 bg-emerald-50 border border-emerald-100 rounded-[2rem] group hover:bg-emerald-600 transition-all">
-                  <div className="bg-white p-3 rounded-2xl text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white"><CalendarCheck size={24}/></div>
-                  <div>
-                     <p className="text-sm font-black text-emerald-900 group-hover:text-white uppercase">Absensi Realtime</p>
-                     <p className="text-[10px] text-emerald-600 group-hover:text-emerald-100 font-bold uppercase">Guru & Pegawai</p>
+            <div className="space-y-4 flex-1">
+               <Link to="/attendance" className="flex items-center gap-5 p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100/50 rounded-[2rem] group hover:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.3)] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-100/50 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+                  <div className="bg-emerald-100 p-3.5 rounded-2xl text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-500 z-10"><CalendarCheck size={24}/></div>
+                  <div className="z-10">
+                     <p className="text-sm font-black text-emerald-950 uppercase tracking-wide">Rekap Kehadiran</p>
+                     <p className="text-[10px] text-emerald-600 font-bold uppercase mt-1 tracking-wider">Guru & Pegawai</p>
                   </div>
                </Link>
-               <Link to="/honor" className="flex items-center gap-4 p-5 bg-amber-50 border border-amber-100 rounded-[2rem] group hover:bg-amber-600 transition-all">
-                  <div className="bg-white p-3 rounded-2xl text-amber-600 group-hover:bg-amber-500 group-hover:text-white"><HandCoins size={24}/></div>
-                  <div>
-                     <p className="text-sm font-black text-amber-900 group-hover:text-white uppercase">Penerimaan Honor</p>
-                     <p className="text-[10px] text-amber-600 group-hover:text-amber-100 font-bold uppercase">Dana BOS & Pajak</p>
+               <Link to="/honor" className="flex items-center gap-5 p-5 bg-gradient-to-br from-amber-50 to-white border border-amber-100/50 rounded-[2rem] group hover:shadow-[0_10px_30px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-16 h-16 bg-amber-100/50 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+                  <div className="bg-amber-100 p-3.5 rounded-2xl text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-500 z-10"><HandCoins size={24}/></div>
+                  <div className="z-10">
+                     <p className="text-sm font-black text-amber-950 uppercase tracking-wide">Penerimaan Honor</p>
+                     <p className="text-[10px] text-amber-600 font-bold uppercase mt-1 tracking-wider">Dana BOS & Pajak</p>
                   </div>
                </Link>
             </div>

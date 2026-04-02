@@ -42,11 +42,14 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
     return () => { unsubscribeMails(); unsubscribeConfig(); };
   }, [type]);
 
-  const filteredMails = mails.filter(mail => {
-    const matchesSearch = mail.subject.toLowerCase().includes(searchTerm.toLowerCase()) || mail.sender.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'Semua' || mail.category === filterCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredMails = React.useMemo(() => {
+    return mails.filter(mail => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = mail.subject.toLowerCase().includes(searchLower) || mail.sender.toLowerCase().includes(searchLower);
+      const matchesCategory = filterCategory === 'Semua' || mail.category === filterCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [mails, searchTerm, filterCategory]);
 
   const exportToCSV = () => {
     const headers = ["Tanggal", "Nomor Surat", "Pengirim/Tujuan", "Perihal", "Kategori", "Urgensi", "Status"];
@@ -256,43 +259,46 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   );
 
   return (
-    <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col relative animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
+    <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col relative animate-fade-in pl-4 pr-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 relative z-10">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight">{type === MailType.INCOMING ? 'Surat Masuk' : 'Surat Keluar'}</h2>
-          <p className="text-slate-500 font-bold text-sm">Kelola arsip sekolah dengan bantuan kecerdasan buatan.</p>
+          <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-premium-700 to-indigo-600 tracking-tighter drop-shadow-sm uppercase">{type === MailType.INCOMING ? 'Surat Masuk' : 'Surat Keluar'}</h2>
+          <p className="text-slate-500 font-bold text-sm tracking-wide mt-1">Kelola arsip sekolah dengan bantuan kecerdasan buatan.</p>
         </div>
         <div className="flex gap-3">
-           <button onClick={exportToCSV} className="px-6 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-2xl shadow-sm font-black text-sm flex items-center gap-3 hover:bg-slate-50">
-             <FileSpreadsheet size={20} className="text-emerald-600" /> EKSPOR EXCEL
+           <button onClick={exportToCSV} className="px-6 py-3.5 bg-white/80 backdrop-blur-md border border-white/60 text-slate-600 rounded-[1.25rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] font-black text-[11px] flex items-center gap-3 hover:bg-white hover:-translate-y-1 hover:shadow-lg transition-all duration-300 uppercase tracking-widest">
+             <FileSpreadsheet size={18} className="text-emerald-500" /> EXCEL
            </button>
-           <button onClick={() => { setEditData(null); setShowForm(true); }} className="px-8 py-3.5 bg-indigo-600 text-white rounded-2xl shadow-xl font-black text-sm flex items-center gap-3">
-             <Plus size={20} /> TAMBAH ARSIP
+           <button onClick={() => { setEditData(null); setShowForm(true); }} className="px-8 py-3.5 bg-gradient-to-tr from-premium-600 to-indigo-500 hover:from-premium-500 hover:to-indigo-400 text-white rounded-[1.25rem] shadow-[0_10px_25px_-5px_rgba(148,64,255,0.4)] font-black text-[11px] flex items-center gap-3 hover:-translate-y-1 hover:shadow-[0_15px_30px_-5px_rgba(148,64,255,0.5)] transition-all duration-300 uppercase tracking-widest ring-1 ring-white/20">
+             <Plus size={18} /> TAMBAH ARSIP
            </button>
         </div>
       </div>
-      <div className="bg-white p-3.5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 px-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-          <input type="text" placeholder="Cari..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-2xl outline-none text-sm font-bold text-slate-700" />
+      <div className="bg-white/70 backdrop-blur-2xl p-4 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col md:flex-row gap-4 px-6 relative z-10">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-premium-400 group-within:text-premium-600 transition-colors" size={20} />
+          <input type="text" placeholder="Cari..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-14 pr-4 py-3.5 bg-white/50 focus:bg-white rounded-[1.25rem] border border-transparent focus:border-premium-200 focus:ring-4 focus:ring-premium-100/50 outline-none text-sm font-bold text-slate-700 transition-all shadow-inner" />
         </div>
-        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="px-6 py-3 bg-slate-50 rounded-2xl text-xs font-black text-slate-600 outline-none">
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="px-6 py-3.5 bg-white/50 focus:bg-white rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest text-slate-600 outline-none border border-transparent focus:border-premium-200 focus:ring-4 focus:ring-premium-100/50 transition-all cursor-pointer shadow-inner">
           <option value="Semua">Semua Kategori</option>
           {Array.from(new Set(mails.map(m => m.category))).map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </select>
       </div>
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0 overflow-hidden px-2 pb-6">
-        <div className="lg:col-span-6 xl:col-span-5 overflow-y-auto pr-2 space-y-4">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 overflow-hidden pb-6">
+        <div className="lg:col-span-5 xl:col-span-4 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
           {filteredMails.length > 0 ? filteredMails.map((mail) => (
-            <div key={mail.id} onClick={() => handleSelectMail(mail)} className={`group p-6 rounded-[2rem] border-2 transition-all cursor-pointer bg-white relative overflow-hidden ${selectedMail?.id === mail.id ? 'border-indigo-600 shadow-2xl ring-4 ring-indigo-50' : 'border-slate-50 hover:border-indigo-100'}`}>
-              <div className="flex justify-between items-start mb-3">
-                <span className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest ${selectedMail?.id === mail.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{mail.category}</span>
-                <span className="text-[10px] font-black text-slate-400">{format(new Date(mail.date), 'dd/MM/yyyy')}</span>
+            <div key={mail.id} onClick={() => handleSelectMail(mail)} className={`group p-6 rounded-[2rem] border-2 transition-all duration-300 cursor-pointer backdrop-blur-xl relative overflow-hidden ${selectedMail?.id === mail.id ? 'bg-gradient-to-br from-indigo-50 to-premium-50 border-premium-400 shadow-[0_10px_30px_-10px_rgba(148,64,255,0.3)] ring-4 ring-premium-100/50 scale-[1.02]' : 'bg-white/60 border-white/60 hover:bg-white hover:border-premium-200 hover:shadow-lg'}`}>
+              <div className="flex justify-between items-start mb-4 relative z-10">
+                <span className={`text-[9px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-sm ${selectedMail?.id === mail.id ? 'bg-premium-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-premium-50 group-hover:text-premium-600 transition-colors'}`}>{mail.category}</span>
+                <span className={`text-[10px] font-black uppercase tracking-wider flex items-center ${selectedMail?.id === mail.id ? 'text-premium-500' : 'text-slate-400'}`}><Clock size={12} className="mr-1" /> {format(new Date(mail.date), 'dd MMM')}</span>
               </div>
-              <h3 className="font-black text-lg mb-2 uppercase line-clamp-2">{mail.subject}</h3>
-              <div className="flex items-center gap-2 text-xs text-slate-400 font-bold"><MapPin size={12} /> <span className="truncate">{mail.sender}</span></div>
+              <h3 className={`font-black text-lg mb-3 uppercase leading-tight line-clamp-2 ${selectedMail?.id === mail.id ? 'text-slate-900 drop-shadow-sm' : 'text-slate-700'}`}>{mail.subject}</h3>
+              <div className={`flex items-center gap-2 text-[11px] font-bold ${selectedMail?.id === mail.id ? 'text-premium-700' : 'text-slate-400'} pt-3 border-t ${selectedMail?.id === mail.id ? 'border-premium-200/50' : 'border-slate-100/50'}`}><MapPin size={14} /> <span className="truncate">{mail.sender}</span></div>
             </div>
-          )) : <div className="py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">Kosong</div>}
+          )) : <div className="py-24 text-center bg-white/40 backdrop-blur-xl rounded-[3rem] border-2 border-dashed border-slate-300/50 shadow-inner flex flex-col items-center justify-center">
+            <Mail size={40} className="text-slate-300 mb-4" />
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Tidak ada arsip</p>
+          </div>}
         </div>
         <div className="lg:col-span-6 xl:col-span-7 h-full hidden lg:block overflow-hidden relative">
           {selectedMail ? <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 h-full overflow-hidden flex flex-col"><DetailContent mail={selectedMail} /></div> : <div className="h-full bg-slate-50/50 rounded-[3rem] border-4 border-dashed border-slate-200 flex items-center justify-center text-slate-400">Pilih Surat</div>}

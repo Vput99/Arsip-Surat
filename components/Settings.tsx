@@ -205,15 +205,20 @@ const Settings: React.FC = () => {
     }
   };
 
-  const filteredStaff = allStaff.filter(s => 
-    s.category === staffCategory && 
-    (s.name.toLowerCase().includes(staffSearch.toLowerCase()) || s.nip.includes(staffSearch))
-  );
+  const filteredStaff = React.useMemo(() => {
+    return allStaff.filter(s => {
+      if (s.category !== staffCategory) return false;
+      const search = staffSearch.toLowerCase();
+      return s.name.toLowerCase().includes(search) || s.nip.includes(search);
+    });
+  }, [allStaff, staffCategory, staffSearch]);
 
-  const filteredTemplates = allTemplates.filter(t => 
-    t.name.toLowerCase().includes(templateSearch.toLowerCase()) || 
-    t.category.toLowerCase().includes(templateSearch.toLowerCase())
-  );
+  const filteredTemplates = React.useMemo(() => {
+    return allTemplates.filter(t => {
+      const search = templateSearch.toLowerCase();
+      return t.name.toLowerCase().includes(search) || t.category.toLowerCase().includes(search);
+    });
+  }, [allTemplates, templateSearch]);
 
   if (!config) return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-indigo-600" /></div>;
 
@@ -221,30 +226,31 @@ const Settings: React.FC = () => {
   const inputClass = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm transition-all";
 
   return (
-    <div className="max-w-5xl mx-auto py-6 animate-fade-in pb-20">
+    <div className="max-w-5xl mx-auto py-6 animate-fade-in pb-20 px-2">
       
       {/* Header & Tabs */}
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden mb-6">
-        <div className="bg-slate-900 p-8 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-600/20 to-violet-600/20"></div>
+      <div className="bg-white/80 backdrop-blur-3xl rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 overflow-hidden mb-8 relative">
+        <div className="p-10 text-center relative overflow-hidden bg-slate-900 rounded-t-[3rem]">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-600/30 via-premium-600/20 to-transparent"></div>
           <div className="relative z-10 flex flex-col items-center">
-            <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Pengaturan Sistem</h2>
-            <p className="text-slate-400 text-sm max-w-md">Kelola identitas sekolah, naskah template, dan database personil.</p>
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 mb-2 tracking-tight uppercase">Pengaturan Sistem</h2>
+            <p className="text-slate-400 text-sm max-w-md font-bold">Kelola identitas sekolah, naskah template, dan database personil secara terpusat.</p>
           </div>
           <div className="absolute top-6 right-6 z-10">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${dbStatus.firebase ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
-              <Database size={12} />
-              {dbStatus.firebase ? 'Realtime Online' : 'Realtime Offline'}
+            <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-[1rem] border text-[10px] font-black uppercase tracking-widest shadow-lg ${dbStatus.firebase ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-emerald-500/20' : 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-rose-500/20'}`}>
+              <Database size={12} className={dbStatus.firebase ? "animate-pulse-glow" : ""} />
+              {dbStatus.firebase ? 'Online Sync' : 'Offline Mode'}
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-100">
-          <button onClick={() => setActiveTab('profile')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'profile' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><School size={18} /> Profil</button>
-          <button onClick={() => setActiveTab('templates')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'templates' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><FileText size={18} /> Template</button>
-          <button onClick={() => setActiveTab('staff')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'staff' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><Users size={18} /> Personil</button>
-          <button onClick={() => setActiveTab('maintenance')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'maintenance' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/30' : 'text-slate-500 hover:text-indigo-500 hover:bg-slate-50'}`}><ShieldCheck size={18} /> Pemeliharaan</button>
+        <div className="flex border-b border-white/20 px-4 bg-white/40">
+          <button onClick={() => setActiveTab('profile')} className={`flex-1 py-5 text-sm font-black flex items-center justify-center gap-3 transition-all duration-300 uppercase tracking-widest ${activeTab === 'profile' ? 'text-premium-700 border-b-4 border-premium-600 bg-premium-50/50 scale-105' : 'text-slate-500 hover:text-premium-600 hover:bg-white/50 border-b-4 border-transparent'}`}><School size={18} /> Profil</button>
+          <button onClick={() => setActiveTab('templates')} className={`flex-1 py-5 text-sm font-black flex items-center justify-center gap-3 transition-all duration-300 uppercase tracking-widest ${activeTab === 'templates' ? 'text-premium-700 border-b-4 border-premium-600 bg-premium-50/50 scale-105' : 'text-slate-500 hover:text-premium-600 hover:bg-white/50 border-b-4 border-transparent'}`}><FileText size={18} /> Template</button>
+          <button onClick={() => setActiveTab('staff')} className={`flex-1 py-5 text-sm font-black flex items-center justify-center gap-3 transition-all duration-300 uppercase tracking-widest ${activeTab === 'staff' ? 'text-premium-700 border-b-4 border-premium-600 bg-premium-50/50 scale-105' : 'text-slate-500 hover:text-premium-600 hover:bg-white/50 border-b-4 border-transparent'}`}><Users size={18} /> Personil</button>
+          <button onClick={() => setActiveTab('maintenance')} className={`flex-1 py-5 text-sm font-black flex items-center justify-center gap-3 transition-all duration-300 uppercase tracking-widest ${activeTab === 'maintenance' ? 'text-premium-700 border-b-4 border-premium-600 bg-premium-50/50 scale-105' : 'text-slate-500 hover:text-premium-600 hover:bg-white/50 border-b-4 border-transparent'}`}><ShieldCheck size={18} /> Sistem</button>
         </div>
       </div>
 
@@ -260,8 +266,9 @@ const Settings: React.FC = () => {
       {/* CONTENT: PROFILE TAB */}
       {activeTab === 'profile' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 animate-fade-in">
-             <form onSubmit={handleSubmitProfile} className="space-y-10">
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 p-10 animate-fade-in relative overflow-hidden">
+             <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
+             <form onSubmit={handleSubmitProfile} className="space-y-10 relative z-10">
                <section>
                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3"><span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Building2 size={16}/></span>Logo Kop</h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -330,46 +337,54 @@ const Settings: React.FC = () => {
       {/* CONTENT: MAINTENANCE TAB */}
       {activeTab === 'maintenance' && (
         <div className="space-y-6 animate-fade-in">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
-                 <div className="bg-indigo-100 text-indigo-600 p-4 rounded-2xl w-fit"><Download size={28}/></div>
-                 <h3 className="text-xl font-black text-slate-800">Ekspor Backup Utama</h3>
-                 <p className="text-sm text-slate-500 leading-relaxed">Unduh seluruh database (Profil, Personil, Templat, dan Arsip Surat) ke dalam file JSON tunggal untuk cadangan offline di komputer sekolah.</p>
-                 <button onClick={handleBackup} disabled={backupLoading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-indigo-100">
-                    {backupLoading ? <Loader2 className="animate-spin" /> : <Download size={18}/>} Unduh Backup (.json)
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="bg-white/80 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-6 hover:-translate-y-1 transition-transform duration-500">
+                 <div className="bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-600 p-5 rounded-3xl w-fit shadow-inner"><Download size={32}/></div>
+                 <h3 className="text-2xl font-black text-slate-800 tracking-tight">Ekspor Backup Data</h3>
+                 <p className="text-sm font-bold text-slate-500 leading-relaxed">Unduh seluruh database (Profil, Personil, Templat, dan Arsip Surat) ke dalam file JSON tunggal untuk cadangan offline di komputer lokal.</p>
+                 <button onClick={handleBackup} disabled={backupLoading} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_10px_25px_-5px_rgba(79,70,229,0.4)] transition-all">
+                    {backupLoading ? <Loader2 className="animate-spin" /> : <Download size={18}/>} Unduh File Cadangan
                  </button>
               </div>
 
-              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
-                 <div className="bg-emerald-100 text-emerald-600 p-4 rounded-2xl w-fit"><RefreshCw size={28}/></div>
-                 <h3 className="text-xl font-black text-slate-800">Kalibrasi Templat</h3>
-                 <p className="text-sm text-slate-500 leading-relaxed">Gunakan fitur ini jika templat surat standar (SPT, SPPD, Notulen) hilang atau rusak. Sistem akan mengunduh ulang versi terbaru dari cloud.</p>
-                 <button onClick={handleInitDb} disabled={initLoading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-emerald-100">
-                    {initLoading ? <Loader2 className="animate-spin" /> : <RefreshCw size={18}/>} Sinkron Ulang Templat
+              <div className="bg-white/80 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-6 hover:-translate-y-1 transition-transform duration-500">
+                 <div className="bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 p-5 rounded-3xl w-fit shadow-inner"><RefreshCw size={32}/></div>
+                 <h3 className="text-2xl font-black text-slate-800 tracking-tight">Kalibrasi Templat</h3>
+                 <p className="text-sm font-bold text-slate-500 leading-relaxed">Gunakan fitur ini untuk merefresh templat surat standar bawaan sistem (SPT, SPPD, Notulen) agar menyesuaikan dengan standar terbaru.</p>
+                 <button onClick={handleInitDb} disabled={initLoading} className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_10px_25px_-5px_rgba(16,185,129,0.4)] transition-all">
+                    {initLoading ? <Loader2 className="animate-spin" /> : <RefreshCw size={18}/>} Inisialisasi Ulang
                  </button>
               </div>
            </div>
 
-           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-8">
-                 <div className="bg-slate-900 text-white p-2 rounded-xl"><History size={20}/></div>
-                 <h3 className="text-xl font-black text-slate-800">Histori Audit Sistem</h3>
+           <div className="bg-white/80 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden mt-8">
+              <div className="flex items-center gap-4 mb-8">
+                 <div className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl shadow-slate-900/20"><History size={24}/></div>
+                 <div>
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Histori Sistem</h3>
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest mt-1">Audit Trail & Log Aktivitas</p>
+                 </div>
               </div>
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
                  {logs.map(log => (
-                    <div key={log.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-4">
-                       <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-400 shrink-0"><Clock size={20}/></div>
+                    <div key={log.id} className="p-6 bg-white rounded-2xl border border-slate-100/50 shadow-sm flex items-start gap-5 hover:bg-slate-50 transition-colors">
+                       <div className="w-12 h-12 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shrink-0"><Clock size={20}/></div>
                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">{log.module}</span>
-                             <span className="text-[10px] font-bold text-slate-400">{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm', { locale: id })}</span>
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-1">
+                             <h4 className="text-[15px] font-black text-slate-800 leading-tight">{log.action}</h4>
+                             <span className="text-[11px] font-bold text-slate-500 tabular-nums">{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm', { locale: id })}</span>
                           </div>
-                          <p className="text-sm font-black text-slate-800 mt-1">{log.action}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{log.details}</p>
+                          <div className="flex items-center gap-3">
+                             <span className="text-[9px] font-black text-premium-600 bg-premium-50 px-2 py-1 rounded-lg uppercase tracking-widest">{log.module}</span>
+                             <p className="text-sm font-bold text-slate-500">{log.details}</p>
+                          </div>
                        </div>
                     </div>
                  ))}
-                 {logs.length === 0 && <p className="text-center py-10 text-slate-400 font-bold uppercase text-xs">Belum ada catatan aktivitas.</p>}
+                 {logs.length === 0 && <div className="text-center py-20 flex flex-col items-center">
+                    <History size={48} className="text-slate-200 mb-4" />
+                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Sistem belum mencatat log apapun</p>
+                 </div>}
               </div>
            </div>
         </div>
@@ -377,79 +392,95 @@ const Settings: React.FC = () => {
 
       {/* CONTENT: TEMPLATE TAB */}
       {activeTab === 'templates' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 animate-fade-in">
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-              <div><h3 className="text-lg font-black text-slate-800">Manajemen Template</h3><p className="text-slate-500 text-sm">Sesuaikan naskah template surat yang muncul di editor.</p></div>
-              <button onClick={handleAddTemplate} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20"><Plus size={18} /> Tambah Template</button>
+        <div className="bg-white/80 backdrop-blur-2xl rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 p-8 md:p-10 animate-fade-in relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-premium-100/40 via-transparent to-transparent rounded-bl-full pointer-events-none"></div>
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 relative z-10">
+              <div>
+                 <h3 className="text-3xl font-black text-slate-800 tracking-tight">Manajemen Templat</h3>
+                 <p className="text-slate-500 text-sm font-bold mt-1">Konfigurasi naskah default pembentuk surat otomatis.</p>
+              </div>
+              <button onClick={handleAddTemplate} disabled={loading} className="flex items-center justify-center w-full md:w-auto gap-3 px-8 py-4 bg-slate-900 text-white rounded-[1.25rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:-translate-y-1 transition-all"><Plus size={18} /> Tambah Baru</button>
            </div>
            
-           <div className="relative mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" placeholder="Cari template..." value={templateSearch} onChange={(e) => setTemplateSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+           <div className="relative mb-8 z-10 group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-within:text-premium-600 transition-colors" size={20} />
+              <input type="text" placeholder="Cari template berdasarkan label..." value={templateSearch} onChange={(e) => setTemplateSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white/50 focus:bg-white rounded-[1.5rem] border border-transparent focus:border-premium-200 outline-none shadow-inner text-sm font-bold text-slate-700 transition-all focus:ring-4 focus:ring-premium-100/50" />
            </div>
 
-           <div className="space-y-4">
+           <div className="space-y-6 relative z-10">
               {filteredTemplates.map(t => (
-                <div key={t.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 group">
-                   <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-                      <div className="flex-1 space-y-3">
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <input value={t.name} onChange={(e) => handleTemplateUpdate(t.id, 'name', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} className="px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-sm" placeholder="Nama Template" />
-                            <select value={t.category} onChange={(e) => handleTemplateUpdate(t.id, 'category', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+                <div key={t.id} className="p-8 bg-white/60 rounded-[2.5rem] border border-white shadow-sm hover:shadow-lg transition-shadow duration-300 group">
+                   <div className="flex flex-col md:flex-row justify-between gap-6 mb-6">
+                      <div className="flex-1 space-y-4">
+                         <div className="flex flex-col md:flex-row gap-4">
+                            <input value={t.name} onChange={(e) => handleTemplateUpdate(t.id, 'name', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl font-black text-sm text-slate-800 shadow-sm focus:ring-2 focus:ring-premium-500 focus:border-premium-500 outline-none" placeholder="Label Identifier" />
+                            <select value={t.category} onChange={(e) => handleTemplateUpdate(t.id, 'category', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} className="w-full md:w-48 px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-slate-600 shadow-sm outline-none cursor-pointer">
                                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                          </div>
-                         <input value={t.subject} onChange={(e) => handleTemplateUpdate(t.id, 'subject', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-black uppercase" placeholder="Judul Surat / Perihal" />
+                         <input value={t.subject} onChange={(e) => handleTemplateUpdate(t.id, 'subject', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-black uppercase text-indigo-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="PERIHAL SURAT CETAK" />
                       </div>
-                      <button onClick={() => handleTemplateDelete(t.id)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={18}/></button>
+                      <button onClick={() => handleTemplateDelete(t.id)} className="w-12 h-12 flex items-center justify-center shrink-0 bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-colors shadow-inner"><Trash2 size={20}/></button>
                    </div>
-                   <textarea value={t.content} onChange={(e) => handleTemplateUpdate(t.id, 'content', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} rows={6} className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-[11px] font-mono leading-relaxed" placeholder="Isi naskah..." />
+                   <textarea value={t.content} onChange={(e) => handleTemplateUpdate(t.id, 'content', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveTemplateRow(t)} rows={8} className="w-full p-6 bg-slate-50/50 border border-slate-200 rounded-[2rem] text-xs font-mono leading-loose text-slate-700 focus:bg-white focus:ring-2 focus:ring-premium-500 outline-none custom-scrollbar" placeholder="Isi naskah..." />
                 </div>
               ))}
+              {filteredTemplates.length === 0 && (
+                <div className="py-20 text-center bg-white/40 backdrop-blur-md rounded-[3rem] border-2 border-dashed border-slate-200 flex flex-col items-center">
+                  <FileText size={48} className="text-slate-300 mb-4" />
+                  <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Tidak ada templat ditemukan</p>
+                </div>
+              )}
            </div>
         </div>
       )}
 
       {/* CONTENT: STAFF TAB */}
       {activeTab === 'staff' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 animate-fade-in">
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-              <div><h3 className="text-lg font-black text-slate-800">Manajemen Personil</h3><p className="text-slate-500 text-sm">Atur urutan dan data Guru & Pegawai.</p></div>
-              <button onClick={handleAddStaff} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm"><Plus size={18} /> Tambah Personil</button>
+        <div className="bg-white/80 backdrop-blur-2xl rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 p-8 md:p-10 animate-fade-in relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 relative z-10">
+              <div>
+                 <h3 className="text-3xl font-black text-slate-800 tracking-tight">Database Personil</h3>
+                 <p className="text-slate-500 text-sm font-bold mt-1">Hierarki dan data referensi GTK lembaga.</p>
+              </div>
+              <button onClick={handleAddStaff} disabled={loading} className="flex items-center justify-center w-full md:w-auto gap-3 px-8 py-4 bg-premium-600 text-white rounded-[1.25rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-premium-600/20 hover:-translate-y-1 hover:shadow-premium-600/40 transition-all"><Plus size={18} /> Tambah Personil</button>
            </div>
 
-           <div className="flex flex-col md:flex-row gap-4 mb-8">
-              <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+           <div className="flex flex-col lg:flex-row gap-6 mb-8 relative z-10">
+              <div className="flex bg-white/60 p-1.5 rounded-[1.5rem] shadow-inner shrink-0 border border-white overflow-x-auto custom-scrollbar">
                 {(['reg', 'pppk', 'extra', 'tukang'] as const).map(cat => (
-                  <button key={cat} onClick={() => setStaffCategory(cat)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${staffCategory === cat ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>
+                  <button key={cat} onClick={() => setStaffCategory(cat)} className={`px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 min-w-[100px] ${staffCategory === cat ? 'bg-gradient-to-b from-white to-slate-50 text-premium-700 shadow-md ring-1 ring-slate-100 scale-105 z-10' : 'text-slate-400 hover:text-slate-600 hover:bg-white/40'}`}>
                     {cat}
                   </button>
                 ))}
               </div>
-              <div className="relative flex-1">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input type="text" placeholder="Cari nama atau NIP..." value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+              <div className="relative flex-1 group">
+                <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-within:text-premium-600 transition-colors" />
+                <input type="text" placeholder="Pencarian cepat nama/NIP..." value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white/60 focus:bg-white border border-white focus:border-premium-200 rounded-[1.5rem] outline-none shadow-inner text-sm font-bold text-slate-700 transition-all focus:ring-4 focus:ring-premium-100/50" />
               </div>
            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 relative z-10">
               {filteredStaff.map((s, idx) => (
-                <div key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4 group">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs shrink-0">{idx + 1}</div>
-                  <div className="flex-1 space-y-3">
-                    <input value={s.name} onChange={(e) => handleStaffChange(s.id, 'name', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(s)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-sm" placeholder="Nama Lengkap" />
-                    <div className="grid grid-cols-2 gap-2">
-                       <input value={s.nip} onChange={(e) => handleStaffChange(s.id, 'nip', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(s)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="NIP" />
-                       <input value={s.rank} onChange={(e) => handleStaffChange(s.id, 'rank', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(s)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="Jabatan/Pangkat" />
+                <div key={s.id} className="p-6 bg-white/80 backdrop-blur-md rounded-[2rem] border border-white/60 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col gap-4 group">
+                  <div className="flex justify-between items-start">
+                     <div className="w-10 h-10 rounded-[1.25rem] bg-premium-50 text-premium-600 flex items-center justify-center font-black text-sm shadow-inner group-hover:scale-110 transition-transform">{idx + 1}</div>
+                     <button onClick={() => handleStaffDelete(s.id)} className="w-10 h-10 flex items-center justify-center bg-transparent hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-xl transition-colors"><Trash2 size={18}/></button>
+                  </div>
+                  <div className="space-y-3 flex-1 mt-2">
+                    <input value={s.name} onChange={(e) => handleStaffChange(s.id, 'name', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(s)} className="w-full px-4 py-3 bg-white/50 focus:bg-white border focus:border-premium-200 border-white rounded-[1.25rem] font-black text-sm text-slate-800 shadow-sm outline-none transition-all" placeholder="NAMA LENGKAP & GELAR" />
+                    <div className="grid grid-cols-2 gap-3">
+                       <input value={s.nip} onChange={(e) => handleStaffChange(s.id, 'nip', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(s)} className="w-full px-4 py-2.5 bg-slate-50/50 focus:bg-white border border-transparent focus:border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none transition-all" placeholder="1980... / NIK" />
+                       <input value={s.rank} onChange={(e) => handleStaffChange(s.id, 'rank', e.target.value)} onFocus={() => isEditingRef.current = true} onBlur={() => handleSaveStaffRow(s)} className="w-full px-4 py-2.5 bg-slate-50/50 focus:bg-white border border-transparent focus:border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none transition-all" placeholder="Pangkat/Golongan" />
                     </div>
                   </div>
-                  <button onClick={() => handleStaffDelete(s.id)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors shrink-0"><Trash2 size={16}/></button>
                 </div>
               ))}
               {filteredStaff.length === 0 && (
-                <div className="col-span-full py-12 text-center text-slate-400 flex flex-col items-center gap-3">
-                   <Users size={32} className="opacity-20"/>
-                   <p className="text-xs font-bold uppercase tracking-widest">Belum ada data personil di kategori ini</p>
+                <div className="col-span-full py-20 text-center text-slate-400 flex flex-col items-center gap-4 bg-white/40 backdrop-blur-md rounded-[3rem] border-2 border-dashed border-slate-200">
+                   <Users size={48} className="text-slate-300"/>
+                   <p className="text-xs font-black uppercase tracking-widest">Tidak ada personil dalam kategori ini</p>
                 </div>
               )}
            </div>

@@ -45,22 +45,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Sidebar Navigasi */}
-      <aside className={`fixed inset-y-0 left-0 z-[70] w-72 bg-[#0F172A] text-white shadow-2xl transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-white/5 print:hidden`}>
-        <div className="flex items-center h-24 px-8 shrink-0 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-600/10 to-transparent"></div>
+      <aside className={`fixed inset-y-0 left-0 z-[70] w-72 lg:w-80 bg-[#09090b]/90 backdrop-blur-2xl text-white shadow-[10px_0_40px_-15px_rgba(0,0,0,0.5)] transform transition-transform duration-500 rounded-r-[2.5rem] lg:rounded-none lg:translate-x-0 lg:static lg:inset-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-white/10 print:hidden overflow-hidden`}>
+        {/* Glow effect at the bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-premium-600/20 to-transparent pointer-events-none"></div>
+        
+        <div className="flex items-center h-32 px-10 shrink-0 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-premium-700/30 via-indigo-900/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-700"></div>
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-premium-500/20 blur-[40px] rounded-full group-hover:bg-premium-400/30 transition-all duration-700"></div>
           <div className="relative z-10 flex items-center">
-            <div className="bg-indigo-600 p-2.5 rounded-2xl mr-4 shadow-xl shadow-indigo-500/20 ring-4 ring-indigo-500/10">
-              <School className="text-white" size={24} />
+            <div className="bg-gradient-to-br from-premium-500 to-indigo-600 p-3 rounded-[1.25rem] mr-5 shadow-[0_0_20px_rgba(148,64,255,0.4)] ring-1 ring-white/20 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+              <School className="text-white drop-shadow-md" size={26} />
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tight text-white uppercase leading-none">Arsip Digital</h1>
-              <p className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.3em] mt-1.5 opacity-80">SD PINTAR V2</p>
+              <h1 className="text-xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 uppercase leading-none drop-shadow-sm">Arsip Sekolah</h1>
+              <p className="text-[10px] text-premium-300 font-bold uppercase tracking-[0.35em] mt-2 opacity-90 flex items-center gap-2">
+                 <span className="w-1.5 h-1.5 rounded-full bg-premium-400 animate-pulse-glow"></span> V2 Pro
+              </p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto custom-scrollbar">
-          <p className="px-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-4">Navigation</p>
+        <nav className="flex-1 px-5 py-6 space-y-2 overflow-y-auto custom-scrollbar relative z-10">
+          <p className="px-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-6 mt-2">Menu Utama</p>
           {navItems.map((item) => {
             const active = location.pathname === item.path;
             return (
@@ -68,13 +74,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 key={item.path} 
                 to={item.path} 
                 onClick={() => setIsSidebarOpen(false)} 
-                className={`group flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all duration-300 ${active ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-900/30 ring-1 ring-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                className={`group flex items-center justify-between px-5 py-4 rounded-[1.25rem] transition-all duration-300 relative overflow-hidden ${active ? 'bg-white/10 text-white shadow-lg shadow-black/20 ring-1 ring-white/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
               >
-                <div className="flex items-center">
-                  <span className={`${active ? 'text-white scale-110' : 'text-slate-500 group-hover:text-slate-300'} mr-4 transition-transform duration-300`}>{item.icon}</span>
-                  <span className="font-bold text-[13px] tracking-wide">{item.label}</span>
+                {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-premium-400 rounded-r-md shadow-[0_0_10px_rgba(148,64,255,0.8)]"></div>}
+                {active && <div className="absolute inset-0 bg-gradient-to-r from-premium-600/20 to-transparent pointer-events-none"></div>}
+                
+                <div className="flex items-center relative z-10">
+                  <span className={`${active ? 'text-premium-300 scale-110' : 'text-slate-500 group-hover:text-premium-200'} mr-4 transition-all duration-300 group-hover:animate-float`}>
+                    {item.icon}
+                  </span>
+                  <span className={`font-bold text-[14px] tracking-wide ${active ? 'font-black drop-shadow-md' : ''}`}>{item.label}</span>
                 </div>
-                {active && <ChevronRight size={14} className="text-indigo-200 animate-pulse" />}
+                {active && <ChevronRight size={16} className="text-premium-300 animate-pulse relative z-10" />}
               </Link>
             );
           })}

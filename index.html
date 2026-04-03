@@ -7,55 +7,88 @@
     <title>ArsipSurat SD Pintar</title>
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --premium-50: #f5f3ff;
-        --premium-100: #ede9fe;
-        --premium-200: #ddd6fe;
-        --premium-300: #c4b5fd;
-        --premium-400: #a78bfa;
-        --premium-500: #8b5cf6;
-        --premium-600: #7c3aed;
-        --premium-700: #6d28d9;
-        --premium-800: #5b21b6;
-        --premium-900: #4c1d95;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              premium: {
+                50: '#f5f3ff',
+                100: '#ede9fe',
+                200: '#ddd6fe',
+                300: '#c4b5fd',
+                400: '#a78bfa',
+                500: '#8b5cf6',
+                600: '#7c3aed',
+                700: '#6d28d9',
+                800: '#5b21b6',
+                900: '#4c1d95',
+              }
+            },
+            animation: {
+              'mesh': 'mesh 15s ease infinite',
+              'float': 'float 6s ease-in-out infinite',
+              'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+            },
+            keyframes: {
+              mesh: {
+                '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+                '33%': { transform: 'translate(10%, -10%) scale(1.1)' },
+                '66%': { transform: 'translate(-5%, 5%) scale(0.95)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              'pulse-glow': {
+                '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+                '50%': { opacity: '1', transform: 'scale(1.05)' },
+              }
+            }
+          }
+        }
       }
-
+    </script>
+    <style>
       body {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        background: #f8fafc;
         margin: 0;
         padding: 0;
-        color: #1e293b;
         overflow: hidden;
       }
 
       /* Glassmorphism Core Classes */
       .glass-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.05);
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
       }
 
       .glass-panel {
-        background: rgba(255, 255, 255, 0.4);
-        backdrop-filter: blur(12px) saturate(160%);
-        -webkit-backdrop-filter: blur(12px) saturate(160%);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.4) !important;
+        backdrop-filter: blur(12px) saturate(160%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
       }
 
       .glass-dark {
-        background: rgba(15, 23, 42, 0.8);
-        backdrop-filter: blur(16px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(15, 23, 42, 0.8) !important;
+        backdrop-filter: blur(16px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
       }
 
       .glass-input {
-        background: rgba(255, 255, 255, 0.5);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.5) !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+      }
+
+      .glass-premium {
+        background: rgba(148, 64, 255, 0.1) !important;
+        backdrop-filter: blur(24px) saturate(200%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
       }
 
       ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -64,13 +97,7 @@
       ::-webkit-scrollbar-thumb:hover { background: rgba(148, 64, 255, 0.3); }
 
       @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-      .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      
-      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-      .animate-float { animation: float 3s ease-in-out infinite; }
-
-      @keyframes pulse-glow { 0%, 100% { opacity: 0.6; box-shadow: 0 0 5px rgba(148, 64, 255, 0.2); } 50% { opacity: 1; box-shadow: 0 0 15px rgba(148, 64, 255, 0.5); } }
-      .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+      .animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
   </head>
   <body>

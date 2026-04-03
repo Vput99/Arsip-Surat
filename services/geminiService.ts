@@ -8,7 +8,7 @@ import { AIAnalysisResult, UrgencyLevel, Mail } from "../types";
  */
 export const analyzeLetter = async (text: string, imageData?: string): Promise<AIAnalysisResult | null> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
     const parts: any[] = [{
       text: `Bertindaklah sebagai staf administrasi sekolah. Ekstrak data dari dokumen ini:
       1. referenceNumber (Nomor Surat)
@@ -28,7 +28,7 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: { parts },
       config: {
         responseMimeType: "application/json",
@@ -61,7 +61,7 @@ export const analyzeLetter = async (text: string, imageData?: string): Promise<A
  */
 export const analyzePayroll = async (data: any): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
     const prompt = `Analisis data pembayaran honor sekolah berikut dan buatkan ringkasan eksekutif profesional untuk laporan BOS:
     Kategori: ${data.category}
     Bulan: ${data.period}
@@ -73,7 +73,7 @@ export const analyzePayroll = async (data: any): Promise<string> => {
     3. Narasi singkat untuk dasar pencairan dana BOS.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: { parts: [{ text: prompt }] }
     });
     
@@ -88,7 +88,7 @@ export const analyzePayroll = async (data: any): Promise<string> => {
  */
 export const generateSPTFromInvitation = async (invitation: Mail): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
     const prompt = `Buatkan naskah SURAT PERINTAH TUGAS (SPT) berdasarkan data surat masuk berikut:
     Dari: ${invitation.sender}
     Nomor: ${invitation.referenceNumber}
@@ -102,7 +102,7 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
     4. Akhiri dengan kalimat penutup tanggung jawab.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: { parts: [{ text: prompt }] }
     });
     
@@ -118,7 +118,7 @@ export const generateSPTFromInvitation = async (invitation: Mail): Promise<strin
  */
 export const generateSPPDFromSPT = async (spt: Mail): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
     const prompt = `Tugas: Konversi naskah SURAT PERINTAH TUGAS (SPT) menjadi naskah SURAT PERINTAH PERJALANAN DINAS (SPPD).
 
 DATA SPT:
@@ -152,7 +152,7 @@ INSTRUKSI KHUSUS:
 10. Keterangan lain-lain : -`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         systemInstruction: "Anda adalah asisten administrasi sekolah yang presisi. Tugas Anda adalah mengekstrak data dari SPT dan memformatnya menjadi 10 poin SPPD standar. Jangan memberikan teks narasi selain 10 poin tersebut.",
@@ -172,13 +172,13 @@ INSTRUKSI KHUSUS:
  */
 export const generateLaporanDanNotulen = async (mailContext: Mail, type: 'LAPORAN' | 'NOTULEN'): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
     const prompt = type === 'LAPORAN' 
       ? `Buatkan naskah LAPORAN HASIL PERJALANAN DINAS. Perihal: "${mailContext.subject}". Deskripsi awal: "${mailContext.description}". Tulis 3 paragraf naratif.`
       : `Buatkan naskah NOTULEN RAPAT. Perihal: "${mailContext.subject}". Pembahasan: "${mailContext.description}". Tulis dalam poin-poin pembahasan.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: { parts: [{ text: prompt }] }
     });
     return response.text || "Gagal menghasilkan teks.";
@@ -192,9 +192,9 @@ export const generateLaporanDanNotulen = async (mailContext: Mail, type: 'LAPORA
  */
 export const generateNotulenContent = async (context: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: { parts: [{ text: `Rapikan catatan rapat berikut menjadi naskah notulen resmi (Hanya isi): "${context}"` }] }
     });
     return response.text || "";
@@ -203,9 +203,9 @@ export const generateNotulenContent = async (context: string): Promise<string> =
 
 export const generateLaporanSPPDContent = async (context: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: { parts: [{ text: `Buat narasi laporan perjalanan dinas dari poin-poin ini: "${context}"` }] }
     });
     return response.text || "";

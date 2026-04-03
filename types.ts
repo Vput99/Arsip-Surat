@@ -144,6 +144,11 @@ export interface MonthlyReport {
   };
 
   createdAt: string;
+  timestamp?: number;
+  kasekName: string;
+  kasekNip: string;
+  pengawasName: string;
+  pengawasNip: string;
 }
 
 export interface SchoolConfig {

@@ -4,7 +4,7 @@ import { Mail, MailType, UrgencyLevel, MailStatus } from '../types';
 import { subscribeToMails, deleteMail, subscribeToConfig, saveMail } from '../services/storage';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
-import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2, PenTool, Upload, MapPin, Wand2, FileCheck, ClipboardList, Loader2, Share2, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Filter, Sparkles, AlertCircle, Download, Calendar, Printer, FileText, ChevronRight, Image as ImageIcon, Clock, FileBadge, X, ExternalLink, Edit, CheckCircle2, PenTool, Upload, MapPin, Wand2, FileCheck, ClipboardList, Loader2, Share2, FileSpreadsheet, Mail as MailIcon } from 'lucide-react';
 import MailForm from './MailForm';
 import { analyzeLetter, generateSPTFromInvitation, generateSPPDFromSPT, generateLaporanDanNotulen } from '../services/geminiService';
 import { SchoolConfig } from '../types';
@@ -259,58 +259,76 @@ const MailList: React.FC<MailListProps> = ({ type }) => {
   );
 
   return (
-    <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col relative animate-fade-in pl-4 pr-1">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 relative z-10">
+    <div className="space-y-8 h-[calc(100vh-100px)] flex flex-col relative animate-fade-in pl-4 pr-1 z-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-4 relative z-10">
         <div>
-          <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-premium-700 to-indigo-600 tracking-tighter drop-shadow-sm uppercase">{type === MailType.INCOMING ? 'Surat Masuk' : 'Surat Keluar'}</h2>
-          <p className="text-slate-500 font-bold text-sm tracking-wide mt-1">Kelola arsip sekolah dengan bantuan kecerdasan buatan.</p>
+          <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-premium-700 via-indigo-600 to-indigo-400 tracking-tighter drop-shadow-sm uppercase">
+            {type === MailType.INCOMING ? 'Arsip Masuk' : 'Arsip Keluar'}
+          </h2>
+          <p className="text-slate-500 font-bold text-sm tracking-widest mt-2 uppercase opacity-70">
+            Intelligent Document Archive & Management System
+          </p>
         </div>
-        <div className="flex gap-3">
-           <button onClick={exportToCSV} className="px-6 py-3.5 bg-white/80 backdrop-blur-md border border-white/60 text-slate-600 rounded-[1.25rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] font-black text-[11px] flex items-center gap-3 hover:bg-white hover:-translate-y-1 hover:shadow-lg transition-all duration-300 uppercase tracking-widest">
-             <FileSpreadsheet size={18} className="text-emerald-500" /> EXCEL
+        <div className="flex gap-4">
+           <button onClick={exportToCSV} className="px-8 py-4 glass-panel text-slate-600 rounded-[1.5rem] shadow-lg font-black text-[11px] flex items-center gap-3 hover:bg-white/90 hover:-translate-y-1 transition-all duration-300 uppercase tracking-[0.2em] border border-white/40">
+             <FileSpreadsheet size={20} className="text-emerald-500" /> EXCEL
            </button>
-           <button onClick={() => { setEditData(null); setShowForm(true); }} className="px-8 py-3.5 bg-gradient-to-tr from-premium-600 to-indigo-500 hover:from-premium-500 hover:to-indigo-400 text-white rounded-[1.25rem] shadow-[0_10px_25px_-5px_rgba(148,64,255,0.4)] font-black text-[11px] flex items-center gap-3 hover:-translate-y-1 hover:shadow-[0_15px_30px_-5px_rgba(148,64,255,0.5)] transition-all duration-300 uppercase tracking-widest ring-1 ring-white/20">
-             <Plus size={18} /> TAMBAH ARSIP
+           <button onClick={() => { setEditData(null); setShowForm(true); }} className="px-10 py-4 bg-gradient-to-tr from-premium-600 to-indigo-500 hover:from-premium-500 hover:to-indigo-400 text-white rounded-[1.5rem] shadow-[0_15px_35px_-5px_rgba(148,64,255,0.4)] font-black text-[11px] flex items-center gap-3 hover:-translate-y-1 transition-all duration-300 uppercase tracking-[0.25em] ring-1 ring-white/30">
+             <Plus size={20} /> TAMBAH ARSIP
            </button>
         </div>
       </div>
-      <div className="bg-white/70 backdrop-blur-2xl p-4 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col md:flex-row gap-4 px-6 relative z-10">
+
+      <div className="glass-panel p-5 rounded-[2.5rem] shadow-xl border border-white/40 flex flex-col md:flex-row gap-5 px-8 relative z-10 mx-1">
         <div className="relative flex-1 group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-premium-400 group-within:text-premium-600 transition-colors" size={20} />
-          <input type="text" placeholder="Cari..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-14 pr-4 py-3.5 bg-white/50 focus:bg-white rounded-[1.25rem] border border-transparent focus:border-premium-200 focus:ring-4 focus:ring-premium-100/50 outline-none text-sm font-bold text-slate-700 transition-all shadow-inner" />
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-premium-400 group-within:text-premium-600 transition-colors" size={22} />
+          <input type="text" placeholder="Cari naskah, pengirim, atau perihal..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-16 pr-6 py-4 glass-input focus:bg-white/80 rounded-[1.5rem] outline-none text-sm font-bold text-slate-700 transition-all shadow-inner border border-white/20" />
         </div>
-        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="px-6 py-3.5 bg-white/50 focus:bg-white rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest text-slate-600 outline-none border border-transparent focus:border-premium-200 focus:ring-4 focus:ring-premium-100/50 transition-all cursor-pointer shadow-inner">
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="px-8 py-4 glass-input focus:bg-white/80 rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest text-slate-600 outline-none cursor-pointer transition-all shadow-inner border border-white/20">
           <option value="Semua">Semua Kategori</option>
           {Array.from(new Set(mails.map(m => m.category))).map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </select>
       </div>
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 overflow-hidden pb-6">
-        <div className="lg:col-span-5 xl:col-span-4 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0 overflow-hidden pb-10">
+        <div className="lg:col-span-5 xl:col-span-4 overflow-y-auto pr-3 space-y-5 custom-scrollbar">
           {filteredMails.length > 0 ? filteredMails.map((mail) => (
-            <div key={mail.id} onClick={() => handleSelectMail(mail)} className={`group p-6 rounded-[2rem] border-2 transition-all duration-300 cursor-pointer backdrop-blur-xl relative overflow-hidden ${selectedMail?.id === mail.id ? 'bg-gradient-to-br from-indigo-50 to-premium-50 border-premium-400 shadow-[0_10px_30px_-10px_rgba(148,64,255,0.3)] ring-4 ring-premium-100/50 scale-[1.02]' : 'bg-white/60 border-white/60 hover:bg-white hover:border-premium-200 hover:shadow-lg'}`}>
-              <div className="flex justify-between items-start mb-4 relative z-10">
-                <span className={`text-[9px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-sm ${selectedMail?.id === mail.id ? 'bg-premium-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-premium-50 group-hover:text-premium-600 transition-colors'}`}>{mail.category}</span>
-                <span className={`text-[10px] font-black uppercase tracking-wider flex items-center ${selectedMail?.id === mail.id ? 'text-premium-500' : 'text-slate-400'}`}><Clock size={12} className="mr-1" /> {format(new Date(mail.date), 'dd MMM')}</span>
+            <div key={mail.id} onClick={() => handleSelectMail(mail)} className={`group p-8 rounded-[2.5rem] border-2 transition-all duration-500 cursor-pointer backdrop-blur-2xl relative overflow-hidden ${selectedMail?.id === mail.id ? 'bg-white/90 border-premium-400 shadow-[0_20px_50px_-15px_rgba(148,64,255,0.3)] ring-4 ring-premium-100/50 scale-[1.03]' : 'glass-card border-white/40 hover:bg-white/80 hover:border-premium-200 hover:shadow-2xl hover:-translate-y-1.5'}`}>
+              <div className="flex justify-between items-start mb-5 relative z-10">
+                <span className={`text-[9px] font-black px-4 py-2 rounded-xl uppercase tracking-[0.25em] shadow-sm ${selectedMail?.id === mail.id ? 'bg-premium-600 text-white' : 'glass-panel text-slate-500 group-hover:text-premium-700 transition-colors'}`}>{mail.category}</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest flex items-center ${selectedMail?.id === mail.id ? 'text-premium-500' : 'text-slate-400'}`}><Clock size={14} className="mr-2" /> {format(new Date(mail.date), 'dd MMM')}</span>
               </div>
-              <h3 className={`font-black text-lg mb-3 uppercase leading-tight line-clamp-2 ${selectedMail?.id === mail.id ? 'text-slate-900 drop-shadow-sm' : 'text-slate-700'}`}>{mail.subject}</h3>
-              <div className={`flex items-center gap-2 text-[11px] font-bold ${selectedMail?.id === mail.id ? 'text-premium-700' : 'text-slate-400'} pt-3 border-t ${selectedMail?.id === mail.id ? 'border-premium-200/50' : 'border-slate-100/50'}`}><MapPin size={14} /> <span className="truncate">{mail.sender}</span></div>
+              <h3 className={`font-black text-xl mb-4 uppercase leading-tight line-clamp-2 tracking-tight ${selectedMail?.id === mail.id ? 'text-slate-900 drop-shadow-sm' : 'text-slate-700 group-hover:text-premium-900'}`}>{mail.subject}</h3>
+              <div className={`flex items-center gap-3 text-[11px] font-bold ${selectedMail?.id === mail.id ? 'text-premium-700' : 'text-slate-400'} pt-4 border-t ${selectedMail?.id === mail.id ? 'border-premium-200/50' : 'border-slate-100/30'}`}>
+                <MapPin size={16} className={selectedMail?.id === mail.id ? 'text-premium-500' : 'text-slate-300'} /> 
+                <span className="truncate uppercase tracking-wider">{mail.sender}</span>
+              </div>
             </div>
-          )) : <div className="py-24 text-center bg-white/40 backdrop-blur-xl rounded-[3rem] border-2 border-dashed border-slate-300/50 shadow-inner flex flex-col items-center justify-center">
-            <Mail size={40} className="text-slate-300 mb-4" />
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Tidak ada arsip</p>
+          )) : <div className="py-32 text-center glass-card rounded-[3.5rem] border-2 border-dashed border-slate-300/30 shadow-inner flex flex-col items-center justify-center space-y-6">
+            <div className="p-6 glass-panel rounded-full text-slate-300"><MailIcon size={48} /></div>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Arsip Kosong</p>
           </div>}
         </div>
-        <div className="lg:col-span-6 xl:col-span-7 h-full hidden lg:block overflow-hidden relative">
-          {selectedMail ? <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 h-full overflow-hidden flex flex-col"><DetailContent mail={selectedMail} /></div> : <div className="h-full bg-slate-50/50 rounded-[3rem] border-4 border-dashed border-slate-200 flex items-center justify-center text-slate-400">Pilih Surat</div>}
+        <div className="lg:col-span-7 xl:col-span-8 h-full hidden lg:block overflow-hidden relative">
+          {selectedMail ? (
+            <div className="glass-card rounded-[3.5rem] shadow-2xl border border-white/40 h-full overflow-hidden flex flex-col animate-fade-in">
+              <DetailContent mail={selectedMail} />
+            </div>
+          ) : (
+            <div className="h-full glass-panel rounded-[3.5rem] border-4 border-dashed border-white/20 flex flex-col items-center justify-center text-slate-400 gap-4">
+              <Eye size={48} className="opacity-20 translate-y-2" />
+              <p className="font-black text-xs uppercase tracking-[0.4em] opacity-40">Pilih berkas untuk pratinjau</p>
+            </div>
+          )}
         </div>
       </div>
       {showDetailModal && selectedMail && (
-        <div className="fixed inset-0 z-[60] bg-slate-900/90 flex flex-col">
-          <div className="flex items-center justify-between p-6 border-b border-white/10">
-            <h4 className="text-white font-black uppercase text-sm">Detail Arsip</h4>
-            <button onClick={() => setShowDetailModal(false)} className="p-2 text-white/60 bg-white/10 rounded-full"><X size={24} /></button>
+        <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-xl flex flex-col animate-fade-in">
+          <div className="flex items-center justify-between p-8 border-b border-white/10 glass-dark">
+            <h4 className="text-white font-black uppercase tracking-[0.3em] text-sm">Pratinjau Arsip Digital</h4>
+            <button onClick={() => setShowDetailModal(false)} className="p-3 text-white/60 bg-white/10 hover:bg-rose-500 hover:text-white rounded-2xl transition-all"><X size={28} /></button>
           </div>
-          <div className="flex-1 overflow-y-auto"><DetailContent mail={selectedMail} /></div>
+          <div className="flex-1 overflow-y-auto glass-panel"><DetailContent mail={selectedMail} /></div>
         </div>
       )}
       {showForm && <MailForm type={type} onClose={() => { setShowForm(false); setEditData(null); }} initialData={editData} />}
